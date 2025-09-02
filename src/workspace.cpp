@@ -41,6 +41,22 @@ void Workspace::init(uint32_t new_sf) {
     }
 }
 
+void Workspace::ensure_rx_buffers(size_t nsym, uint32_t sf, uint32_t cr_plus4) {
+    size_t bits_needed    = nsym * sf;
+    size_t nibbles_needed = bits_needed / cr_plus4;
+    size_t data_needed    = (nibbles_needed + 1) / 2;
+    if (rx_symbols.size() < nsym)
+        rx_symbols.resize(nsym);
+    if (rx_bits.size() < bits_needed)
+        rx_bits.resize(bits_needed);
+    if (rx_deint.size() < bits_needed)
+        rx_deint.resize(bits_needed);
+    if (rx_nibbles.size() < nibbles_needed)
+        rx_nibbles.resize(nibbles_needed);
+    if (rx_data.size() < data_needed)
+        rx_data.resize(data_needed);
+}
+
 void Workspace::fft(const std::complex<float>* in, std::complex<float>* out) const {
     const uint32_t N = plan.N;
     const uint32_t log2N = plan.log2N;
