@@ -1,3 +1,5 @@
+// Cross-validation test that compares local TX/RX against reference IQ and
+// payload vectors produced by `scripts/export_vectors.sh`.
 #include "lora/tx/loopback_tx.hpp"
 #include "lora/rx/loopback_rx.hpp"
 #include <filesystem>
@@ -12,6 +14,7 @@ using namespace lora::utils;
 TEST(ReferenceVectors, CrossValidate) {
     namespace fs = std::filesystem;
     Workspace ws;
+    const float kTol = 1e-3f;
     auto root = fs::path(__FILE__).parent_path().parent_path();
     auto vec_dir = root / "vectors";
     for (const auto& entry : fs::directory_iterator(vec_dir)) {
@@ -46,8 +49,8 @@ TEST(ReferenceVectors, CrossValidate) {
         auto tx_iq = lora::tx::loopback_tx(ws, payload, sf, cr_enum);
         ASSERT_EQ(tx_iq.size(), iq.size());
         for (size_t i = 0; i < iq.size(); ++i) {
-            EXPECT_NEAR(tx_iq[i].real(), iq[i].real(), 1e-3);
-            EXPECT_NEAR(tx_iq[i].imag(), iq[i].imag(), 1e-3);
+            EXPECT_NEAR(tx_iq[i].real(), iq[i].real(), kTol);
+            EXPECT_NEAR(tx_iq[i].imag(), iq[i].imag(), kTol);
         }
     }
 }
