@@ -66,3 +66,35 @@ gtest_discover_tests(test_header_crc)
 add_executable(test_loopback tests/test_loopback.cpp)
 target_link_libraries(test_loopback PRIVATE lora_phy GTest::gtest_main)
 gtest_discover_tests(test_loopback)
+add_executable(test_reference_vectors tests/test_reference_vectors.cpp)
+target_link_libraries(test_reference_vectors PRIVATE lora_phy GTest::gtest_main)
+# --- Reference vectors support ---
+
+set(VECTORS_DIR ${CMAKE_SOURCE_DIR}/vectors)
+
+
+add_custom_target(export_vectors
+  COMMAND ${CMAKE_COMMAND} -E env ROOT=${CMAKE_SOURCE_DIR} bash ${CMAKE_SOURCE_DIR}/scripts/export_vectors.sh
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  COMMENT "Generating reference vectors via external/gr_lora_sdr flowgraph"
+)
+
+
+add_custom_target(mark_export_exec
+  COMMAND ${CMAKE_COMMAND} -E chmod +x ${CMAKE_SOURCE_DIR}/scripts/export_vectors.sh
+)
+add_dependencies(export_vectors mark_export_exec)
+
+
+add_custom_target(copy_vectors ALL
+  COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_BINARY_DIR}/vectors
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${VECTORS_DIR} ${CMAKE_BINARY_DIR}/vectors
+  COMMENT "Copying vectors/ -> build/"
+)
+
+
+gtest_discover_tests(test_reference_vectors
+  TEST_PREFIX "reference."
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  DISCOVERY_TIMEOUT 60
+)
