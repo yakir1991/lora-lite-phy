@@ -73,3 +73,13 @@
 **Next**
 - Cross-validate interleaver patterns against `gr_lora_sdr` vectors.
 - Prepare TX→RX loopback harness integrating utilities.
+
+## 2025-09-05 — Milestone 2: Loopback Harness
+
+**Done**
+- Added workspace with one-time allocation of chirps, buffers, and FFT plan.
+- Implemented TX and RX loopback modules chaining whitening, Hamming FEC, interleaving, Gray map, and chirp modulation with reciprocal demodulation.
+- Created end-to-end loopback test covering SF7–SF12 and CR 4/5–4/8.
+
+**Next**
+- Cross-validate against `gr_lora_sdr` vectors.
