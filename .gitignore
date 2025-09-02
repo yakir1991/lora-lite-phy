@@ -1,0 +1,16 @@
+# Build artifacts
+build/
+build-*/
+*.o
+*.obj
+*.a
+*.so
+*.dll
+*.dylib
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake-build-*/
+compile_commands.json
+# VS Code
+.vscode/
