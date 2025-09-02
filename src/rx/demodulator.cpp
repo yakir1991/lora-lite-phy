@@ -4,6 +4,8 @@
 #include "lora/utils/gray.hpp"
 #include "lora/utils/crc.hpp"
 #include <cmath>
+#include <chrono>
+#include <fstream>
 
 using namespace lora::utils;
 
@@ -14,6 +16,15 @@ std::pair<std::vector<uint8_t>, bool> loopback_rx(Workspace& ws,
                                                   uint32_t sf,
                                                   CodeRate cr,
                                                   size_t payload_len) {
+    auto start = std::chrono::steady_clock::now();
+    auto log_time = [&]() {
+        auto end = std::chrono::steady_clock::now();
+        static std::ofstream log("../tests/perf/demod_profile.log", std::ios::app);
+        log << "loopback_rx "
+            << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()
+            << "\n";
+    };
+
     ws.init(sf);
     uint32_t N = ws.N;
     uint32_t cr_plus4 = static_cast<uint32_t>(cr) + 4;
@@ -63,8 +74,10 @@ std::pair<std::vector<uint8_t>, bool> loopback_rx(Workspace& ws,
         for (uint32_t b = 0; b < cr_plus4; ++b)
             cw = (cw << 1) | deint[i + b];
         auto dec = hamming_decode4(cw, cr_plus4, cr, T);
-        if (!dec)
+        if (!dec) {
+            log_time();
             return {{}, false};
+        }
         nibbles.push_back(dec->first & 0x0F);
     }
 
@@ -76,8 +89,10 @@ std::pair<std::vector<uint8_t>, bool> loopback_rx(Workspace& ws,
         data[i] = (high << 4) | low;
     }
     size_t total_needed = payload_len + 2;
-    if (data.size() < total_needed)
+    if (data.size() < total_needed) {
+        log_time();
         return {{}, false};
+    }
     data.resize(total_needed);
 
     // Dewhiten
@@ -87,9 +102,12 @@ std::pair<std::vector<uint8_t>, bool> loopback_rx(Workspace& ws,
     // CRC verify
     Crc16Ccitt crc16;
     auto ver = crc16.verify_with_trailer_be(data.data(), payload_len + 2);
-    if (!ver.first)
+    if (!ver.first) {
+        log_time();
         return {{}, false};
+    }
     data.resize(payload_len);
+    log_time();
     return {data, true};
 }
 

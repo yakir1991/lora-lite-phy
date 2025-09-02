@@ -1,0 +1,86 @@
+loopback_rx 18798
+loopback_rx 6193
+loopback_rx 6964
+loopback_rx 7868
+loopback_rx 8685
+loopback_rx 10579
+loopback_rx 12240
+loopback_rx 13884
+loopback_rx 15377
+loopback_rx 18416
+loopback_rx 22501
+loopback_rx 24491
+loopback_rx 34358
+loopback_rx 40973
+loopback_rx 47009
+loopback_rx 54659
+loopback_rx 73536
+loopback_rx 85935
+loopback_rx 103482
+loopback_rx 116965
+loopback_rx 117709
+loopback_rx 142561
+loopback_rx 163666
+loopback_rx 188967
+average_us 55659
+--------------------------------------------------------------------------------
+Command:            ./test_loopback
+Massif arguments:   --massif-out-file=massif.out
+ms_print arguments: massif.out
+--------------------------------------------------------------------------------
+
+
+    MB
+0.992^                                                                       :
+     |                                                              #########:
+     |                                                     @@@@@@@@:#        :
+     |                                                     @       :#        :
+     |                                             @@@@@@@:@       :#        :
+     |                                             @      :@       :#        :
+     |                                       @@@@@@@      :@       :#        :
+     |                                @@@@@@:@     @      :@       :#        :
+     |                           @@@@@@     :@     @      :@       :#        :
+     |                           @    @     :@     @      :@       :#        :
+     |                      @@@@:@    @     :@     @      :@       :#        :
+     |                  @@@@@   :@    @     :@     @      :@       :#        :
+     |                  @   @   :@    @     :@     @      :@       :#        :
+     |               @@@@   @   :@    @     :@     @      :@       :#        :
+     |          @@@@@@  @   @   :@    @     :@     @      :@       :#        :
+     |        @@@ @  @  @   @   :@    @     :@     @      :@       :#        :
+     |    @ @@@ @ @  @  @   @   :@    @     :@     @      :@       :#        :
+     |  @@@:@@@ @ @  @  @   @   :@    @     :@     @      :@       :#        :
+     |@@@@@:@@@ @ @  @  @   @   :@    @     :@     @      :@       :#        :
+     |@@@@@:@@@ @ @  @  @   @   :@    @     :@     @      :@       :#        :
+   0 +----------------------------------------------------------------------->Gi
+     0                                                                   1.568
+
+Number of snapshots: 88
+ Detailed snapshots: [3, 5, 7, 10, 12, 13, 15, 16, 18, 19, 22, 25, 28, 31, 34, 38, 41, 44, 47, 56, 59, 62, 66, 76, 79, 82, 85 (peak)]
+
+--------------------------------------------------------------------------------
+  n        time(i)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+  0              0                0                0             0            0
+  1      2,218,346           73,736           73,728             8            0
+  2      2,900,063          116,688          116,229           459            0
+  3      3,328,045          116,688          116,229           459            0
+99.61% (116,229B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->63.18% (73,728B) 0x491038E: ??? (in /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33)
+| ->63.18% (73,728B) 0x400571E: call_init.part.0 (dl-init.c:74)
+|   ->63.18% (73,728B) 0x4005823: call_init (dl-init.c:120)
+|     ->63.18% (73,728B) 0x4005823: _dl_init (dl-init.c:121)
+|       ->63.18% (73,728B) 0x401F59F: ??? (in /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2)
+|         
+->30.28% (35,328B) 0x119689: std::__new_allocator<std::complex<float> >::allocate(unsigned long, void const*) (in /workspace/lora-lite-phy/build/test_loopback)
+| ->30.28% (35,328B) 0x11917A: std::_Vector_base<std::complex<float>, std::allocator<std::complex<float> > >::_M_allocate(unsigned long) (in /workspace/lora-lite-phy/build/test_loopback)
+|   ->26.33% (30,720B) 0x118B08: std::_Vector_base<std::complex<float>, std::allocator<std::complex<float> > >::_M_create_storage(unsigned long) (in /workspace/lora-lite-phy/build/test_loopback)
+|   | ->26.33% (30,720B) 0x117F96: std::_Vector_base<std::complex<float>, std::allocator<std::complex<float> > >::_Vector_base(unsigned long, std::allocator<std::complex<float> > const&) (in /workspace/lora-lite-phy/build/test_loopback)
+|   |   ->26.33% (30,720B) 0x1172B4: std::vector<std::complex<float>, std::allocator<std::complex<float> > >::vector(unsigned long, std::allocator<std::complex<float> > const&) (in /workspace/lora-lite-phy/build/test_loopback)
+|   |     ->26.33% (30,720B) 0x116A64: lora::tx::loopback_tx(lora::Workspace&, std::vector<unsigned char, std::allocator<unsigned char> > const&, unsigned int, lora::utils::CodeRate) (in /workspace/lora-lite-phy/build/test_loopback)
+|   |       ->26.33% (30,720B) 0x112F3A: Loopback_TxRx_Test::TestBody() (in /workspace/lora-lite-phy/build/test_loopback)
+|   |         ->26.33% (30,720B) 0x164836: void testing::internal::HandleSehExceptionsInMethodIfSupported<testing::Test, void>(testing::Test*, void (testing::Test::*)(), char const*) (in /workspace/lora-lite-phy/build/test_loopback)
+|   |           ->26.33% (30,720B) 0x15C16E: void testing::internal::HandleExceptionsInMethodIfSupported<testing::Test, void>(testing::Test*, void (testing::Test::*)(), char const*) (in /workspace/lora-lite-phy/build/test_loopback)
+|   |             ->26.33% (30,720B) 0x132D7D: testing::Test::Run() (in /workspace/lora-lite-phy/build/test_loopback)
+|   |               ->26.33% (30,720B) 0x13394E: testing::TestInfo::Run() (in /workspace/lora-lite-phy/build/test_loopback)
+|   |                 ->26.33% (30,720B) 0x1343C7: testing::TestSuite::Run() (in /workspace/lora-lite-phy/build/test_loopback)
+peak_mem_heap_B 1039609
