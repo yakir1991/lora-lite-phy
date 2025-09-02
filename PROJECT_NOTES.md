@@ -108,3 +108,12 @@
 
 **Next**
 - Sweep AWGN SNR to measure robustness across coding rates.
+
+## 2025-09-09 — AWGN SNR Sweep
+
+**Done**
+- Added AWGN SNR sweep harness running TX→RX with Gaussian noise from 0–20 dB across CR 4/5–4/8.
+- Wired the sweep into CMake and `ctest` for automated CI execution.
+
+**Next**
+- Profile demodulator runtime to guide future optimizations.
