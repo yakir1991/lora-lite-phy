@@ -40,3 +40,14 @@
 - Add deterministic **known-good tests** for Hamming/Interleaver.
 - Prepare **TX→RX loopback** (symbol-aligned IQ, no sync) integrating these utilities.
 - Add a small **benchmark harness** (pps/cycles) and verify **zero allocations** on hot paths (valgrind/mallinfo).
+
+## 2025-09-02 — Submodules pinned
+
+**Done**
+- Pinned `external/liquid-dsp` to **v1.7.0** (`4dda702…`).
+- Pinned `external/gr_lora_sdr` to **a8143cb…** (reference vectors).
+- `.gitmodules` set to **shallow** for faster clones; submodules kept out of the build.
+
+**Next**
+- Implement spec-accurate **Hamming** (CR 4/5..4/8) and **Diagonal Interleaver** (incl. LDRO) + unit tests (SF7..SF12).
+- Add `scripts/export_vectors.sh` to generate known-good vectors from `gr_lora_sdr` for cross-validation.
