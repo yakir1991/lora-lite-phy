@@ -51,3 +51,14 @@
 **Next**
 - Implement spec-accurate **Hamming** (CR 4/5..4/8) and **Diagonal Interleaver** (incl. LDRO) + unit tests (SF7..SF12).
 - Add `scripts/export_vectors.sh` to generate known-good vectors from `gr_lora_sdr` for cross-validation.
+
+## 2025-09-03 — Hamming codec complete
+
+**Done**
+- Replaced placeholder with generated Hamming (4,n) tables and syndrome maps.
+- Added decode path correcting single-bit errors (CR4/7,4/8) and detecting errors for CR4/5 and CR4/6.
+- Expanded unit tests to cover all coding rates.
+
+**Next**
+- Implement diagonal interleaver patterns and associated unit tests.
+- Cross-validate utilities against reference vectors from `gr_lora_sdr`.
