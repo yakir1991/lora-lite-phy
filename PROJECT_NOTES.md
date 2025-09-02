@@ -126,3 +126,11 @@
 
 **Next**
 - Examine and eliminate remaining dynamic allocations in the RX path.
+
+## 2025-09-11 — RX path allocations removed
+
+**Done**
+- Added scratch buffers to `Workspace` and reused them in `loopback_rx` to avoid per-call dynamic allocations.
+
+**Next**
+- Consider exposing a view into the workspace buffer to eliminate the final output copy.
