@@ -1,15 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# This helper regenerates golden IQ/payload vectors by invoking the
+# reference GNU Radio flowgraph shipped with `gr_lora_sdr`.  The produced
+# files live under `vectors/` and are later consumed by unit tests to
+# cross‑validate the local TX/RX implementation.
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT_DIR="$ROOT/vectors"
 mkdir -p "$OUT_DIR"
 
-# Spreading factor / code rate pairs to export
-# Code rate uses LoRa notation (45=4/5, ...)
+# Spreading factor / code rate pairs to export. Code rate uses LoRa
+# notation (45 = 4/5, ...).  Additional pairs can be supplied by setting
+# the PAIRS environment variable before calling this script.
 PAIRS=(
   "7 45"
   "8 48"
+  ${PAIRS_EXTRA:-}
 )
 
 for entry in "${PAIRS[@]}"; do

@@ -100,3 +100,11 @@
 
 **Next**
 - Run AWGN robustness tests across coding rates.
+
+## 2025-09-08 — Reference vector parity tests
+
+**Done**
+- Automated test validates that decoding the stored IQ yields the original payload and that re-encoding regenerates the reference IQ.
+
+**Next**
+- Sweep AWGN SNR to measure robustness across coding rates.
