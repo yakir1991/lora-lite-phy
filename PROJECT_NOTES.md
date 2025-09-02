@@ -116,4 +116,13 @@
 - Wired the sweep into CMake and `ctest` for automated CI execution.
 
 **Next**
-- Profile demodulator runtime to guide future optimizations.
+  - Profile demodulator runtime to guide future optimizations.
+
+## 2025-09-10 — Demodulator runtime profile
+
+**Done**
+- Instrumented RX demodulator with `std::chrono` and logged per-packet runtime.
+- Wrapped loopback test with `valgrind --tool=massif`; peak heap usage ≈1.0 MB with average runtime ≈55 ms.
+
+**Next**
+- Examine and eliminate remaining dynamic allocations in the RX path.
