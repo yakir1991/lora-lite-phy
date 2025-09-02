@@ -98,3 +98,7 @@ gtest_discover_tests(test_reference_vectors
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   DISCOVERY_TIMEOUT 60
 )
+
+add_executable(test_awgn_sweep tests/awgn_sweep.cpp)
+target_link_libraries(test_awgn_sweep PRIVATE lora_phy GTest::gtest_main)
+gtest_discover_tests(test_awgn_sweep)
