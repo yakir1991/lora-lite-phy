@@ -91,3 +91,12 @@
 
 **Next**
 - Export test vectors from `gr_lora_sdr` and validate TX/RX paths against them.
+
+## 2025-09-07 — Cross-validation vectors
+
+**Done**
+- Exported reference TX IQ and payloads for SF7/CR4/5 and SF8/CR4/8 using `gr_lora_sdr`.
+- Added automated test to check local TX/RX against these vectors.
+
+**Next**
+- Run AWGN robustness tests across coding rates.
