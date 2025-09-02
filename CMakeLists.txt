@@ -26,6 +26,15 @@ add_library(lora_utils
 )
 target_include_directories(lora_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+# ---------- Library: lora_phy (tx/rx loopback) ----------
+add_library(lora_phy
+    src/workspace.cpp
+    src/tx/loopback_tx.cpp
+    src/rx/loopback_rx.cpp
+)
+target_link_libraries(lora_phy PUBLIC lora_utils)
+target_include_directories(lora_phy PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 # ---------- Tests ----------
 enable_testing()
 include(GoogleTest)
@@ -53,3 +62,7 @@ gtest_discover_tests(test_crc)
 add_executable(test_header_crc tests/test_header_crc.cpp)
 target_link_libraries(test_header_crc PRIVATE lora_utils GTest::gtest_main)
 gtest_discover_tests(test_header_crc)
+
+add_executable(test_loopback tests/test_loopback.cpp)
+target_link_libraries(test_loopback PRIVATE lora_phy GTest::gtest_main)
+gtest_discover_tests(test_loopback)
