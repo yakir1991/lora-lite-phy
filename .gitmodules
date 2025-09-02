@@ -1,3 +1,8 @@
 [submodule "external/liquid-dsp"]
 	path = external/liquid-dsp
 	url = https://github.com/jgaeddert/liquid-dsp
+	shallow = true
+[submodule "external/gr_lora_sdr"]
+	path = external/gr_lora_sdr
+	url = https://github.com/tapparelj/gr-lora_sdr
+	shallow = true
