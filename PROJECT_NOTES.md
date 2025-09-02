@@ -83,3 +83,11 @@
 
 **Next**
 - Cross-validate against `gr_lora_sdr` vectors.
+
+## 2025-09-06 — CRC cross-validation
+
+**Done**
+- Verified CRC-16 CCITT parameters against reference payload "123456789" (expected 0x29B1) and added golden unit test.
+
+**Next**
+- Export test vectors from `gr_lora_sdr` and validate TX/RX paths against them.
