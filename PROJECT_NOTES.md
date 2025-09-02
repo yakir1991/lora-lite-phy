@@ -62,3 +62,14 @@
 **Next**
 - Implement diagonal interleaver patterns and associated unit tests.
 - Cross-validate utilities against reference vectors from `gr_lora_sdr`.
+
+## 2025-09-04 — Interleaver patterns complete
+
+**Done**
+- Replaced placeholder interleaver with spec-accurate diagonal mapping including LDRO column shift.
+- Documented interleaver API and dimensions.
+- Added comprehensive unit tests for SF7–SF12 and CR 4/5–4/8 verifying round-trip and LDRO behaviour.
+
+**Next**
+- Cross-validate interleaver patterns against `gr_lora_sdr` vectors.
+- Prepare TX→RX loopback harness integrating utilities.
