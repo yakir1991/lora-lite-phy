@@ -16,3 +16,10 @@ TEST(CRC16, RoundtripTrailerBE) {
     auto [ok, calc] = crc.verify_with_trailer_be(payload.data(), payload.size());
     EXPECT_TRUE(ok) << std::hex << calc;
 }
+
+TEST(CRC16, KnownVector) {
+    Crc16Ccitt crc{};
+    const char* msg = "123456789";
+    uint16_t calc = crc.compute(reinterpret_cast<const uint8_t*>(msg), 9);
+    EXPECT_EQ(calc, 0x29B1);
+}
