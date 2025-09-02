@@ -30,7 +30,7 @@ target_include_directories(lora_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
 add_library(lora_phy
     src/workspace.cpp
     src/tx/loopback_tx.cpp
-    src/rx/loopback_rx.cpp
+    src/rx/demodulator.cpp
 )
 target_link_libraries(lora_phy PUBLIC lora_utils)
 target_include_directories(lora_phy PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
