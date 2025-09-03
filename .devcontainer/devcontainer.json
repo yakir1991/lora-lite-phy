@@ -1,0 +1,8 @@
+{
+  "name": "LoRa Lite PHY",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "vscode"
+}
+

@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          lfs: true
+      - name: Pull LFS files
+      # ensure LFS files fetched
+        run: git lfs pull
+
+      - name: Install dependencies via apt
+        id: apt
+        continue-on-error: true
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build pkg-config libliquid-dev
+          sudo apt-get install -y gnuradio gnuradio-dev
+
+      - name: Install GNU Radio via conda-forge
+        if: steps.apt.outcome != 'success'
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-name: gnuradio
+          create-args: gnuradio
+          init-shell: bash
+          activate-environment: gnuradio
+
+      - name: Export vectors
+        env:
+          ROOT: ${{ github.workspace }}
+        run: scripts/export_vectors.sh
+
+      - name: Configure
+        run: cmake -S . -B build -GNinja
+
+      - name: Build
+        run: cmake --build build -j"$(nproc)"
+
+      - name: Test
+        run: |
+          cd build
+          ctest --output-on-failure
+
+      - name: Upload benchmarks
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmarks
+          path: build/benchmarks/*.csv
+          if-no-files-found: ignore
+

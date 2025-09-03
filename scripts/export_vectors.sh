@@ -6,9 +6,21 @@ set -euo pipefail
 # files live under `vectors/` and are later consumed by unit tests to
 # cross‑validate the local TX/RX implementation.
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PYTHON=${PYTHON:-python3}
+ROOT=${ROOT:-"$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"}
 OUT_DIR="$ROOT/vectors"
 mkdir -p "$OUT_DIR"
+
+# Verify that GNU Radio is available unless ALLOW_SKIP=1
+if ! "$PYTHON" -c "import gnuradio" >/dev/null 2>&1; then
+  if [[ "${ALLOW_SKIP:-0}" == "1" ]]; then
+    echo "GNU Radio not found; skipping vector export" >&2
+    exit 0
+  else
+    echo "GNU Radio not found. Please install it to export vectors." >&2
+    exit 1
+  fi
+fi
 
 # Spreading factor / code rate pairs to export. Code rate uses LoRa
 # notation (45 = 4/5, ...).  Additional pairs can be supplied by setting
@@ -27,7 +39,7 @@ for entry in "${PAIRS[@]}"; do
 
   # Create deterministic 4-byte payload if none exists
   if [ ! -f "$payload_file" ]; then
-    python3 - <<'PY'
+    "$PYTHON" - <<'PY'
 import os,sys
 payload=bytes(range(1,5))
 with open(sys.argv[1], 'wb') as f:
@@ -37,7 +49,7 @@ PY
   fi
 
   # Invoke reference GNU Radio flowgraph
-  python3 "$ROOT/external/gr_lora_sdr/apps/simulation/flowgraph/tx_rx_simulation.py" \
+  "$PYTHON" "$ROOT/external/gr_lora_sdr/apps/simulation/flowgraph/tx_rx_simulation.py" \
     "$payload_file" /tmp/rx_payload.bin /tmp/rx_crc.bin \
     --sf "$sf" --cr $((cr-40)) --pay-len "$(stat -c%s "$payload_file")" --SNRdB 30
 

@@ -134,3 +134,18 @@
 
 **Next**
 - Consider exposing a view into the workspace buffer to eliminate the final output copy.
+
+## 2025-09-12 — CI & devcontainer
+
+**Done**
+- Added GitHub Actions workflow that provisions GNU Radio, exports reference
+  vectors and runs the test suite.
+- Introduced VS Code devcontainer with GNU Radio and build dependencies
+  preinstalled.
+- Hardened `scripts/export_vectors.sh` with a Python override and GNU Radio
+  preflight check.
+- Documented CI vector generation, devcontainer usage and the `PYTHON`
+  selector for the export script in the README.
+
+**Next**
+- Consider exposing a view into the workspace buffer to eliminate the final output copy.

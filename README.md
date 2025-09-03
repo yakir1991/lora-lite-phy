@@ -38,3 +38,19 @@ ctest -R Loopback --output-on-failure # run only loopback test
 See [LoRa_Lite_Migration_Plan_README.md](LoRa_Lite_Migration_Plan_README.md)
 for detailed roadmap and context.
 
+## CI & vectors
+The GitHub Actions workflow provisions GNU Radio, regenerates reference
+vectors via `scripts/export_vectors.sh`, builds the project with Ninja and
+executes `ctest`. Generated benchmark CSVs are uploaded as artifacts on
+success.
+
+## Development container
+A VS Code devcontainer (`.devcontainer/`) preinstalls GNU Radio and the
+build dependencies from the README. Open the repository in VS Code and
+select **Reopen in Container** to develop inside the prepared environment.
+
+## Export script
+`scripts/export_vectors.sh` selects the Python interpreter via the
+`PYTHON` environment variable (defaults to `python3`). Override it when a
+non-default interpreter is required.
+
