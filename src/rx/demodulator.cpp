@@ -1,6 +1,5 @@
 #include "lora/rx/loopback_rx.hpp"
 #include "lora/utils/whitening.hpp"
-#include "lora/utils/interleaver.hpp"
 #include "lora/utils/gray.hpp"
 #include "lora/utils/crc.hpp"
 #include <cmath>
@@ -9,11 +8,11 @@
 
 namespace lora::rx {
 
-std::pair<std::vector<uint8_t>, bool> loopback_rx(Workspace& ws,
-                                                  std::span<const std::complex<float>> samples,
-                                                  uint32_t sf,
-                                                  lora::utils::CodeRate cr,
-                                                  size_t payload_len) {
+std::pair<std::span<uint8_t>, bool> loopback_rx(Workspace& ws,
+                                                std::span<const std::complex<float>> samples,
+                                                uint32_t sf,
+                                                lora::utils::CodeRate cr,
+                                                size_t payload_len) {
     auto start = std::chrono::steady_clock::now();
     auto log_time = [&]() {
         auto end = std::chrono::steady_clock::now();
@@ -59,7 +58,7 @@ std::pair<std::vector<uint8_t>, bool> loopback_rx(Workspace& ws,
     size_t nbits = bit_idx;
 
     // Deinterleave
-    lora::utils::InterleaverMap M = lora::utils::make_diagonal_interleaver(sf, cr_plus4);
+    const auto& M = ws.get_interleaver(sf, cr_plus4);
     auto& deint = ws.rx_deint;
     for (size_t off = 0; off < nbits; off += M.n_in) {
         for (uint32_t i = 0; i < M.n_out; ++i)
@@ -77,7 +76,7 @@ std::pair<std::vector<uint8_t>, bool> loopback_rx(Workspace& ws,
         auto dec = lora::utils::hamming_decode4(cw, cr_plus4, cr, T);
         if (!dec) {
             log_time();
-            return {{}, false};
+            return {std::span<uint8_t>{}, false};
         }
         nibbles[nib_idx++] = dec->first & 0x0F;
     }
@@ -93,7 +92,7 @@ std::pair<std::vector<uint8_t>, bool> loopback_rx(Workspace& ws,
     size_t total_needed = payload_len + 2;
     if (data_len < total_needed) {
         log_time();
-        return {{}, false};
+        return {std::span<uint8_t>{}, false};
     }
 
     // Dewhiten
@@ -105,11 +104,10 @@ std::pair<std::vector<uint8_t>, bool> loopback_rx(Workspace& ws,
     auto ver = crc16.verify_with_trailer_be(data.data(), payload_len + 2);
     if (!ver.first) {
         log_time();
-        return {{}, false};
+        return {std::span<uint8_t>{}, false};
     }
-    std::vector<uint8_t> out(data.begin(), data.begin() + payload_len);
     log_time();
-    return {out, true};
+    return {std::span<uint8_t>(data.data(), payload_len), true};
 }
 
 } // namespace lora::rx

@@ -1,6 +1,5 @@
 #include "lora/tx/loopback_tx.hpp"
 #include "lora/utils/whitening.hpp"
-#include "lora/utils/interleaver.hpp"
 #include "lora/utils/gray.hpp"
 #include "lora/utils/crc.hpp"
 #include <cmath>
@@ -51,7 +50,7 @@ std::span<const std::complex<float>> loopback_tx(Workspace& ws,
     }
 
     // Interleave
-    lora::utils::InterleaverMap M = lora::utils::make_diagonal_interleaver(sf, cr_plus4);
+    const auto& M = ws.get_interleaver(sf, cr_plus4);
     auto& inter = ws.tx_inter;
     for (size_t off = 0; off < nbits; off += M.n_in) {
         for (uint32_t i = 0; i < M.n_out; ++i)

@@ -2,7 +2,9 @@
 #include <cstdint>
 #include <vector>
 #include <complex>
+#include <unordered_map>
 #include <liquid/liquid.h>
+#include "lora/utils/interleaver.hpp"
 
 using liquid_fftplan = fftplan;
 
@@ -30,11 +32,15 @@ struct Workspace {
     std::vector<uint32_t> tx_symbols;
     std::vector<std::complex<float>> tx_iq;
 
+    // Cached interleaver maps indexed by (sf << 8) | cr_plus4
+    std::unordered_map<uint32_t, lora::utils::InterleaverMap> interleavers;
+
     ~Workspace();
     void init(uint32_t new_sf);
     void fft(const std::complex<float>* in, std::complex<float>* out);
     void ensure_rx_buffers(size_t nsym, uint32_t sf, uint32_t cr_plus4);
     void ensure_tx_buffers(size_t payload_len, uint32_t sf, uint32_t cr_plus4);
+    const lora::utils::InterleaverMap& get_interleaver(uint32_t sf, uint32_t cr_plus4);
 };
 
 } // namespace lora
