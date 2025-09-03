@@ -7,14 +7,12 @@
 #include <chrono>
 #include <fstream>
 
-using namespace lora::utils;
-
 namespace lora::rx {
 
 std::pair<std::vector<uint8_t>, bool> loopback_rx(Workspace& ws,
                                                   const std::vector<std::complex<float>>& samples,
                                                   uint32_t sf,
-                                                  CodeRate cr,
+                                                  lora::utils::CodeRate cr,
                                                   size_t payload_len) {
     auto start = std::chrono::steady_clock::now();
     auto log_time = [&]() {
@@ -47,7 +45,7 @@ std::pair<std::vector<uint8_t>, bool> loopback_rx(Workspace& ws,
                 max_bin = k;
             }
         }
-        symbols[s_idx] = gray_decode(max_bin);
+        symbols[s_idx] = lora::utils::gray_decode(max_bin);
     }
 
     // Symbols -> bits
@@ -61,7 +59,7 @@ std::pair<std::vector<uint8_t>, bool> loopback_rx(Workspace& ws,
     size_t nbits = bit_idx;
 
     // Deinterleave
-    InterleaverMap M = make_diagonal_interleaver(sf, cr_plus4);
+    lora::utils::InterleaverMap M = lora::utils::make_diagonal_interleaver(sf, cr_plus4);
     auto& deint = ws.rx_deint;
     for (size_t off = 0; off < nbits; off += M.n_in) {
         for (uint32_t i = 0; i < M.n_out; ++i)
@@ -69,14 +67,14 @@ std::pair<std::vector<uint8_t>, bool> loopback_rx(Workspace& ws,
     }
 
     // Hamming decode
-    static HammingTables T = make_hamming_tables();
+    static lora::utils::HammingTables T = lora::utils::make_hamming_tables();
     auto& nibbles = ws.rx_nibbles;
     size_t nib_idx = 0;
     for (size_t i = 0; i < nbits; i += cr_plus4) {
         uint16_t cw = 0;
         for (uint32_t b = 0; b < cr_plus4; ++b)
             cw = (cw << 1) | deint[i + b];
-        auto dec = hamming_decode4(cw, cr_plus4, cr, T);
+        auto dec = lora::utils::hamming_decode4(cw, cr_plus4, cr, T);
         if (!dec) {
             log_time();
             return {{}, false};
@@ -99,11 +97,11 @@ std::pair<std::vector<uint8_t>, bool> loopback_rx(Workspace& ws,
     }
 
     // Dewhiten
-    auto lfsr = LfsrWhitening::pn9_default();
+    auto lfsr = lora::utils::LfsrWhitening::pn9_default();
     lfsr.apply(data.data(), total_needed);
 
     // CRC verify
-    Crc16Ccitt crc16;
+    lora::utils::Crc16Ccitt crc16;
     auto ver = crc16.verify_with_trailer_be(data.data(), payload_len + 2);
     if (!ver.first) {
         log_time();
