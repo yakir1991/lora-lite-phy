@@ -15,6 +15,13 @@ TEST(CRC16, RoundtripTrailerBE) {
 
     auto [ok, calc] = crc.verify_with_trailer_be(payload.data(), payload.size());
     EXPECT_TRUE(ok) << std::hex << calc;
+
+    // LoRa CRC expects detection of single-bit errors; flipping any bit should
+    // invalidate the checksum.
+    auto corrupt = payload;
+    corrupt[0] ^= 0x01;
+    auto [ok_corrupt, calc_corrupt] = crc.verify_with_trailer_be(corrupt.data(), corrupt.size());
+    EXPECT_FALSE(ok_corrupt) << std::hex << calc_corrupt;
 }
 
 TEST(CRC16, KnownVector) {
