@@ -13,3 +13,14 @@ TEST(HeaderCRC, RoundtripBE) {
     HeaderCrc::append_trailer_be(hdr);
     EXPECT_TRUE(HeaderCrc::verify_be(hdr.data(), hdr.size()));
 }
+
+TEST(HeaderCRC, DetectsBitFlip) {
+    std::vector<uint8_t> hdr = {
+        0x1A,
+        0b00111001,
+        0x55
+    };
+    HeaderCrc::append_trailer_be(hdr);
+    hdr[0] ^= 0x01;
+    EXPECT_FALSE(HeaderCrc::verify_be(hdr.data(), hdr.size()));
+}

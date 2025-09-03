@@ -12,7 +12,9 @@ std::pair<std::span<uint8_t>, bool> loopback_rx(Workspace& ws,
                                                 std::span<const std::complex<float>> samples,
                                                 uint32_t sf,
                                                 lora::utils::CodeRate cr,
-                                                size_t payload_len) {
+                                                size_t payload_len,
+                                                bool check_sync,
+                                                uint8_t expected_sync) {
     auto start = std::chrono::steady_clock::now();
     auto log_time = [&]() {
         auto end = std::chrono::steady_clock::now();
@@ -25,13 +27,41 @@ std::pair<std::span<uint8_t>, bool> loopback_rx(Workspace& ws,
     ws.init(sf);
     uint32_t N = ws.N;
     uint32_t cr_plus4 = static_cast<uint32_t>(cr) + 4;
-    size_t nsym = samples.size() / N;
+    size_t nsym_total = samples.size() / N;
+    size_t data_offset = 0;
+    if (check_sync) {
+        if (nsym_total == 0) {
+            log_time();
+            return {std::span<uint8_t>{}, false};
+        }
+        const std::complex<float>* block = samples.data();
+        for (uint32_t n = 0; n < N; ++n)
+            ws.rxbuf[n] = block[n] * ws.downchirp[n];
+        ws.fft(ws.rxbuf.data(), ws.fftbuf.data());
+        uint32_t max_bin = 0;
+        float max_mag = 0.f;
+        for (uint32_t k = 0; k < N; ++k) {
+            float mag = std::norm(ws.fftbuf[k]);
+            if (mag > max_mag) {
+                max_mag = mag;
+                max_bin = k;
+            }
+        }
+        uint32_t sync_sym = lora::utils::gray_decode(max_bin);
+        if (sync_sym != expected_sync) {
+            log_time();
+            return {std::span<uint8_t>{}, false};
+        }
+        data_offset = 1;
+        --nsym_total;
+    }
+    size_t nsym = nsym_total;
     ws.ensure_rx_buffers(nsym, sf, cr_plus4);
 
     // Demodulate symbols
     auto& symbols = ws.rx_symbols;
     for (size_t s_idx = 0; s_idx < nsym; ++s_idx) {
-        const std::complex<float>* block = &samples[s_idx * N];
+        const std::complex<float>* block = &samples[(s_idx + data_offset) * N];
         for (uint32_t n = 0; n < N; ++n)
             ws.rxbuf[n] = block[n] * ws.downchirp[n];
         ws.fft(ws.rxbuf.data(), ws.fftbuf.data());
