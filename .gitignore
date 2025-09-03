@@ -15,3 +15,7 @@ compile_commands.json
 # VS Code
 .vscode/
 vectors/*.bin
+# Logs & perf artifacts
+*.log
+logs/
+tests/perf/*.log
