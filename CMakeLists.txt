@@ -32,7 +32,7 @@ add_library(lora_phy
     src/tx/loopback_tx.cpp
     src/rx/demodulator.cpp
 )
-target_link_libraries(lora_phy PUBLIC lora_utils)
+target_link_libraries(lora_phy PUBLIC lora_utils liquid)
 target_include_directories(lora_phy PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # ---------- Tests ----------

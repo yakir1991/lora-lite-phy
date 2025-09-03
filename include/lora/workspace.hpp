@@ -2,20 +2,16 @@
 #include <cstdint>
 #include <vector>
 #include <complex>
+#include <liquid/liquid.h>
+
+using liquid_fftplan = fftplan;
 
 namespace lora {
-
-struct FftPlan {
-    uint32_t N{};
-    uint32_t log2N{};
-    std::vector<std::complex<float>> twiddles; // N/2 twiddles
-    std::vector<uint32_t> bitrev;               // N indices
-};
 
 struct Workspace {
     uint32_t sf{};
     uint32_t N{};
-    FftPlan plan;
+    liquid_fftplan plan{};
     std::vector<std::complex<float>> upchirp;
     std::vector<std::complex<float>> downchirp;
     std::vector<std::complex<float>> rxbuf;
@@ -28,8 +24,9 @@ struct Workspace {
     std::vector<uint8_t>  rx_nibbles;
     std::vector<uint8_t>  rx_data;
 
+    ~Workspace();
     void init(uint32_t new_sf);
-    void fft(const std::complex<float>* in, std::complex<float>* out) const;
+    void fft(const std::complex<float>* in, std::complex<float>* out);
     void ensure_rx_buffers(size_t nsym, uint32_t sf, uint32_t cr_plus4);
 };
 
