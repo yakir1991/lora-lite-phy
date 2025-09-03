@@ -9,6 +9,7 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <span>
 
 using namespace lora;
 using namespace lora::utils;
@@ -54,8 +55,8 @@ static std::complex<float> interp(const std::vector<std::complex<float>>& v,
 }
 
 static std::vector<std::complex<float>>
-apply_impairments(const std::vector<std::complex<float>>& in, std::mt19937& rng) {
-    auto sig = in;
+apply_impairments(std::span<const std::complex<float>> in, std::mt19937& rng) {
+    std::vector<std::complex<float>> sig(in.begin(), in.end());
 
     // CFO
     if (g_cfg.cfo_hz != 0.f) {
