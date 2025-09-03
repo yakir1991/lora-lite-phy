@@ -1,5 +1,8 @@
 // Cross-validation test that compares local TX/RX against reference IQ and
 // payload vectors produced by `scripts/export_vectors.sh`.
+//
+// Reference vectors contain floating-point IQ samples; equality checks allow
+// for a small numeric tolerance to accommodate minor rounding differences.
 #include "lora/tx/loopback_tx.hpp"
 #include "lora/rx/loopback_rx.hpp"
 #include <filesystem>
@@ -15,9 +18,13 @@ using namespace lora::utils;
 TEST(ReferenceVectors, CrossValidate) {
     namespace fs = std::filesystem;
     Workspace ws;
+    // Permissible numeric error when comparing reference and locally-generated
+    // IQ samples.  A millesimal tolerance is sufficient for the deterministic
+    // loopback implementation used to export vectors.
     const float kTol = 1e-3f;
     auto root = fs::path(__FILE__).parent_path().parent_path();
     auto vec_dir = root / "vectors";
+    size_t tested = 0;
     for (const auto& entry : fs::directory_iterator(vec_dir)) {
         auto path = entry.path();
         auto name = path.filename().string();
@@ -54,5 +61,8 @@ TEST(ReferenceVectors, CrossValidate) {
             EXPECT_NEAR(tx_iq[i].real(), iq[i].real(), kTol);
             EXPECT_NEAR(tx_iq[i].imag(), iq[i].imag(), kTol);
         }
+        ++tested;
     }
+    // Expect reference coverage for SF7–SF12 with CR 4/5 and 4/8.
+    ASSERT_EQ(tested, 12u);
 }
