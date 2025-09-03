@@ -49,6 +49,8 @@ void Workspace::ensure_rx_buffers(size_t nsym, uint32_t sf, uint32_t cr_plus4) {
         rx_nibbles.resize(nibbles_needed);
     if (rx_data.size() < data_needed)
         rx_data.resize(data_needed);
+    // Precompute interleaver map for this configuration
+    get_interleaver(sf, cr_plus4);
 }
 
 void Workspace::ensure_tx_buffers(size_t payload_len, uint32_t sf, uint32_t cr_plus4) {
@@ -66,6 +68,8 @@ void Workspace::ensure_tx_buffers(size_t payload_len, uint32_t sf, uint32_t cr_p
         tx_symbols.resize(nsym);
     if (tx_iq.size() < nsym * N)
         tx_iq.resize(nsym * N);
+    // Precompute interleaver map for this configuration
+    get_interleaver(sf, cr_plus4);
 }
 
 void Workspace::fft(const std::complex<float>* in, std::complex<float>* out) {
@@ -74,6 +78,16 @@ void Workspace::fft(const std::complex<float>* in, std::complex<float>* out) {
     fft_execute(plan);
     if (out != fftbuf.data())
         std::copy(fftbuf.begin(), fftbuf.begin() + N, out);
+}
+
+const lora::utils::InterleaverMap& Workspace::get_interleaver(uint32_t sf, uint32_t cr_plus4) {
+    uint32_t key = (sf << 8) | cr_plus4;
+    auto it = interleavers.find(key);
+    if (it == interleavers.end()) {
+        auto M = lora::utils::make_diagonal_interleaver(sf, cr_plus4);
+        it = interleavers.emplace(key, std::move(M)).first;
+    }
+    return it->second;
 }
 
 } // namespace lora
