@@ -51,6 +51,23 @@ void Workspace::ensure_rx_buffers(size_t nsym, uint32_t sf, uint32_t cr_plus4) {
         rx_data.resize(data_needed);
 }
 
+void Workspace::ensure_tx_buffers(size_t payload_len, uint32_t sf, uint32_t cr_plus4) {
+    size_t total_bytes = payload_len + 2; // payload + CRC
+    size_t bits_needed = total_bytes * 2 * cr_plus4;
+    uint32_t block_bits = sf * cr_plus4;
+    if (bits_needed % block_bits)
+        bits_needed = ((bits_needed / block_bits) + 1) * block_bits;
+    size_t nsym = bits_needed / sf;
+    if (tx_bits.size() < bits_needed)
+        tx_bits.resize(bits_needed);
+    if (tx_inter.size() < bits_needed)
+        tx_inter.resize(bits_needed);
+    if (tx_symbols.size() < nsym)
+        tx_symbols.resize(nsym);
+    if (tx_iq.size() < nsym * N)
+        tx_iq.resize(nsym * N);
+}
+
 void Workspace::fft(const std::complex<float>* in, std::complex<float>* out) {
     if (in != rxbuf.data())
         std::copy(in, in + N, rxbuf.begin());
