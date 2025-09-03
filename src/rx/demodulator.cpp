@@ -10,7 +10,7 @@
 namespace lora::rx {
 
 std::pair<std::vector<uint8_t>, bool> loopback_rx(Workspace& ws,
-                                                  const std::vector<std::complex<float>>& samples,
+                                                  std::span<const std::complex<float>> samples,
                                                   uint32_t sf,
                                                   lora::utils::CodeRate cr,
                                                   size_t payload_len) {

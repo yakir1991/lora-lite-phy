@@ -24,10 +24,17 @@ struct Workspace {
     std::vector<uint8_t>  rx_nibbles;
     std::vector<uint8_t>  rx_data;
 
+    // Scratch buffers for TX path to avoid per-call allocations
+    std::vector<uint8_t>  tx_bits;
+    std::vector<uint8_t>  tx_inter;
+    std::vector<uint32_t> tx_symbols;
+    std::vector<std::complex<float>> tx_iq;
+
     ~Workspace();
     void init(uint32_t new_sf);
     void fft(const std::complex<float>* in, std::complex<float>* out);
     void ensure_rx_buffers(size_t nsym, uint32_t sf, uint32_t cr_plus4);
+    void ensure_tx_buffers(size_t payload_len, uint32_t sf, uint32_t cr_plus4);
 };
 
 } // namespace lora
