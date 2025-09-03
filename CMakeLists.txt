@@ -35,6 +35,10 @@ add_library(lora_phy
 target_link_libraries(lora_phy PUBLIC lora_utils liquid)
 target_include_directories(lora_phy PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+# ---------- Benchmarks ----------
+add_executable(benchmarks benchmarks/tx_rx_bench.cpp)
+target_link_libraries(benchmarks PRIVATE lora_phy)
+
 # ---------- Tests ----------
 enable_testing()
 include(GoogleTest)
