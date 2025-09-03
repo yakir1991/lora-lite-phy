@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <span>
+#include <algorithm>
 
 using namespace lora;
 using namespace lora::utils;
@@ -192,7 +193,9 @@ TEST(AWGN, SNR_Sweep) {
                                std::complex<float>(noise(rng), noise(rng));
 
                 auto rxres = rx::loopback_rx(ws, noisy, g_cfg.sf, cr, payload.size());
-                bool frame_ok = rxres.second && rxres.first == payload;
+                bool frame_ok = rxres.second &&
+                                rxres.first.size() == payload.size() &&
+                                std::equal(rxres.first.begin(), rxres.first.end(), payload.begin());
                 if (!frame_ok)
                     frame_errors++;
                 if (rxres.second && rxres.first.size() == payload.size()) {

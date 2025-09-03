@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <random>
+#include <algorithm>
 #include "lora/tx/loopback_tx.hpp"
 #include "lora/rx/loopback_rx.hpp"
 #include "lora/workspace.hpp"
@@ -18,7 +19,8 @@ TEST(Loopback, TxRx) {
             auto txsig = tx::loopback_tx(ws, payload, sf, cr);
             auto rxres = rx::loopback_rx(ws, txsig, sf, cr, payload.size());
             EXPECT_TRUE(rxres.second);
-            EXPECT_EQ(rxres.first, payload);
+            ASSERT_EQ(rxres.first.size(), payload.size());
+            EXPECT_TRUE(std::equal(rxres.first.begin(), rxres.first.end(), payload.begin()));
         }
     }
 }

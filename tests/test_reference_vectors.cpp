@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <algorithm>
 
 using namespace lora;
 using namespace lora::tx;
@@ -45,7 +46,8 @@ TEST(ReferenceVectors, CrossValidate) {
         SCOPED_TRACE(name);
         auto rx = lora::rx::loopback_rx(ws, iq, sf, cr_enum, payload.size());
         ASSERT_TRUE(rx.second);
-        EXPECT_EQ(rx.first, payload);
+        ASSERT_EQ(rx.first.size(), payload.size());
+        EXPECT_TRUE(std::equal(rx.first.begin(), rx.first.end(), payload.begin()));
         auto tx_iq = lora::tx::loopback_tx(ws, payload, sf, cr_enum);
         ASSERT_EQ(tx_iq.size(), iq.size());
         for (size_t i = 0; i < iq.size(); ++i) {
