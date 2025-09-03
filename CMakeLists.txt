@@ -67,6 +67,10 @@ add_executable(test_header_crc tests/test_header_crc.cpp)
 target_link_libraries(test_header_crc PRIVATE lora_utils GTest::gtest_main)
 gtest_discover_tests(test_header_crc)
 
+add_executable(test_sync_word tests/test_sync_word.cpp)
+target_link_libraries(test_sync_word PRIVATE lora_phy GTest::gtest_main)
+gtest_discover_tests(test_sync_word)
+
 add_executable(test_loopback tests/test_loopback.cpp)
 target_link_libraries(test_loopback PRIVATE lora_phy GTest::gtest_main)
 gtest_discover_tests(test_loopback)
