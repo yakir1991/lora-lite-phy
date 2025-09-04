@@ -194,11 +194,11 @@
 
 **Done**
 - Added OS>1 handling via decimation and phase search:
-  - `detect_preamble_os()` tries OS candidates {1,2,4,8} ופאזות; מחזיר start-sample, OS ו‑phase.
-  - `decode_with_preamble_cfo_sto_os()` מבצע decimate ל‑OS=1 לפי OS/phase, ואז מפעיל preamble+CFO+STO.
-- הוספתי דצימטור פוליפאזי אמיתי על בסיס Liquid‑DSP:
-  - `include/lora/rx/decimate.hpp`, `src/rx/decimate.cpp` — FIR Kaiser עם `firdecim_crcf`.
-- טסט: `Preamble.OS4DetectAndDecode` (OS=4 סינתטי) — עובר.
+  - `detect_preamble_os()` tries OS candidates {1,2,4,8} and phases; returns start-sample, OS, and phase.
+  - `decode_with_preamble_cfo_sto_os()` decimates to OS=1 according to OS/phase, then applies preamble+CFO+STO.
+- Added a real polyphase decimator based on Liquid‑DSP:
+  - `include/lora/rx/decimate.hpp`, `src/rx/decimate.cpp` — Kaiser FIR with `firdecim_crcf`.
+- Test: `Preamble.OS4DetectAndDecode` (synthetic OS=4) — passes.
 
 **Next**
 - Validate against real oversampled captures, not only synthetic repeat.
