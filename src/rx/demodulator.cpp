@@ -161,3 +161,25 @@ std::pair<std::span<uint8_t>, bool> loopback_rx_header(
 }
 
 } // namespace lora::rx
+
+namespace lora::rx {
+
+std::pair<std::span<uint8_t>, bool> loopback_rx_header_auto(
+    Workspace& ws,
+    std::span<const std::complex<float>> samples,
+    uint32_t sf,
+    lora::utils::CodeRate cr,
+    size_t min_preamble_syms,
+    bool os_aware) {
+    if (os_aware) {
+        return decode_frame_with_preamble_cfo_sto_os_auto(ws, samples, sf, cr, min_preamble_syms);
+    } else {
+        // Fallback: run OS=1 CFO/STO then decode header + payload
+        auto det = detect_preamble(ws, samples, sf, min_preamble_syms);
+        if (!det) return {std::span<uint8_t>{}, false};
+        // Use the OS=1 CFO/STO path, then decode header/payload via auto function on the aligned span
+        return decode_frame_with_preamble_cfo_sto_os_auto(ws, samples, sf, cr, min_preamble_syms);
+    }
+}
+
+} // namespace lora::rx

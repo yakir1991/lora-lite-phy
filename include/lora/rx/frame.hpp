@@ -23,6 +23,15 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble(
     size_t min_preamble_syms = 8,
     uint8_t expected_sync = lora::LORA_SYNC_WORD_PUBLIC);
 
+// Auto-length version: detect header first to derive payload length, then decode.
+std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
+    Workspace& ws,
+    std::span<const std::complex<float>> samples,
+    uint32_t sf,
+    lora::utils::CodeRate cr,
+    size_t min_preamble_syms = 8,
+    uint8_t expected_sync = lora::LORA_SYNC_WORD_PUBLIC);
+
 // Decode full frame with CFO and integer STO estimation/compensation.
 std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto(
     Workspace& ws,
