@@ -1,54 +1,51 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# This helper regenerates golden IQ/payload vectors by invoking the
-# reference GNU Radio flowgraph shipped with `gr_lora_sdr`.  The produced
-# files live under `vectors/` and are later consumed by unit tests to
-# cross‑validate the local TX/RX implementation.
+# Regenerate golden IQ/payload vectors using the GNU Radio reference (gr_lora_sdr).
+# Outputs go to vectors/ and are used by the unit tests.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT_DIR="$ROOT/vectors"
 mkdir -p "$OUT_DIR"
 
-# Spreading factor / code rate pairs to export. Code rate uses LoRa
-# notation (45 = 4/5, ...).  Additional pairs can be supplied by setting
-# the PAIRS environment variable before calling this script.
-PAIRS=(
-  "7 45"
-  "8 48"
-  ${PAIRS_EXTRA:-}
-)
+# Default SF/CR pairs; you can append via:
+#   PAIRS="9 45 10 48" or PAIRS_EXTRA="9 45" (both supported)
+DEFAULT_PAIRS=("7 45" "8 48")
+read -r -a ENV_PAIRS <<< "${PAIRS:-}"
+read -r -a ENV_PAIRS_EXTRA <<< "${PAIRS_EXTRA:-}"
+PAIRS=( "${DEFAULT_PAIRS[@]}" "${ENV_PAIRS[@]}" "${ENV_PAIRS_EXTRA[@]}" )
+
+# Ensure GNU Radio reference is available in this conda env
+python3 - <<'PY'
+import sys
+try:
+    import gnuradio, gnuradio.lora_sdr
+except Exception as e:
+    sys.exit(f"ERROR: GNU Radio or gnuradio.lora_sdr is missing: {e}")
+PY
 
 for entry in "${PAIRS[@]}"; do
-  sf=$(echo "$entry" | awk '{print $1}')
-  cr=$(echo "$entry" | awk '{print $2}')
+  sf="${entry%% *}"
+  cr="${entry##* }"
   payload_file="$OUT_DIR/sf${sf}_cr${cr}_payload.bin"
   iq_file="$OUT_DIR/sf${sf}_cr${cr}_iq.bin"
 
-  # Create deterministic 4-byte payload if none exists
-  if [ ! -f "$payload_file" ]; then
-    python3 - <<'PY'
-import os,sys
-payload=bytes(range(1,5))
-with open(sys.argv[1], 'wb') as f:
-    f.write(payload)
-PY
- "$payload_file"
+  # Create deterministic 16-byte payload if none exists (0x01..0x10)
+  if [[ ! -f "$payload_file" ]]; then
+    python3 -c 'import sys; open(sys.argv[1],"wb").write(bytes(range(1,17)))' "$payload_file"
   fi
 
-  # Ensure GNU Radio reference model is available
-  python3 - <<'PY'
-try:
-    import gnuradio
-    import gnuradio.lora_sdr
-except Exception as e:
-    raise SystemExit("ERROR: GNU Radio or gnuradio.lora_sdr is not available in this environment.\n"
-                     "Install via conda (recommended) and re-run export.")
-PY
-
-  # Generate IQ using the GNU Radio TX-only flowgraph (no preamble)
-  python3 "$ROOT/scripts/gr_generate_vectors.py" \
-    --sf "$sf" --cr "$cr" --payload "$payload_file" --out "$iq_file" \
-    --bw 125000 --samp-rate 125000 --preamble-len 8
-
+  echo "[*] Generating IQ: SF=$sf CR=$cr -> $iq_file"
+  if ! timeout 120s python3 "$ROOT/scripts/gr_generate_vectors.py" \
+      --sf "$sf" --cr "$cr" \
+      --payload "$payload_file" \
+      --out "$iq_file" \
+      --bw 125000 --samp-rate 125000 --preamble-len 8; then
+    echo "Primary generator failed or timed out. Falling back to GRC path..." >&2
+    bash "$ROOT/scripts/export_vectors_grc.sh"
+    break
+  fi
 done
+
+ls -lh "$OUT_DIR"/*.bin
+echo "Done."
