@@ -47,6 +47,8 @@ target_link_libraries(benchmarks PRIVATE lora_phy)
 # Tools
 add_executable(gen_vectors tools/gen_vectors.cpp)
 target_link_libraries(gen_vectors PRIVATE lora_phy)
+add_executable(gen_frame_vectors tools/gen_frame_vectors.cpp)
+target_link_libraries(gen_frame_vectors PRIVATE lora_phy)
 
 # ---------- Tests ----------
 enable_testing()
@@ -141,6 +143,14 @@ add_executable(test_reference_vectors_os tests/test_reference_vectors_os.cpp)
 target_link_libraries(test_reference_vectors_os PRIVATE lora_phy GTest::gtest_main)
 gtest_discover_tests(test_reference_vectors_os
   TEST_PREFIX "reference_os."
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  DISCOVERY_TIMEOUT 60
+)
+
+add_executable(test_reference_vectors_header_os tests/test_reference_vectors_header_os.cpp)
+target_link_libraries(test_reference_vectors_header_os PRIVATE lora_phy GTest::gtest_main)
+gtest_discover_tests(test_reference_vectors_header_os
+  TEST_PREFIX "reference_os_hdr."
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   DISCOVERY_TIMEOUT 60
 )

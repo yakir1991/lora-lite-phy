@@ -77,6 +77,13 @@ PY
   else
     echo "[!] GNU Radio not available; skipping OS4 vector for sf=$sf cr=$cr"
   fi
+
+  # Header-enabled OS4 IQ using local frame_tx + upsample (always generated)
+  iq_os4_hdr_file="$OUT_DIR/sf${sf}_cr${cr}_iq_os4_hdr.bin"
+  cmake --build "$ROOT/build" --target gen_frame_vectors >/dev/null || true
+  "$ROOT/build/gen_frame_vectors" --sf "$sf" --cr "$cr" \
+    --payload "$payload_file" --out "$iq_os4_hdr_file" --os 4 --preamble 8 || true
+
 done
 
 ls -lh "$OUT_DIR"/*.bin
