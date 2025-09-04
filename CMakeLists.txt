@@ -33,6 +33,7 @@ add_library(lora_phy
     src/rx/demodulator.cpp
     src/rx/decimate.cpp
     src/rx/preamble.cpp
+    src/rx/header.cpp
 )
 target_link_libraries(lora_phy PUBLIC lora_utils liquid)
 target_include_directories(lora_phy PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -113,6 +114,7 @@ gtest_discover_tests(test_reference_vectors
   DISCOVERY_TIMEOUT 60
 )
 
+
 add_executable(test_awgn_sweep tests/awgn_sweep.cpp)
 target_link_libraries(test_awgn_sweep PRIVATE lora_phy GTest::gtest)
 gtest_discover_tests(
@@ -122,6 +124,17 @@ gtest_discover_tests(
   PROPERTIES LABELS "slow"
 )
 
+
+add_executable(test_header_parse tests/test_header_parse.cpp)
+target_link_libraries(test_header_parse PRIVATE lora_phy GTest::gtest_main)
+gtest_discover_tests(test_header_parse)
 add_executable(test_preamble tests/test_preamble.cpp)
 target_link_libraries(test_preamble PRIVATE lora_phy GTest::gtest_main)
 gtest_discover_tests(test_preamble)
+add_executable(test_reference_vectors_os tests/test_reference_vectors_os.cpp)
+target_link_libraries(test_reference_vectors_os PRIVATE lora_phy GTest::gtest_main)
+gtest_discover_tests(test_reference_vectors_os
+  TEST_PREFIX "reference_os."
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  DISCOVERY_TIMEOUT 60
+)

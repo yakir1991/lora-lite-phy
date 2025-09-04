@@ -57,6 +57,26 @@ for entry in "${PAIRS[@]}"; do
       fi
     fi
   fi
+
+  # Additionally, generate oversampled (OS=4) IQ via GNU Radio TX-PDU for sync/OS tests
+  iq_os4_file="$OUT_DIR/sf${sf}_cr${cr}_iq_os4.bin"
+  if python3 - <<'PY'
+try:
+    import gnuradio
+    import gnuradio.lora_sdr
+    import sys
+    sys.exit(0)
+except Exception:
+    sys.exit(1)
+PY
+  then
+    echo "[*] Generating OS4 IQ (GNU Radio): SF=$sf CR=$cr -> $iq_os4_file"
+    timeout 120s python3 "$ROOT/scripts/gr_tx_pdu_vectors.py" \
+      --sf "$sf" --cr "$cr" --payload "$payload_file" --out "$iq_os4_file" \
+      --bw 125000 --samp-rate 500000 --preamble-len 8 --timeout 30 || true
+  else
+    echo "[!] GNU Radio not available; skipping OS4 vector for sf=$sf cr=$cr"
+  fi
 done
 
 ls -lh "$OUT_DIR"/*.bin
