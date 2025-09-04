@@ -11,7 +11,7 @@ static inline uint8_t lfsr8_next(uint8_t s) {
 LfsrWhitening LfsrWhitening::pn9_default() {
     LfsrWhitening w;
     w.poly = 0;
-    w.state = 0xFF; // seed לא אפס
+    w.state = 0xFF; // non-zero seed
     w.order = 8;
     return w;
 }

@@ -2,6 +2,7 @@
 import argparse
 import sys, os, time
 from gnuradio import gr, blocks
+import pmt
 import gnuradio.lora_sdr as lora_sdr
 
 
@@ -16,44 +17,29 @@ class LoraTxPdu(gr.top_block):
         cr = cr_lora - 40
         ldro = 1 if sf > 6 else 0
 
-        # Preprocess payload to match local model: CRC16(CCITT, init=0xFFFF, xorout=0),
-        # then 8-bit LFSR whitening with poly x^8+x^6+x^5+x^4+1, seed 0xFF.
-        def crc16_ccitt(data: bytes) -> int:
-            poly = 0x1021
-            crc = 0xFFFF
-            for b in data:
-                crc ^= (b << 8) & 0xFFFF
-                for _ in range(8):
-                    if crc & 0x8000:
-                        crc = ((crc << 1) ^ poly) & 0xFFFF
-                    else:
-                        crc = (crc << 1) & 0xFFFF
-            return crc & 0xFFFF
-        def lfsr8_next(s: int) -> int:
-            fb = ((s >> 7) ^ (s >> 5) ^ (s >> 4) ^ (s >> 3)) & 1
-            return ((s << 1) & 0xFF) | fb
-        crc = crc16_ccitt(payload_bytes)
-        payload_crc = bytearray(payload_bytes)
-        payload_crc.append((crc >> 8) & 0xFF)
-        payload_crc.append(crc & 0xFF)
-        s = 0xFF
-        for i in range(len(payload_crc)):
-            payload_crc[i] ^= s
-            s = lfsr8_next(s)
-
-        # Stream source of whitened bytes (payload+CRC) without header
-        self.src = blocks.vector_source_b(list(payload_crc), False, 1)
-
-        self.henc   = lora_sdr.hamming_enc(cr, sf)
-        self.inter  = lora_sdr.interleaver(cr, sf, ldro, int(bw_hz))
-        self.gray   = lora_sdr.gray_demap(sf)
-        self.mod    = lora_sdr.modulate(sf, int(samp_rate_hz), int(bw_hz), sync_word, 0, preamb_len)
+        # Build a message path: hex PDU -> whitening (is_hex, use_length_tag) -> header -> add_crc
+        # -> hamming_enc -> interleaver -> gray_demap -> modulate -> file_sink
+        hex_msg = ','.join(f"{b:02x}" for b in payload_bytes)
+        self.msg_src = blocks.message_strobe(pmt.intern(hex_msg), 1000)
+        self.whiten  = lora_sdr.whitening(True, True, ',', 'packet_len')
+        self.header  = lora_sdr.header(False, True, cr)
+        self.add_crc = lora_sdr.add_crc(True)
+        self.henc    = lora_sdr.hamming_enc(cr, sf)
+        self.inter   = lora_sdr.interleaver(cr, sf, ldro, int(bw_hz))
+        self.gray    = lora_sdr.gray_demap(sf)
+        # Compute frame zero padding similar to example (to satisfy output multiple)
+        frame_zero_padd = int(20 * (2**sf) * samp_rate_hz / bw_hz)
+        self.mod     = lora_sdr.modulate(sf, int(samp_rate_hz), int(bw_hz), [0x12], frame_zero_padd, preamb_len)
 
         self.sink = blocks.file_sink(gr.sizeof_gr_complex, out_iq_path, False)
         self.sink.set_unbuffered(True)
 
-        # Stream wiring (no header, CRC already included and whitened)
-        self.connect(self.src, self.henc)
+        # Messages
+        self.msg_connect(self.msg_src, 'strobe', self.whiten, 'msg')
+        # Stream wiring
+        self.connect(self.whiten, self.header)
+        self.connect(self.header, self.add_crc)
+        self.connect(self.add_crc, self.henc)
         self.connect(self.henc, self.inter)
         self.connect(self.inter, self.gray)
         self.connect(self.gray, self.mod)

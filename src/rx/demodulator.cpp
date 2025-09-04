@@ -1,5 +1,6 @@
 #include "lora/rx/loopback_rx.hpp"
 #include "lora/utils/whitening.hpp"
+#include "lora/rx/frame.hpp"
 #include "lora/utils/gray.hpp"
 #include "lora/utils/crc.hpp"
 #include <cmath>
@@ -142,3 +143,21 @@ std::pair<std::span<uint8_t>, bool> loopback_rx(Workspace& ws,
 
 } // namespace lora::rx
 
+namespace lora::rx {
+
+std::pair<std::span<uint8_t>, bool> loopback_rx_header(
+    Workspace& ws,
+    std::span<const std::complex<float>> samples,
+    uint32_t sf,
+    lora::utils::CodeRate cr,
+    size_t payload_len,
+    size_t min_preamble_syms,
+    bool os_aware) {
+    if (os_aware) {
+        return decode_frame_with_preamble_cfo_sto_os(ws, samples, sf, cr, payload_len, min_preamble_syms);
+    } else {
+        return decode_frame_with_preamble_cfo_sto(ws, samples, sf, cr, payload_len, min_preamble_syms);
+    }
+}
+
+} // namespace lora::rx

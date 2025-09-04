@@ -19,7 +19,7 @@ TEST(Whitening, Roundtrip) {
 
     std::vector<uint8_t> enc = buf;
     w1.apply(enc.data(), enc.size());
-    w2.apply(enc.data(), enc.size()); // dewhiten = whiten שוב
+    w2.apply(enc.data(), enc.size()); // dewhiten = re-apply whitening
 
     EXPECT_EQ(enc, buf);
 }
