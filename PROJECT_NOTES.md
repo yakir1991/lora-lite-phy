@@ -4,7 +4,7 @@
 
 ---
 
-## 2025-09-01 — Milestone 0: Project Skeleton & Policies
+## Milestone 0: Project Skeleton & Policies
 
 **Done**
 - Confirmed original reference repo is `tapparelj/gr-lora_sdr` (read‑only; vectors only).
@@ -23,7 +23,7 @@
 - Prepare minimal unit tests (gtest/ctest) and wire them into CMake.
 - Lock initial parameters for bring-up: SF7, BW 125 kHz, CR 4/7, explicit header.
 
-## 2025-09-01 — Milestone 1: CRC + Header CRC + Whitening
+## Milestone 1: CRC + Header CRC + Whitening
 
 **Done**
 - Added **CRC-16 CCITT** utility (poly `0x1021`) with `compute/verify` and a 2-byte **Big-Endian trailer** for the payload.
@@ -41,7 +41,7 @@
 - Prepare **TX→RX loopback** (symbol-aligned IQ, no sync) integrating these utilities.
 - Add a small **benchmark harness** (pps/cycles) and verify **zero allocations** on hot paths (valgrind/mallinfo).
 
-## 2025-09-02 — Submodules pinned
+## Submodules pinned
 
 **Done**
 - Pinned `external/liquid-dsp` to **v1.7.0** (`4dda702…`).
@@ -52,7 +52,7 @@
 - Implement spec-accurate **Hamming** (CR 4/5..4/8) and **Diagonal Interleaver** (incl. LDRO) + unit tests (SF7..SF12).
 - Add `scripts/export_vectors.sh` to generate known-good vectors from `gr_lora_sdr` for cross-validation.
 
-## 2025-09-03 — Hamming codec complete
+## Hamming codec complete
 
 **Done**
 - Replaced placeholder with generated Hamming (4,n) tables and syndrome maps.
@@ -63,7 +63,7 @@
 - Implement diagonal interleaver patterns and associated unit tests.
 - Cross-validate utilities against reference vectors from `gr_lora_sdr`.
 
-## 2025-09-04 — Interleaver patterns complete
+## Interleaver patterns complete
 
 **Done**
 - Replaced placeholder interleaver with spec-accurate diagonal mapping including LDRO column shift.
@@ -74,7 +74,7 @@
 - Cross-validate interleaver patterns against `gr_lora_sdr` vectors.
 - Prepare TX→RX loopback harness integrating utilities.
 
-## 2025-09-05 — Milestone 2: Loopback Harness
+## Milestone 2: Loopback Harness
 
 **Done**
 - Added workspace with one-time allocation of chirps, buffers, and FFT plan.
@@ -84,7 +84,7 @@
 **Next**
 - Cross-validate against `gr_lora_sdr` vectors.
 
-## 2025-09-06 — CRC cross-validation
+## CRC cross-validation
 
 **Done**
 - Verified CRC-16 CCITT parameters against reference payload "123456789" (expected 0x29B1) and added golden unit test.
@@ -92,7 +92,7 @@
 **Next**
 - Export test vectors from `gr_lora_sdr` and validate TX/RX paths against them.
 
-## 2025-09-07 — Cross-validation vectors
+## Cross-validation vectors
 
 **Done**
 - Exported reference TX IQ and payloads for SF7/CR4/5 and SF8/CR4/8 using `gr_lora_sdr`.
@@ -101,7 +101,7 @@
 **Next**
 - Run AWGN robustness tests across coding rates.
 
-## 2025-09-08 — Reference vector parity tests
+## Reference vector parity tests
 
 **Done**
 - Automated test validates that decoding the stored IQ yields the original payload and that re-encoding regenerates the reference IQ.
@@ -109,7 +109,7 @@
 **Next**
 - Sweep AWGN SNR to measure robustness across coding rates.
 
-## 2025-09-09 — AWGN SNR Sweep
+## AWGN SNR Sweep
 
 **Done**
 - Added AWGN SNR sweep harness running TX→RX with Gaussian noise from 0–20 dB across CR 4/5–4/8.
@@ -118,7 +118,7 @@
 **Next**
   - Profile demodulator runtime to guide future optimizations.
 
-## 2025-09-10 — Demodulator runtime profile
+## Demodulator runtime profile
 
 **Done**
 - Instrumented RX demodulator with `std::chrono` and logged per-packet runtime.
@@ -127,7 +127,7 @@
 **Next**
 - Examine and eliminate remaining dynamic allocations in the RX path.
 
-## 2025-09-11 — RX path allocations removed
+## RX path allocations removed
 
 **Done**
 - Added scratch buffers to `Workspace` and reused them in `loopback_rx` to avoid per-call dynamic allocations.
