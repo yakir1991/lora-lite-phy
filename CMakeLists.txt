@@ -39,6 +39,8 @@ target_include_directories(lora_phy PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 add_executable(benchmarks benchmarks/tx_rx_bench.cpp)
 target_link_libraries(benchmarks PRIVATE lora_phy)
 
+# (No local vector generator; use GNU Radio script instead)
+
 # ---------- Tests ----------
 enable_testing()
 include(GoogleTest)
@@ -89,7 +91,7 @@ add_custom_target(export_vectors
 
 
 add_custom_target(mark_export_exec
-  COMMAND ${CMAKE_COMMAND} -E chmod +x ${CMAKE_SOURCE_DIR}/scripts/export_vectors.sh
+  COMMAND ${CMAKE_COMMAND} -E env chmod +x ${CMAKE_SOURCE_DIR}/scripts/export_vectors.sh
 )
 add_dependencies(export_vectors mark_export_exec)
 

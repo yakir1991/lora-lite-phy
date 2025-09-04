@@ -36,14 +36,19 @@ PY
  "$payload_file"
   fi
 
-  # Invoke reference GNU Radio flowgraph
-  python3 "$ROOT/external/gr_lora_sdr/apps/simulation/flowgraph/tx_rx_simulation.py" \
-    "$payload_file" /tmp/rx_payload.bin /tmp/rx_crc.bin \
-    --sf "$sf" --cr $((cr-40)) --pay-len "$(stat -c%s "$payload_file")" --SNRdB 30
+  # Ensure GNU Radio reference model is available
+  python3 - <<'PY'
+try:
+    import gnuradio
+    import gnuradio.lora_sdr
+except Exception as e:
+    raise SystemExit("ERROR: GNU Radio or gnuradio.lora_sdr is not available in this environment.\n"
+                     "Install via conda (recommended) and re-run export.")
+PY
 
-  # Flowgraph dumps TX IQ to tmp1.bin when probes are enabled
-  if [ -f tmp1.bin ]; then
-    mv tmp1.bin "$iq_file"
-  fi
+  # Generate IQ using the GNU Radio TX-only flowgraph (no preamble)
+  python3 "$ROOT/scripts/gr_generate_vectors.py" \
+    --sf "$sf" --cr "$cr" --payload "$payload_file" --out "$iq_file" \
+    --bw 125000 --samp-rate 125000 --preamble-len 8
 
 done
