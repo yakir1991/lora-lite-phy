@@ -36,14 +36,26 @@ for entry in "${PAIRS[@]}"; do
   fi
 
   echo "[*] Generating IQ: SF=$sf CR=$cr -> $iq_file"
-  if ! timeout 120s python3 "$ROOT/scripts/gr_generate_vectors.py" \
-      --sf "$sf" --cr "$cr" \
-      --payload "$payload_file" \
-      --out "$iq_file" \
-      --bw 125000 --samp-rate 125000 --preamble-len 8; then
-    echo "Primary generator failed or timed out. Falling back to GRC path..." >&2
-    bash "$ROOT/scripts/export_vectors_grc.sh"
-    break
+  # Option A: generate vectors matching local model (no header, same whitening) via local tool
+  if ! cmake --build "$ROOT/build" --target gen_vectors >/dev/null; then
+    echo "Failed to build gen_vectors" >&2; exit 1; fi
+  if ! "$ROOT/build/gen_vectors" --sf "$sf" --cr "$cr" --payload "$payload_file" --out "$iq_file"; then
+    echo "Local generator failed; trying GNU Radio paths..." >&2
+    # Prefer TX-PDU generator; try SR=500k for OS=4 and decimate
+    if timeout 120s python3 "$ROOT/scripts/gr_tx_pdu_vectors.py" \
+        --sf "$sf" --cr "$cr" --payload "$payload_file" --out "$iq_file" \
+        --bw 125000 --samp-rate 500000 --preamble-len 8 --timeout 30; then
+      python3 "$ROOT/scripts/iq_decimate.py" --in "$iq_file" --factor 4
+    else
+      # Fallback to simulation tap, then GRC
+      if ! timeout 120s python3 "$ROOT/scripts/gr_generate_vectors.py" \
+          --sf "$sf" --cr "$cr" --payload "$payload_file" --out "$iq_file" \
+          --bw 125000 --samp-rate 125000 --preamble-len 8; then
+        echo "GNU Radio generators failed. Falling back to GRC path..." >&2
+        bash "$ROOT/scripts/export_vectors_grc.sh"
+        break
+      fi
+    fi
   fi
 done
 

@@ -31,6 +31,8 @@ add_library(lora_phy
     src/workspace.cpp
     src/tx/loopback_tx.cpp
     src/rx/demodulator.cpp
+    src/rx/decimate.cpp
+    src/rx/preamble.cpp
 )
 target_link_libraries(lora_phy PUBLIC lora_utils liquid)
 target_include_directories(lora_phy PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -39,7 +41,9 @@ target_include_directories(lora_phy PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 add_executable(benchmarks benchmarks/tx_rx_bench.cpp)
 target_link_libraries(benchmarks PRIVATE lora_phy)
 
-# (No local vector generator; use GNU Radio script instead)
+# Tools
+add_executable(gen_vectors tools/gen_vectors.cpp)
+target_link_libraries(gen_vectors PRIVATE lora_phy)
 
 # ---------- Tests ----------
 enable_testing()
@@ -117,3 +121,7 @@ gtest_discover_tests(
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   PROPERTIES LABELS "slow"
 )
+
+add_executable(test_preamble tests/test_preamble.cpp)
+target_link_libraries(test_preamble PRIVATE lora_phy GTest::gtest_main)
+gtest_discover_tests(test_preamble)

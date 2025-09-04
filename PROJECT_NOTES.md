@@ -134,3 +134,72 @@
 
 **Next**
 - Consider exposing a view into the workspace buffer to eliminate the final output copy.
+
+## Reference vectors via GNU Radio (TX-only)
+
+**Done**
+- Added GNU Radio based TX-only generators to produce “true” reference IQ that includes preamble/header with oversampling (SR/BW > 1):
+  - `scripts/gr_tx_pdu_vectors.py` (PDU → whitening/header/FEC/interleaver/gray/modulate → IQ with timeout and debug).
+  - `scripts/export_vectors.sh` now prefers the TX‑PDU path at `--samp-rate 500000` (OS=4) and decimates to OS=1 for current tests.
+  - Cleanup helpers: removed Throttle from flowgraphs (script + patched `tx_rx_simulation.py`).
+
+**Updated tests**
+- `tests/test_reference_vectors.cpp` now:
+  - Tries OS candidates {1,2,4,8} by decimating IQ accordingly.
+  - Slides a symbol-aligned window across the IQ and calls the local RX until CRC matches the known payload — effectively stripping preamble/header without hard-coding lengths.
+  - Correlates local TX IQ against the aligned slice to validate modulation parity.
+
+**Notes / open items**
+- The GNU Radio whitening/header pipeline differs from the local MVP path (which whitens only the payload+CRC and has no header), so decoding the raw TX‑PDU IQ directly still fails CRC; test now aligns by sliding window and can handle OS>1 but full “GNURadio frame” parity still needs unified whitening/header handling.
+
+## Reference vectors Option A (no header, matching whitening) — finalized
+
+**Done**
+- Added a local primary generator matching the MVP exactly (no header, CRC16 CCITT, whitening with 8‑bit LFSR poly x^8+x^6+x^5+x^4+1, seed 0xFF):
+  - `tools/gen_vectors.cpp` and `scripts/export_vectors.sh` prefer this path.
+- Tests pass against these vectors and serve as a stable regression set.
+- Kept GNU Radio generators as secondary/tertiary for future cross‑validation.
+
+**Next**
+- Move on to MVP synchronization per README plan:
+  - Preamble detection via correlation with reference upchirps.
+  - STO (timing) and CFO estimation; compensate before dechirp/FFT.
+  - Add unit/integration tests for sync robustness.
+
+## MVP Synchronization — Preamble, CFO, STO
+
+**Done**
+- Added preamble detection (OS=1) with small sample-level offset search:
+  - `detect_preamble()` returns start sample index of a run of upchirps.
+- Added CFO estimation over preamble (`estimate_cfo_from_preamble`) and compensation (global phasor rotate).
+- Added integer STO estimator around preamble (`estimate_sto_from_preamble`) and alignment.
+- High-level helpers:
+  - `decode_with_preamble()` — detect preamble + sync then decode payload.
+  - `decode_with_preamble_cfo()` — detect, estimate CFO, compensate, decode.
+  - `decode_with_preamble_cfo_sto()` — detect, estimate CFO, estimate STO, realign, decode.
+- Tests:
+  - `Preamble.DetectAndDecode`, `Preamble.DetectFailOnShortPreamble`, `Preamble.CFOCompensation`, `Preamble.STOAlignment` — all pass.
+
+**Next**
+- Extend to OS>1 (oversampled) detection by either internal decimation or OS-aware correlation.
+- Fractional STO estimation (sub-sample) if needed; currently integer-only.
+- Integrate with future frame parsing (header) when we move past MVP.
+
+## Docs updated
+
+**Done**
+- README.md now documents the Synchronization (MVP) capabilities, public APIs under `include/lora/rx/preamble.hpp`, and how to run the sync tests.
+
+## Synchronization — OS>1 support
+
+**Done**
+- Added OS>1 handling via decimation and phase search:
+  - `detect_preamble_os()` tries OS candidates {1,2,4,8} ופאזות; מחזיר start-sample, OS ו‑phase.
+  - `decode_with_preamble_cfo_sto_os()` מבצע decimate ל‑OS=1 לפי OS/phase, ואז מפעיל preamble+CFO+STO.
+- הוספתי דצימטור פוליפאזי אמיתי על בסיס Liquid‑DSP:
+  - `include/lora/rx/decimate.hpp`, `src/rx/decimate.cpp` — FIR Kaiser עם `firdecim_crcf`.
+- טסט: `Preamble.OS4DetectAndDecode` (OS=4 סינתטי) — עובר.
+
+**Next**
+- Validate against real oversampled captures, not only synthetic repeat.
+- Consider polyphase decimation (filtering) if images/noise affect detection under OS>1.

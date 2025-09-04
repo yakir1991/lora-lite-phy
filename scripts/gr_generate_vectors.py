@@ -20,29 +20,16 @@ class LoraTxOnly(gr.top_block):
         # LDRO for sf>6 (matches LoRa spec)
         ldro = 1 if sf > 6 else 0
 
-        # Blocks: bytes -> whitening -> header -> add_crc -> hamming_enc ->
-        #         interleaver -> gray_demap -> modulate -> file_sink (complex)
+        # Use hierarchical TX block provided by lora_sdr to ensure tags/preamble/header behavior
+        import gnuradio.lora_sdr.lora_sdr_lora_tx as ltx
         self.src = blocks.file_source(gr.sizeof_char, payload_path, False)
-        # Arguments: is_hex, use_length_tag, separator, length_tag_name
-        self.whiten = lora_sdr.whitening(False, False)
-        # Header adds LoRa explicit header with payload length/CRC
-        self.header = lora_sdr.header(False, True, cr)
-        self.add_crc = lora_sdr.add_crc(True)
-        self.hamming_enc = lora_sdr.hamming_enc(cr, sf)
-        self.interleaver = lora_sdr.interleaver(cr, sf, ldro, int(bw_hz))
-        self.gray_demap = lora_sdr.gray_demap(sf)
-        self.mod = lora_sdr.modulate(sf, int(samp_rate_hz), int(bw_hz), [sync_word], 0, preamb_len)
+        # Module itself is the hierarchical block class
+        self.tx = ltx(int(samp_rate_hz), int(bw_hz), sf, cr, False, int(preamb_len))
+        # The hierarchical TX typically expects bytes and outputs complex IQ
         self.sink = blocks.file_sink(gr.sizeof_gr_complex, out_iq_path, False)
         self.sink.set_unbuffered(True)
-
-        self.connect(self.src, self.whiten)
-        self.connect(self.whiten, self.header)
-        self.connect(self.header, self.add_crc)
-        self.connect(self.add_crc, self.hamming_enc)
-        self.connect(self.hamming_enc, self.interleaver)
-        self.connect(self.interleaver, self.gray_demap)
-        self.connect(self.gray_demap, self.mod)
-        self.connect(self.mod, self.sink)
+        self.connect(self.src, self.tx)
+        self.connect(self.tx, self.sink)
 
 
 def main(argv=None):

@@ -62,7 +62,24 @@ vectors remain aligned with the true reference implementation.
 - Integrate a single FFT backend and precomputed chirps
 - Complete TX/RX pipeline over preallocated buffers
 - Cross-validate against `gr-lora_sdr` vectors and capture performance metrics
-- Add basic synchronization (preamble detection and timing/Fo offset)
+- Basic synchronization (preamble detection and timing/Fo offset) — initial implementation added (see Synchronization)
 
 See [LoRa_Lite_Migration_Plan_README.md](LoRa_Lite_Migration_Plan_README.md)
 for detailed roadmap and context.
+
+## Synchronization (MVP)
+- Preamble detection: detects a run of upchirps (OS=1) and returns the start sample.
+- Sync-word check: validates the following symbol against the expected sync.
+- CFO estimate + compensate: coarse estimate from preamble, phasor rotation before dechirp/FFT.
+- STO (integer) estimate + align: searches small sample shifts to maximize correlation with upchirp, then realigns.
+
+APIs (see `include/lora/rx/preamble.hpp`):
+- `detect_preamble(ws, samples, sf, min_syms=8)` → `optional<size_t>` start sample
+- `decode_with_preamble(ws, samples, sf, cr, payload_len, min_preamble_syms=8, expected_sync=0x34)`
+- `decode_with_preamble_cfo(...)` and `decode_with_preamble_cfo_sto(...)` for CFO/STO handling
+
+Run only the sync tests:
+```bash
+cd build
+ctest -R Preamble --output-on-failure
+```
