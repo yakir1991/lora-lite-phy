@@ -154,3 +154,7 @@ gtest_discover_tests(test_reference_vectors_header_os
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   DISCOVERY_TIMEOUT 60
 )
+
+add_executable(test_loopback_header_auto tests/test_loopback_header_auto.cpp)
+target_link_libraries(test_loopback_header_auto PRIVATE lora_phy GTest::gtest_main)
+gtest_discover_tests(test_loopback_header_auto)
