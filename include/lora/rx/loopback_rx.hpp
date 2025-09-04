@@ -32,4 +32,13 @@ std::pair<std::span<uint8_t>, bool> loopback_rx_header(
     size_t min_preamble_syms = 8,
     bool os_aware = true);
 
+// Auto-length variant: derives payload length from header.
+std::pair<std::span<uint8_t>, bool> loopback_rx_header_auto(
+    Workspace& ws,
+    std::span<const std::complex<float>> samples,
+    uint32_t sf,
+    utils::CodeRate cr,
+    size_t min_preamble_syms = 8,
+    bool os_aware = true);
+
 } // namespace lora::rx
