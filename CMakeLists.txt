@@ -30,9 +30,11 @@ target_include_directories(lora_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
 add_library(lora_phy
     src/workspace.cpp
     src/tx/loopback_tx.cpp
+    src/tx/frame_tx.cpp
     src/rx/demodulator.cpp
     src/rx/decimate.cpp
     src/rx/preamble.cpp
+    src/rx/frame.cpp
     src/rx/header.cpp
 )
 target_link_libraries(lora_phy PUBLIC lora_utils liquid)
@@ -125,6 +127,10 @@ gtest_discover_tests(
 )
 
 
+
+add_executable(test_header_end_to_end tests/test_header_end_to_end.cpp)
+target_link_libraries(test_header_end_to_end PRIVATE lora_phy GTest::gtest_main)
+gtest_discover_tests(test_header_end_to_end)
 add_executable(test_header_parse tests/test_header_parse.cpp)
 target_link_libraries(test_header_parse PRIVATE lora_phy GTest::gtest_main)
 gtest_discover_tests(test_header_parse)

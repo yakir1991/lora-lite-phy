@@ -18,5 +18,18 @@ std::pair<std::span<uint8_t>, bool> loopback_rx(Workspace& ws,
                                                 bool check_sync = false,
                                                 uint8_t expected_sync = lora::LORA_SYNC_WORD_PUBLIC);
 
-} // namespace lora::rx
+// Header-based decode integrated with loopback path.
+// Expects preamble + sync then a frame layout:
+//   [header(2)+CRC(2)] + [payload bytes] + [payload CRC(2)]
+// Whitening is applied to the entire frame in TX.
+// If os_aware=true, performs OS detection and polyphase decimation before CFO/STO compensation and decode.
+std::pair<std::span<uint8_t>, bool> loopback_rx_header(
+    Workspace& ws,
+    std::span<const std::complex<float>> samples,
+    uint32_t sf,
+    utils::CodeRate cr,
+    size_t payload_len,
+    size_t min_preamble_syms = 8,
+    bool os_aware = true);
 
+} // namespace lora::rx
