@@ -50,6 +50,14 @@ target_link_libraries(gen_vectors PRIVATE lora_phy)
 add_executable(gen_frame_vectors tools/gen_frame_vectors.cpp)
 target_link_libraries(gen_frame_vectors PRIVATE lora_phy)
 
+# Debug helper for investigating header auto OS4 loopback
+add_executable(dbg_loopback_header_auto tools/dbg_loopback_header_auto.cpp)
+target_link_libraries(dbg_loopback_header_auto PRIVATE lora_phy)
+
+# CLI decoder tool
+add_executable(lora_decode tools/lora_decode.cpp)
+target_link_libraries(lora_decode PRIVATE lora_phy)
+
 # ---------- Tests ----------
 enable_testing()
 include(GoogleTest)
@@ -154,7 +162,10 @@ gtest_discover_tests(test_reference_vectors_header_os
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   DISCOVERY_TIMEOUT 60
 )
-
-add_executable(test_loopback_header_auto tests/test_loopback_header_auto.cpp)
-target_link_libraries(test_loopback_header_auto PRIVATE lora_phy GTest::gtest_main)
-gtest_discover_tests(test_loopback_header_auto)
+add_executable(test_reference_vectors_header_os_varlen tests/test_reference_vectors_header_os_varlen.cpp)
+target_link_libraries(test_reference_vectors_header_os_varlen PRIVATE lora_phy GTest::gtest_main)
+gtest_discover_tests(test_reference_vectors_header_os_varlen
+  TEST_PREFIX "reference_os_hdr_len."
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  DISCOVERY_TIMEOUT 60
+)

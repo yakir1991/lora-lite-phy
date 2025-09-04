@@ -182,4 +182,20 @@ std::pair<std::span<uint8_t>, bool> loopback_rx_header_auto(
     }
 }
 
+std::pair<std::span<uint8_t>, bool> loopback_rx_header_auto_sync(
+    Workspace& ws,
+    std::span<const std::complex<float>> samples,
+    uint32_t sf,
+    lora::utils::CodeRate cr,
+    size_t min_preamble_syms,
+    bool os_aware,
+    uint8_t expected_sync) {
+    if (os_aware) {
+        return decode_frame_with_preamble_cfo_sto_os_auto(ws, samples, sf, cr, min_preamble_syms, expected_sync);
+    } else {
+        // OS=1 path with explicit sync
+        return decode_frame_with_preamble_cfo_sto(ws, samples, sf, cr, /*payload_len*/0, min_preamble_syms, expected_sync);
+    }
+}
+
 } // namespace lora::rx
