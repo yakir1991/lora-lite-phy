@@ -217,7 +217,12 @@ std::optional<PreambleDetectResult> detect_preamble_os(Workspace& ws,
             auto decim = decimate_os_phase(samples, os, phase);
             if (auto pos = detect_preamble(ws, decim, sf, min_syms)) {
                 size_t start_raw = (*pos) * static_cast<size_t>(os) + static_cast<size_t>(phase);
-                return PreambleDetectResult{start_raw, os, phase};
+                // Compensate decimator group delay (L/2 taps) from decimate_os_phase
+                // L = max(32*os, 8*os) in decimate_os_phase → L = 32*os for os>=1
+                unsigned int L = static_cast<unsigned int>(std::max(32*os, 8*os));
+                size_t gd_raw = static_cast<size_t>(L/2); // samples at OS input rate
+                size_t adj_raw = start_raw > gd_raw ? (start_raw - gd_raw) : 0u;
+                return PreambleDetectResult{adj_raw, os, phase};
             }
         }
     }

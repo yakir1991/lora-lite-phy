@@ -41,4 +41,14 @@ std::pair<std::span<uint8_t>, bool> loopback_rx_header_auto(
     size_t min_preamble_syms = 8,
     bool os_aware = true);
 
+// Auto-length variant with explicit sync-word selection (default 0x34 public).
+std::pair<std::span<uint8_t>, bool> loopback_rx_header_auto_sync(
+    Workspace& ws,
+    std::span<const std::complex<float>> samples,
+    uint32_t sf,
+    utils::CodeRate cr,
+    size_t min_preamble_syms = 8,
+    bool os_aware = true,
+    uint8_t expected_sync = lora::LORA_SYNC_WORD_PUBLIC);
+
 } // namespace lora::rx

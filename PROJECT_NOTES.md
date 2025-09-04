@@ -203,3 +203,39 @@
 **Next**
 - Validate against real oversampled captures, not only synthetic repeat.
 - Consider polyphase decimation (filtering) if images/noise affect detection under OS>1.
+
+## Synchronization — OS>1 validation (GNU Radio, real vectors)
+
+**Done**
+- Generated oversampled (OS=4) IQ using the GNU Radio TX-PDU path for SF7/CR4/5 and SF8/CR4/8.
+  - Files created under `vectors/`: `sf7_cr45_iq_os4.bin`, `sf8_cr48_iq_os4.bin` (plus header-enabled `*_iq_os4_hdr.bin`).
+- Copied vectors into the build tree and executed OS tests:
+  - `ctest -R "reference_os|reference_os_hdr" --output-on-failure` → both tests passed.
+  - Confirms `decode_with_preamble_cfo_sto_os()` and `loopback_rx_header_auto()` successfully decode OS=4 IQ with preamble+header.
+
+**Next**
+- Expand coverage to more SF/CR pairs (e.g., SF9/CR4/5, SF10/CR4/8) to improve confidence.
+- Stress under CFO/Noise: add SNR and CFO sweeps for OS>1 vectors to quantify robustness and fine-tune detection thresholds.
+- Consider adding a small CLI decoder to streamline manual validation on captured IQ files.
+
+**Milestone status**
+- We are in README Milestone 7 — Synchronization (post-MVP).
+- Subtask "Validate against real oversampled captures" is now completed for two pairs (SF7/CR4/5, SF8/CR4/8).
+
+## Header-auto on OS>1 — investigation and fixes
+
+**Done**
+- Investigated failure in `LoopbackHeaderAuto.OS4PreambleSyncDecode` (synthetic OS4 via repeat-upsample).
+- Root cause: header/payload were decoded in two separately padded parts, creating a symbol budget mismatch vs. the one-shot TX padding; OS decimation also introduces a group delay that shortens the decimated stream by ~`L/2/os` samples (e.g., 16 at SF7/OS4).
+- Implemented streaming deinterleaver/decoder for header-auto path so header and payload decode from a single continuous bitstream (no per-part padding).
+- Compensated decimator group delay in OS detection and added tail padding to avoid off-by-one symbol loss on decimated input.
+- Added a small debug hook (`include/lora/debug.hpp`) and a local helper (`tools/dbg_loopback_header_auto.cpp`) to print alignment and symbol counts during investigation.
+- Removed redundant synthetic test `tests/test_loopback_header_auto.cpp` in favor of the canonical vector-based OS4 header test `tests/test_reference_vectors_header_os.cpp`.
+- All tests green (`ctest`): 25/25 passed.
+
+**Next**
+- Broaden vector coverage to additional payload lengths and SF/CR pairs to exercise the streaming header-auto path under more combinations.
+- Consider replacing zero-order upsample in synthetic tools with polyphase interpolation to better match capture/decimation characteristics.
+
+**Notes**
+- GNU Radio + `gnuradio.lora_sdr` are available; `scripts/export_vectors.sh` succeeded in generating OS4 vectors.

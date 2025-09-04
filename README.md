@@ -43,6 +43,31 @@ ctest --output-on-failure             # run all tests
 ctest -R Loopback --output-on-failure # run only loopback test
 ```
 
+## CLI Decoder
+Build the CLI and decode IQ files (float32 or CS16) with auto OS detection and header‑auto decode:
+```bash
+cmake --build build --target lora_decode
+
+# Float32 IQ with preamble+sync+header+payload (OS=4 file)
+./build/lora_decode --in vectors/sf7_cr45_iq_os4_hdr.bin --sf 7 --cr 45 --format f32
+
+# Float32 IQ (OS=1, generated locally)
+./build/gen_frame_vectors --sf 7 --cr 45 --payload vectors/sf7_cr45_payload.bin --out /tmp/f.bin --os 1 --preamble 8
+./build/lora_decode --in /tmp/f.bin --sf 7 --cr 45 --format f32
+
+# CS16 IQ
+./build/lora_decode --in capture_cs16.bin --sf 7 --cr 45 --format cs16 --out payload.bin
+
+# JSON output (machine‑readable): includes header, payload_hex, and status
+./build/lora_decode --in vectors/sf7_cr45_iq_os4_hdr.bin --sf 7 --cr 45 --format f32 --json
+```
+
+Notes:
+- Use `--print-header` to print header fields on stderr (human‑readable) in addition to the decoded payload.
+- Use `--allow-partial` to return payload even if CRC fails (diagnostics). With `--json`, outputs a partial JSON with reason.
+- Set `LORA_DEBUG=1` to print pre‑detected OS/phase/start on stderr.
+```
+
 ## Reference vectors (optional)
 Reference vectors are generated from the GNU Radio LoRa SDR blocks when available.
 Recommended, isolated setup using conda:
@@ -57,6 +82,19 @@ cmake --build build --target export_vectors
 The vectors are stored under `vectors/` and copied into the build tree automatically.
 If GNU Radio is not available, the export target will fail (by design) to ensure
 vectors remain aligned with the true reference implementation.
+
+Advanced options:
+- Broaden SF/CR coverage or payload lengths in one go:
+  - `PAIRS_EXTRA="9 45 10 48" LENGTHS="24 31 48" cmake --build build --target export_vectors`
+- Generate local header-enabled OS4 IQ with selectable interpolation:
+  - Polyphase (recommended):
+    `./build/gen_frame_vectors --sf 7 --cr 45 --payload vectors/sf7_cr45_payload.bin --out /tmp/f_os4_poly.bin --os 4 --preamble 8 --interp poly`
+  - Repeat (zero-order hold, synthetic):
+    `./build/gen_frame_vectors --sf 7 --cr 45 --payload vectors/sf7_cr45_payload.bin --out /tmp/f_os4_rep.bin --os 4 --preamble 8 --interp repeat`
+
+Note on GNU Radio Throttle:
+- For batch vector generation we strip/remove `blocks_throttle` from the flowgraphs to avoid blocking, see `scripts/export_vectors_grc.sh` and `scripts/strip_throttle_blocks.py`.
+- This does not affect signal content (preamble/header/payload) — only execution rate.
 
 ## Remaining MVP work
 - Integrate a single FFT backend and precomputed chirps

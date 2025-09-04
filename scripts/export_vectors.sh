@@ -10,10 +10,21 @@ mkdir -p "$OUT_DIR"
 
 # Default SF/CR pairs; you can append via:
 #   PAIRS="9 45 10 48" or PAIRS_EXTRA="9 45" (both supported)
-DEFAULT_PAIRS=("7 45" "8 48")
+# Default SF/CR pairs; broaden coverage for OS>1/header tests
+DEFAULT_PAIRS=(
+  "7 45" "7 47"
+  "8 45" "8 48"
+  "9 45" "9 48"
+  "10 45" "10 48"
+)
 read -r -a ENV_PAIRS <<< "${PAIRS:-}"
 read -r -a ENV_PAIRS_EXTRA <<< "${PAIRS_EXTRA:-}"
 PAIRS=( "${DEFAULT_PAIRS[@]}" "${ENV_PAIRS[@]}" "${ENV_PAIRS_EXTRA[@]}" )
+
+# Additional payload lengths to widen coverage (besides the default 16B)
+DEFAULT_LENGTHS=(16 24 31 48)
+read -r -a ENV_LENGTHS <<< "${LENGTHS:-}"
+LENS=( "${DEFAULT_LENGTHS[@]}" "${ENV_LENGTHS[@]}" )
 
 # Ensure GNU Radio reference is available in this conda env
 python3 - <<'PY'
@@ -83,6 +94,22 @@ PY
   cmake --build "$ROOT/build" --target gen_frame_vectors >/dev/null || true
   "$ROOT/build/gen_frame_vectors" --sf "$sf" --cr "$cr" \
     --payload "$payload_file" --out "$iq_os4_hdr_file" --os 4 --preamble 8 || true
+
+  # Extra lengths for broader coverage (header-enabled, OS4)
+  for ln in "${LENS[@]}"; do
+    [[ -z "$ln" ]] && continue
+    if [[ "$ln" -eq 16 ]]; then continue; fi # already covered by default
+    pay_len_file="$OUT_DIR/sf${sf}_cr${cr}_payload_len${ln}.bin"
+    python3 - "$pay_len_file" "$ln" <<'PY'
+import sys
+path, ln = sys.argv[1], int(sys.argv[2])
+buf = bytes((i % 256 for i in range(1, ln+1)))
+open(path,'wb').write(buf)
+PY
+    iq_hdr_len_file="$OUT_DIR/sf${sf}_cr${cr}_iq_os4_hdr_len${ln}.bin"
+    "$ROOT/build/gen_frame_vectors" --sf "$sf" --cr "$cr" \
+      --payload "$pay_len_file" --out "$iq_hdr_len_file" --os 4 --preamble 8 || true
+  done
 
 done
 
