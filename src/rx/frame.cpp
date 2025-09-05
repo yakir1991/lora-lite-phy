@@ -34,11 +34,19 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble(
     if (!pos) return {std::span<uint8_t>{}, false};
     ws.init(sf);
     uint32_t N = ws.N;
-    // Check sync symbol
-    size_t sync_start = *pos + min_preamble_syms * N;
-    if (sync_start + N > samples.size()) return {std::span<uint8_t>{}, false};
-    uint32_t sync_sym = demod_symbol(ws, &samples[sync_start]);
-    if (sync_sym != expected_sync) return {std::span<uint8_t>{}, false};
+    // Check sync symbol with small elastic search (±2 symbols)
+    size_t sync_start = 0;
+    bool found_sync = false;
+    int shifts[5] = {0, -1, 1, -2, 2};
+    for (int s : shifts) {
+        if ((int)min_preamble_syms + s < 1) continue;
+        size_t idx = (s >= 0) ? (*pos + (min_preamble_syms + (size_t)s) * N)
+                               : (*pos + (min_preamble_syms - (size_t)(-s)) * N);
+        if (idx + N > samples.size()) continue;
+        uint32_t ss = demod_symbol(ws, &samples[idx]);
+        if (ss == expected_sync) { found_sync = true; sync_start = idx; break; }
+    }
+    if (!found_sync) return {std::span<uint8_t>{}, false};
 
     // Data starts after sync
     auto data = std::span<const std::complex<float>>(samples.data() + sync_start + N,
@@ -198,13 +206,21 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
     if (aligned_start >= comp.size()) { lora::debug::set_fail(105); return {std::span<uint8_t>{}, false}; }
     auto aligned = std::span<const std::complex<float>>(comp.data() + aligned_start,
                                                         comp.size() - aligned_start);
-    // Check sync word
+    // Check sync word with small elastic search (±2 symbols)
     ws.init(sf);
     uint32_t N = ws.N;
-    size_t sync_start = min_preamble_syms * N;
-    if (sync_start + N > aligned.size()) { lora::debug::set_fail(106); return {std::span<uint8_t>{}, false}; }
-    uint32_t sync_sym = demod_symbol(ws, &aligned[sync_start]);
-    if (sync_sym != expected_sync) { lora::debug::set_fail(107); return {std::span<uint8_t>{}, false}; }
+    size_t sync_start = 0;
+    bool found_sync2 = false;
+    int shifts2[5] = {0, -1, 1, -2, 2};
+    for (int s : shifts2) {
+        if ((int)min_preamble_syms + s < 1) continue;
+        size_t idx = (s >= 0) ? ((min_preamble_syms + (size_t)s) * N)
+                               : ((min_preamble_syms - (size_t)(-s)) * N);
+        if (idx + N > aligned.size()) continue;
+        uint32_t ss = demod_symbol(ws, &aligned[idx]);
+        if (ss == expected_sync) { found_sync2 = true; sync_start = idx; break; }
+    }
+    if (!found_sync2) { lora::debug::set_fail(107); return {std::span<uint8_t>{}, false}; }
     // Data starts after sync
     auto data = std::span<const std::complex<float>>(aligned.data() + sync_start + N,
                                                      aligned.size() - (sync_start + N));
