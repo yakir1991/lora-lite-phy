@@ -160,7 +160,7 @@
 - End-to-end loopback passes for targeted SF/CR/BW combinations with CRC success.  
 - Cross-validation passes against a fixed set of `gr-lora_sdr` vectors.  
 - No malloc/new in processing calls after initialization.  
-- The original repository remains untouched and fully functional.
+- The original repository remains fully functional.
 
 ---
 

@@ -131,3 +131,18 @@ ctest -R Preamble --output-on-failure
 - Validate OS>1 on real GNU Radio/SDR captures (not only synthetic repeat).
 - Add explicit header parsing in RX (length/CR/header CRC) and dewhiten entire frame; derive payload length from header.
 - Add tests for header parsing and end-to-end with header-enabled vectors.
+
+## Cross-Validation & Benchmarks
+- Run cross-validation against GNU Radio TX-PDU (OS4) across many SF/CR/lengths with random payloads; produces CSV and optional heatmaps:
+```bash
+# Quick run
+CROSS_REPS=1 python3 scripts/cross_validate_benchmark.py
+
+# Control ranges (comma-separated) and repetitions
+CROSS_SFS="7,8,9" CROSS_CRS="45,48" CROSS_LENGTHS="16,48" CROSS_REPS=2 \
+  python3 scripts/cross_validate_benchmark.py
+
+# Outputs under build/reports/:
+#  - cross_validate.csv
+#  - success_rate_heatmap.png, decode_time_heatmap.png (if matplotlib available)
+```

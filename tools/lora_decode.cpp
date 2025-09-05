@@ -54,6 +54,7 @@ static bool read_cs16_iq(const std::string& path, std::vector<std::complex<float
 int main(int argc, char** argv) {
     std::string in_path; int sf = 0; int cr_int = 0; Format fmt = Format::AUTO;
     int min_pre = 8; unsigned int sync_hex = lora::LORA_SYNC_WORD_PUBLIC; bool sync_auto = false; std::string out_path;
+    bool user_min_pre = false;
     bool print_header = false; bool allow_partial = false; bool json = false;
 
     for (int i = 1; i < argc; ++i) {
@@ -65,7 +66,7 @@ int main(int argc, char** argv) {
             std::string v = argv[++i];
             if (v == "auto") fmt = Format::AUTO; else if (v == "f32") fmt = Format::F32; else if (v == "cs16") fmt = Format::CS16; else { usage(argv[0]); return 2; }
         }
-        else if (a == "--min-preamble" && i+1 < argc) min_pre = std::stoi(argv[++i]);
+        else if (a == "--min-preamble" && i+1 < argc) { min_pre = std::stoi(argv[++i]); user_min_pre = true; }
         else if (a == "--sync" && i+1 < argc) {
             std::string v = argv[++i];
             if (v == "auto" || v == "AUTO") { sync_auto = true; sync_hex = lora::LORA_SYNC_WORD_PUBLIC; }
@@ -88,6 +89,13 @@ int main(int argc, char** argv) {
         } catch (...) { fmt = Format::F32; }
     }
     if (fmt == Format::AUTO) fmt = Format::F32; // stdin default
+
+    // Auto-calibrate minimal preamble symbols by SF if user did not specify
+    if (!user_min_pre) {
+        if (sf >= 10)      min_pre = 12;
+        else if (sf == 9)  min_pre = 10;
+        else               min_pre = 8;
+    }
 
     std::vector<std::complex<float>> iq;
     bool ok = (fmt == Format::F32) ? read_f32_iq(in_path, iq) : read_cs16_iq(in_path, iq);
@@ -125,7 +133,7 @@ int main(int argc, char** argv) {
         // Fallbacks: try alternative sync, and vary preamble length heuristically
         uint8_t sync_alt = (static_cast<uint8_t>(sync_hex & 0xFF) == lora::LORA_SYNC_WORD_PUBLIC) ? lora::LORA_SYNC_WORD_PRIVATE : lora::LORA_SYNC_WORD_PUBLIC;
         if (sync_auto) { sync_hex = lora::LORA_SYNC_WORD_PUBLIC; sync_alt = lora::LORA_SYNC_WORD_PRIVATE; }
-        int pre_alts[3] = {min_pre, 6, 10};
+        int pre_alts[4] = {min_pre, 6, 10, 12};
         bool ok_any = false;
         for (int pre : pre_alts) {
             auto r2 = lora::rx::loopback_rx_header_auto_sync(ws, span, static_cast<uint32_t>(sf), cr, static_cast<size_t>(pre), true, static_cast<uint8_t>(sync_hex & 0xFF));
@@ -193,7 +201,9 @@ int main(int argc, char** argv) {
                     );
                 }
             } else {
-                std::fprintf(stderr, "Decode failed (step=%d, reason=%s). Hints: try --sync 0x12 or adjust --min-preamble.\n", lora::debug::last_fail_step, reason);
+                std::fprintf(stderr,
+                    "Decode failed (step=%d, reason=%s). detect_os=%d detect_phase=%d detect_start=%zu. Hints: try --sync auto/0x12 or adjust --min-preamble.\n",
+                    lora::debug::last_fail_step, reason, det_os, det_phase, det_start);
             }
             return code;
         }

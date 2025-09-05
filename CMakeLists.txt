@@ -162,6 +162,12 @@ gtest_discover_tests(test_reference_vectors_header_os
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   DISCOVERY_TIMEOUT 60
 )
+
+# ---------- CLI tests (smoke) ----------
+add_test(NAME cli.json.os1
+  COMMAND bash -lc "${CMAKE_BINARY_DIR}/gen_frame_vectors --sf 7 --cr 45 --payload ${CMAKE_SOURCE_DIR}/vectors/sf7_cr45_payload.bin --out ${CMAKE_BINARY_DIR}/cli_os1.bin --os 1 --preamble 8 && ${CMAKE_BINARY_DIR}/lora_decode --in ${CMAKE_BINARY_DIR}/cli_os1.bin --sf 7 --cr 45 --format f32 --json"
+)
+set_tests_properties(cli.json.os1 PROPERTIES PASS_REGULAR_EXPRESSION "\"success\": true")
 add_executable(test_reference_vectors_header_os_varlen tests/test_reference_vectors_header_os_varlen.cpp)
 target_link_libraries(test_reference_vectors_header_os_varlen PRIVATE lora_phy GTest::gtest_main)
 gtest_discover_tests(test_reference_vectors_header_os_varlen
@@ -169,3 +175,9 @@ gtest_discover_tests(test_reference_vectors_header_os_varlen
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   DISCOVERY_TIMEOUT 60
 )
+
+# Cross-validate full (limited reps by default)
+add_test(NAME cross.validate.full
+  COMMAND bash -lc "CROSS_REPS=1 python3 ${CMAKE_SOURCE_DIR}/scripts/cross_validate_benchmark.py --root ${CMAKE_SOURCE_DIR} --build ${CMAKE_BINARY_DIR}"
+)
+set_tests_properties(cross.validate.full PROPERTIES LABELS perf)
