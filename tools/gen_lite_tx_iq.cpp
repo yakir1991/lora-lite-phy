@@ -43,11 +43,17 @@ int main(int argc, char** argv) {
     auto iq_frame = lora::tx::frame_tx(ws, payload, (uint32_t)sf, cr, hdr);
 
     uint32_t N = ws.N;
-    // Build full signal: preamble upchirps + single sync symbol + frame
-    std::vector<std::complex<float>> sig; sig.reserve((pre + 1) * N + iq_frame.size());
-    for (int s = 0; s < pre; ++s) for (uint32_t n = 0; n < N; ++n) sig.push_back(ws.upchirp[n]);
+    // Build full signal: preamble + sync + optional SFD + frame
+    std::vector<std::complex<float>> sig; sig.reserve((pre + 3) * N + N/4 + iq_frame.size());
+    for (int s = 0; s < pre; ++s)
+        for (uint32_t n = 0; n < N; ++n) sig.push_back(ws.upchirp[n]);
     uint32_t sync_sym = lora::utils::gray_encode(sync_hex & 0xFFu) & (N - 1);
-    for (uint32_t n = 0; n < N; ++n) sig.push_back(ws.upchirp[(n + sync_sym) % N]);
+    for (uint32_t n = 0; n < N; ++n)
+        sig.push_back(ws.upchirp[(n + sync_sym) % N]);
+    // Standard LoRa SFD: two downchirps followed by a quarter upchirp
+    for (int s = 0; s < 2; ++s)
+        for (uint32_t n = 0; n < N; ++n) sig.push_back(ws.downchirp[n]);
+    for (uint32_t n = 0; n < N/4; ++n) sig.push_back(ws.upchirp[n]);
     sig.insert(sig.end(), iq_frame.begin(), iq_frame.end());
 
     // Optional oversample by repeat

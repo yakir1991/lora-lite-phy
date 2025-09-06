@@ -348,7 +348,8 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
         float dn1 = corr_mag(s1, ws.downchirp.data());
         float up2 = corr_mag(s2, ws.upchirp.data());
         float dn2 = corr_mag(s2, ws.downchirp.data());
-        if (dn1 > up1 && dn2 > up2) {
+        const float ratio = 2.0f;
+        if (dn1 > up1 * ratio && dn2 > up2 * ratio) {
             // Advance start by 2 downchirps + quarter symbol
             sync_start += (2u * N + N/4u);
         }
