@@ -87,45 +87,6 @@ def run_case(sf, cr, bw, length, seed=1234, timeout=5.0, snr_db: float = 0.0):
     return ok, text, recv[:length]
 
 
-def _write_summary(outdir, csv):
-    # Generate a simple README summary
-    rd = outdir / 'README.md'
-    try:
-        lines = csv.read_text().strip().splitlines()
-        if not lines:
-            return
-        header = lines[0].split(',')
-        rows = lines[1:]
-        total = len(rows)
-        # dynamic indices to support both old and new schema
-        def idx(name, default=None):
-            try:
-                return header.index(name)
-            except ValueError:
-                return default
-        i_sf = idx('sf', 0)
-        i_cr = idx('cr', 1)
-        i_ok = idx('ok', 4 if len(header) == 6 else 5)
-        ok = sum(1 for r in rows if r.split(',')[i_ok] == '1') if rows else 0
-        by_sfcr = {}
-        for r in rows:
-            cols = r.split(',')
-            sf = cols[i_sf]; cr = cols[i_cr]; okv = cols[i_ok]
-            key = (sf,cr)
-            s = by_sfcr.setdefault(key, {'tot':0,'ok':0})
-            s['tot'] += 1
-            s['ok'] += 1 if okv=='1' else 0
-        with rd.open('w') as f:
-            f.write('# Original (hierarchical) TX→RX Validation\n\n')
-            f.write(f'- Cases: {total}\n')
-            rate = (100.0*ok/total) if total else 0.0
-            f.write(f'- Success: {ok}/{total} ({rate:.1f}%)\n\n')
-            f.write('## By SF/CR\n')
-            for (sf,cr), v in sorted(by_sfcr.items(), key=lambda x:(int(x[0][0]), int(x[0][1]))):
-                srate = 100.0*v['ok']/v['tot'] if v['tot'] else 0.0
-                f.write(f"- SF={sf} CR={cr}: {v['ok']}/{v['tot']} ({srate:.1f}%)\n")
-    except Exception:
-        pass
 
 
 def main():
@@ -137,7 +98,7 @@ def main():
     ap.add_argument('--lengths', default='14,16,48')
     ap.add_argument('--reps', type=int, default=1)
     ap.add_argument('--timeout', type=float, default=6.0)
-    ap.add_argument('--snrs', default='0', help='Comma-separated SNR values in dB (e.g., "0,5,10,15")')
+    ap.add_argument('--snrs', default='0,5,10,15', help='Comma-separated SNR values in dB (e.g., "0,5,10,15")')
     # Convenience options for quicker runs
     ap.add_argument('--quick', action='store_true', help='Run a small sanity subset (sf=7, cr=45, bw=125k, len=16)')
     ap.add_argument('--max-cases', type=int, default=0, help='Process at most this many cases (0 = no limit)')
@@ -191,7 +152,14 @@ def main():
         ok, sent, recv = run_case(sf, cr, bw, ln, seed=1000, timeout=args.timeout, snr_db=snr0)
         with csv.open('a') as f:
             f.write(f"{sf},{cr},{bw},{ln},{snr0},{1 if ok else 0},{'' if ok else 'mismatch_or_timeout'}\n")
-        _write_summary(outdir, csv)
+        try:
+            from summarize_matrix import load_rows, summarize, write_readme
+        except Exception:
+            sys.path.insert(0, str(Path(__file__).parent))
+            from summarize_matrix import load_rows, summarize, write_readme
+        rows = load_rows(csv)
+        sm = summarize(rows)
+        write_readme(outdir, sm)
         print(f"[orig] quick done ok={ok}", flush=True)
         print(f"Done. CSV: {csv}", file=sys.stderr)
         return 0
@@ -251,30 +219,37 @@ def main():
                                 for r in range(args.reps):
                                     if args.max_cases and processed >= args.max_cases:
                                         raise KeyboardInterrupt()
-                                print(f"[orig] run sf={sf} cr={cr} bw={bw} len={ln} snr={snr} rep={r}", flush=True)
-                                ok = False; reason = ''
-                                try:
-                                    ok, sent, recv = run_case(sf, cr, bw, ln, seed=(1000+r), timeout=args.timeout, snr_db=snr)
-                                    reason = '' if ok else 'mismatch_or_timeout'
-                                except MemoryError:
-                                    ok = False; reason = 'alloc_failed'
-                                except KeyboardInterrupt:
-                                    ok = False; reason = 'interrupted'
+                                    print(f"[orig] run sf={sf} cr={cr} bw={bw} len={ln} snr={snr} rep={r}", flush=True)
+                                    ok = False; reason = ''
+                                    try:
+                                        ok, sent, recv = run_case(sf, cr, bw, ln, seed=(1000+r), timeout=args.timeout, snr_db=snr)
+                                        reason = '' if ok else 'mismatch_or_timeout'
+                                    except MemoryError:
+                                        ok = False; reason = 'alloc_failed'
+                                    except KeyboardInterrupt:
+                                        ok = False; reason = 'interrupted'
+                                        with csv.open('a') as f:
+                                            f.write(f"{sf},{cr},{bw},{ln},{snr},{1 if ok else 0},{reason}\n")
+                                        processed += 1
+                                        raise
+                                    except Exception:
+                                        ok = False; reason = 'exception'
                                     with csv.open('a') as f:
                                         f.write(f"{sf},{cr},{bw},{ln},{snr},{1 if ok else 0},{reason}\n")
                                     processed += 1
-                                    raise
-                                except Exception:
-                                    ok = False; reason = 'exception'
-                                with csv.open('a') as f:
-                                    f.write(f"{sf},{cr},{bw},{ln},{snr},{1 if ok else 0},{reason}\n")
-                                processed += 1
-                                print(f"[orig] done sf={sf} cr={cr} bw={bw} len={ln} snr={snr} ok={ok}", flush=True)
-                                time.sleep(0.05)
+                                    print(f"[orig] done sf={sf} cr={cr} bw={bw} len={ln} snr={snr} ok={ok}", flush=True)
+                                    time.sleep(0.05)
     except KeyboardInterrupt:
-        print("[orig] interrupted by user, writing summary...", file=sys.stderr)
+        print("[orig] interrupted by user", file=sys.stderr)
     finally:
-        _write_summary(outdir, csv)
+        try:
+            from summarize_matrix import load_rows, summarize, write_readme
+        except Exception:
+            sys.path.insert(0, str(Path(__file__).parent))
+            from summarize_matrix import load_rows, summarize, write_readme
+        rows = load_rows(csv)
+        sm = summarize(rows)
+        write_readme(outdir, sm)
     print(f"Done. CSV: {csv}", file=sys.stderr)
     return 0
 
