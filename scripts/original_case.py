@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse, os, sys, time, json, random, string
+import argparse, os, sys, time, json, random, string, threading
 
 os.environ.setdefault('GR_VMCIRCBUF_DISABLE_SHM', '1')
 
@@ -14,7 +14,7 @@ def rand_ascii(n: int, seed: int) -> str:
 
 
 class Harness(gr.top_block):
-    def __init__(self, sf, cr_lora, text, bw, sr, sync=0x12):
+    def __init__(self, sf, cr_lora, text, bw, sr, sync=0x12, out_stream_path: str | None = None):
         gr.top_block.__init__(self, "orig_case", catch_exceptions=True)
         cr_map = {45:1,46:2,47:3,48:4}
         cr_api = cr_map.get(cr_lora, 1)
@@ -35,12 +35,20 @@ class Harness(gr.top_block):
             self.chan.set_min_output_buffer(min_buf)
         except Exception:
             pass
-        self.throttle = blocks.throttle(gr.sizeof_gr_complex, int(sr*2), True)
+        self.throttle = blocks.throttle(gr.sizeof_gr_complex, int(sr*10), True)
         self.connect(self.tx, self.throttle)
         self.connect(self.throttle, self.chan)
         self.connect(self.chan, self.rx)
         self.msg_connect(self.msg_src, 'strobe', self.tx, 'in')
         self.msg_connect(self.rx, 'out', self.msg_dbg, 'store')
+        # Optional: capture RX payload stream bytes to a file for robust polling
+        self.out_stream_path = out_stream_path or f"/tmp/original_case_rx_{os.getpid()}.bin"
+        try:
+            self.stream_sink = blocks.file_sink(gr.sizeof_char, self.out_stream_path, False)
+            self.stream_sink.set_unbuffered(True)
+            self.connect(self.rx, self.stream_sink)
+        except Exception:
+            self.stream_sink = None
 
 
 def main():
@@ -51,15 +59,21 @@ def main():
     ap.add_argument('--len', type=int, required=True)
     ap.add_argument('--seed', type=int, default=1000)
     ap.add_argument('--timeout', type=float, default=8.0)
+    ap.add_argument('--verbose', action='store_true', help='Print progress to stderr')
+    ap.add_argument('--no-wait', action='store_true', help='Do not call tb.wait() (escape rare GR hang)')
+    ap.add_argument('--out-stream', default='', help='Optional path to capture RX payload bytes')
     args = ap.parse_args()
 
     text = rand_ascii(args.len, args.seed)
     sr = 4 * args.bw
-    tb = Harness(args.sf, args.cr, text, args.bw, sr)
+    out_stream_path = args.out_stream or f"/tmp/original_case_rx_{os.getpid()}.bin"
+    tb = Harness(args.sf, args.cr, text, args.bw, sr, out_stream_path=out_stream_path)
     ok = False; recv = ''
     try:
+        if args.verbose:
+            print('[orig_case] starting flowgraph', file=sys.stderr, flush=True)
         tb.start()
-        start = time.time()
+        start = time.time(); last_tick = 0.0
         while True:
             try:
                 import pmt
@@ -77,14 +91,43 @@ def main():
                         pass
             except Exception:
                 pass
+            # Fallback: poll stream capture file for first len bytes
+            if not recv and out_stream_path:
+                try:
+                    if os.path.exists(out_stream_path) and os.path.getsize(out_stream_path) >= args.len:
+                        with open(out_stream_path, 'rb') as f:
+                            data = f.read(args.len)
+                            recv = data.decode('ascii', errors='ignore')
+                except Exception:
+                    pass
             if len(recv) >= args.len:
                 break
-            if time.time() - start > args.timeout:
+            now = time.time()
+            if now - start > args.timeout:
+                if args.verbose:
+                    print('[orig_case] timeout reached', file=sys.stderr, flush=True)
                 break
+            if args.verbose and now - last_tick > 0.5:
+                last_tick = now
+                print('[orig_case] waiting for RX...', file=sys.stderr, flush=True)
             time.sleep(0.05)
     finally:
         try:
-            tb.stop(); tb.wait()
+            if args.verbose:
+                print('[orig_case] stopping...', file=sys.stderr, flush=True)
+            tb.stop()
+            if not args.no_wait:
+                # Guard tb.wait() with a thread to avoid rare deadlocks
+                waited = {'done': False}
+                def _waiter():
+                    try:
+                        tb.wait()
+                    finally:
+                        waited['done'] = True
+                t = threading.Thread(target=_waiter, daemon=True)
+                t.start(); t.join(timeout=2.0)
+                if not waited['done'] and args.verbose:
+                    print('[orig_case] wait() timed out; continuing without join', file=sys.stderr, flush=True)
         except Exception:
             pass
 
