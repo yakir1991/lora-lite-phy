@@ -204,6 +204,24 @@
 - Validate against real oversampled captures, not only synthetic repeat.
 - Consider polyphase decimation (filtering) if images/noise affect detection under OS>1.
 
+## Synchronization — Elastic sync + Cross‑validation
+
+**Done**
+- Added elastic sync search around the expected sync symbol in RX:
+  - Symbol-level ±2 symbols plus small sample-level shifts (±N/32, ±N/16) to tolerate slight misalignment after decimation/STO.
+  - Applied for OS=1 (decode_frame_with_preamble) and OS>1 auto path (decode_frame_with_preamble_cfo_sto_os_auto).
+- CLI improvements:
+  - Auto `min_preamble` by SF (SF≥10→12, SF=9→10, else 8) when not specified.
+  - `--sync auto` tries 0x34 then 0x12 automatically, including in cross-validation.
+  - JSON outputs include header as an object and detect_os/phase/start for diagnostics; partial payload on CRC failure with `--allow-partial`.
+- Cross-validation harness:
+  - `scripts/cross_validate_benchmark.py` generates OS4 IQ via GNU Radio TX-PDU and validates lora_decode across SF/CR/lengths with random payloads.
+  - Produces CSV (success/reason/timings/memory/detect fields) and optional heatmaps.
+
+**Next**
+- Consider a finer sync refinement (windowed correlation) around the sync region for the rare remaining `sync_mismatch` cases.
+- Broaden CLI tests to cover OS4 partial decode (`--allow-partial`) and verify JSON reasons.
+
 ## Synchronization — OS>1 validation (GNU Radio, real vectors)
 
 **Done**

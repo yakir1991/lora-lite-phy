@@ -29,7 +29,8 @@ class LoraTxPdu(gr.top_block):
         self.gray    = lora_sdr.gray_demap(sf)
         # Compute frame zero padding similar to example (to satisfy output multiple)
         frame_zero_padd = int(20 * (2**sf) * samp_rate_hz / bw_hz)
-        self.mod     = lora_sdr.modulate(sf, int(samp_rate_hz), int(bw_hz), [0x12], frame_zero_padd, preamb_len)
+        # Allow custom sync word list (e.g., [0x34] for public network)
+        self.mod     = lora_sdr.modulate(sf, int(samp_rate_hz), int(bw_hz), sync_word, frame_zero_padd, preamb_len)
 
         self.sink = blocks.file_sink(gr.sizeof_gr_complex, out_iq_path, False)
         self.sink.set_unbuffered(True)
@@ -55,6 +56,7 @@ def main():
     ap.add_argument('--bw', type=int, default=125000)
     ap.add_argument('--samp-rate', type=int, default=125000)
     ap.add_argument('--preamble-len', type=int, default=0)
+    ap.add_argument('--sync', default='0x12', help='sync word byte (e.g., 0x12 or 0x34)')
     ap.add_argument('--timeout', type=float, default=15.0)
     args = ap.parse_args()
 
@@ -62,9 +64,13 @@ def main():
         data = f.read()
     print(f"[tx-pdu] sf={args.sf} cr={args.cr} len={len(data)} out={args.out}")
 
+    try:
+        sync_val = int(args.sync, 0)
+    except Exception:
+        sync_val = 0x12
     tb = LoraTxPdu(args.sf, args.cr, data, args.out,
                    bw_hz=args.bw, samp_rate_hz=args.samp_rate,
-                   preamb_len=args.preamble_len)
+                   sync_word=[sync_val], preamb_len=args.preamble_len)
     try:
         tb.start()
         start = time.time(); last = -1
