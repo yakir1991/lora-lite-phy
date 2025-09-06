@@ -34,17 +34,64 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble(
     if (!pos) return {std::span<uint8_t>{}, false};
     ws.init(sf);
     uint32_t N = ws.N;
-    // Check sync symbol with small elastic search (±2 symbols)
+    // Check sync symbol with small elastic search (±2 symbols and small sample shifts)
     size_t sync_start = 0;
     bool found_sync = false;
-    int shifts[5] = {0, -1, 1, -2, 2};
-    for (int s : shifts) {
-        if ((int)min_preamble_syms + s < 1) continue;
-        size_t idx = (s >= 0) ? (*pos + (min_preamble_syms + (size_t)s) * N)
+    int sym_shifts_os1[5] = {0, -1, 1, -2, 2};
+    int samp_shifts_os1[5] = {0, -(int)N/32, (int)N/32, -(int)N/16, (int)N/16};
+    for (int s : sym_shifts_os1) {
+        size_t base = (s >= 0) ? (*pos + (min_preamble_syms + (size_t)s) * N)
                                : (*pos + (min_preamble_syms - (size_t)(-s)) * N);
-        if (idx + N > samples.size()) continue;
-        uint32_t ss = demod_symbol(ws, &samples[idx]);
-        if (ss == expected_sync) { found_sync = true; sync_start = idx; break; }
+        for (int so : samp_shifts_os1) {
+            if (so >= 0) {
+                if (base + (size_t)so + N > samples.size()) continue;
+                size_t idx = base + (size_t)so;
+                uint32_t ss = demod_symbol(ws, &samples[idx]);
+                if (ss == expected_sync) { found_sync = true; sync_start = idx; break; }
+            } else {
+                size_t offs = (size_t)(-so);
+                if (base < offs) continue;
+                size_t idx = base - offs;
+                if (idx + N > samples.size()) continue;
+                uint32_t ss = demod_symbol(ws, &samples[idx]);
+                if (ss == expected_sync) { found_sync = true; sync_start = idx; break; }
+            }
+        }
+        if (found_sync) break;
+    }
+    if (!found_sync) {
+        // Fallback: windowed correlation around expected sync region
+        // Build expected sync symbol (time-domain upchirp shifted by expected_sync)
+        std::vector<std::complex<float>> ref(N);
+        for (uint32_t n = 0; n < N; ++n)
+            ref[n] = std::conj(ws.upchirp[(n + expected_sync) % N]);
+        long best_off = 0; float best_mag = -1.f;
+        int range = (int)N/8; int step = std::max<int>(1, (int)N/64);
+        size_t base = *pos + min_preamble_syms * N;
+        for (int off = -range; off <= range; off += step) {
+            if (off >= 0) {
+                if (base + (size_t)off + N > samples.size()) continue;
+                size_t idx = base + (size_t)off;
+                std::complex<float> acc(0.f,0.f);
+                for (uint32_t n = 0; n < N; ++n) acc += samples[idx + n] * ref[n];
+                float mag = std::abs(acc);
+                if (mag > best_mag) { best_mag = mag; best_off = off; }
+            } else {
+                size_t offs = (size_t)(-off);
+                if (base < offs) continue;
+                size_t idx = base - offs;
+                if (idx + N > samples.size()) continue;
+                std::complex<float> acc(0.f,0.f);
+                for (uint32_t n = 0; n < N; ++n) acc += samples[idx + n] * ref[n];
+                float mag = std::abs(acc);
+                if (mag > best_mag) { best_mag = mag; best_off = off; }
+            }
+        }
+        if (best_mag > 0.f) {
+            sync_start = (best_off >= 0) ? (base + (size_t)best_off)
+                                        : (base - (size_t)(-best_off));
+            found_sync = true;
+        }
     }
     if (!found_sync) return {std::span<uint8_t>{}, false};
 
@@ -189,38 +236,123 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
     // Estimate CFO over preamble (OS=1 now)
     auto pos0 = detect_preamble(ws, aligned0, sf, min_preamble_syms);
     if (!pos0) { lora::debug::set_fail(102); return {std::span<uint8_t>{}, false}; }
-    auto cfo = estimate_cfo_from_preamble(ws, aligned0, sf, *pos0, min_preamble_syms);
-    if (!cfo) { lora::debug::set_fail(103); return {std::span<uint8_t>{}, false}; }
+    auto cfo_opt = estimate_cfo_from_preamble(ws, aligned0, sf, *pos0, min_preamble_syms);
+    // Fallback: if CFO estimation fails (rare on clean signals), assume 0 and continue
+    float cfo_val = cfo_opt.has_value() ? *cfo_opt : 0.0f;
+    if (!cfo_opt) {
+        // Do not early-exit; try decoding with zero CFO as a robustness fallback
+        // Mark the step for diagnostics but proceed
+        lora::debug::set_fail(103);
+    }
     // Compensate CFO
     std::vector<std::complex<float>> comp(aligned0.size());
-    float two_pi_eps = -2.0f * static_cast<float>(M_PI) * (*cfo);
+    float two_pi_eps = -2.0f * static_cast<float>(M_PI) * (cfo_val);
     std::complex<float> j(0.f, 1.f);
     for (size_t n = 0; n < aligned0.size(); ++n)
         comp[n] = aligned0[n] * std::exp(j * (two_pi_eps * static_cast<float>(n)));
     // Estimate integer STO
-    auto sto = estimate_sto_from_preamble(ws, comp, sf, *pos0, min_preamble_syms, static_cast<int>(ws.N/8));
-    if (!sto) { lora::debug::set_fail(104); return {std::span<uint8_t>{}, false}; }
-    int shift = *sto;
+    auto sto_opt = estimate_sto_from_preamble(ws, comp, sf, *pos0, min_preamble_syms, static_cast<int>(ws.N/8));
+    int shift = 0;
+    if (sto_opt) {
+        shift = *sto_opt;
+    } else {
+        // Fallback: assume zero STO
+        lora::debug::set_fail(104);
+    }
     size_t aligned_start = (shift >= 0) ? (*pos0 + static_cast<size_t>(shift))
                                         : (*pos0 - static_cast<size_t>(-shift));
     if (aligned_start >= comp.size()) { lora::debug::set_fail(105); return {std::span<uint8_t>{}, false}; }
     auto aligned = std::span<const std::complex<float>>(comp.data() + aligned_start,
                                                         comp.size() - aligned_start);
-    // Check sync word with small elastic search (±2 symbols)
+    // Check sync word with small elastic search (±2 symbols and small sample shifts)
     ws.init(sf);
     uint32_t N = ws.N;
     size_t sync_start = 0;
     bool found_sync2 = false;
-    int shifts2[5] = {0, -1, 1, -2, 2};
-    for (int s : shifts2) {
-        if ((int)min_preamble_syms + s < 1) continue;
-        size_t idx = (s >= 0) ? ((min_preamble_syms + (size_t)s) * N)
-                               : ((min_preamble_syms - (size_t)(-s)) * N);
-        if (idx + N > aligned.size()) continue;
-        uint32_t ss = demod_symbol(ws, &aligned[idx]);
-        if (ss == expected_sync) { found_sync2 = true; sync_start = idx; break; }
+    int sym_shifts2[5] = {0, -1, 1, -2, 2};
+    int samp_shifts2[5] = {0, -(int)N/32, (int)N/32, -(int)N/16, (int)N/16};
+    for (int s : sym_shifts2) {
+        size_t base = (s >= 0) ? ((min_preamble_syms + (size_t)s) * N)
+                                : ((min_preamble_syms - (size_t)(-s)) * N);
+        for (int so : samp_shifts2) {
+            if (so >= 0) {
+                if (base + (size_t)so + N > aligned.size()) continue;
+                size_t idx = base + (size_t)so;
+                uint32_t ss = demod_symbol(ws, &aligned[idx]);
+                if (ss == expected_sync) { found_sync2 = true; sync_start = idx; break; }
+            } else {
+                size_t offs = (size_t)(-so);
+                if (base < offs) continue;
+                size_t idx = base - offs;
+                if (idx + N > aligned.size()) continue;
+                uint32_t ss = demod_symbol(ws, &aligned[idx]);
+                if (ss == expected_sync) { found_sync2 = true; sync_start = idx; break; }
+            }
+        }
+        if (found_sync2) break;
     }
-    if (!found_sync2) { lora::debug::set_fail(107); return {std::span<uint8_t>{}, false}; }
+    if (!found_sync2) {
+        // Fallback: windowed correlation around expected sync region on aligned sequence
+        std::vector<std::complex<float>> ref(N);
+        for (uint32_t n = 0; n < N; ++n)
+            ref[n] = std::conj(ws.upchirp[(n + expected_sync) % N]);
+        long best_off = 0; float best_mag = -1.f;
+        int range = (int)N/8; int step = std::max<int>(1, (int)N/64);
+        size_t base = min_preamble_syms * N;
+        for (int off = -range; off <= range; off += step) {
+            if (off >= 0) {
+                if (base + (size_t)off + N > aligned.size()) continue;
+                size_t idx = base + (size_t)off;
+                std::complex<float> acc(0.f,0.f);
+                for (uint32_t n = 0; n < N; ++n) acc += aligned[idx + n] * ref[n];
+                float mag = std::abs(acc);
+                if (mag > best_mag) { best_mag = mag; best_off = off; }
+            } else {
+                size_t offs = (size_t)(-off);
+                if (base < offs) continue;
+                size_t idx = base - offs;
+                if (idx + N > aligned.size()) continue;
+                std::complex<float> acc(0.f,0.f);
+                for (uint32_t n = 0; n < N; ++n) acc += aligned[idx + n] * ref[n];
+                float mag = std::abs(acc);
+                if (mag > best_mag) { best_mag = mag; best_off = off; }
+            }
+        }
+        if (best_mag > 0.f) {
+            sync_start = (best_off >= 0) ? (base + (size_t)best_off)
+                                        : (base - (size_t)(-best_off));
+            found_sync2 = true;
+        }
+        if (!found_sync2) { lora::debug::set_fail(107); return {std::span<uint8_t>{}, false}; }
+    }
+    // Heuristic: if a second sync symbol follows, skip it; then if two downchirps follow, skip them + quarter
+    {
+        ws.init(sf);
+        uint32_t N = ws.N;
+        // Second sync check
+        if (sync_start + N + N <= aligned.size()) {
+            uint32_t ss2 = demod_symbol(ws, &aligned[sync_start + N]);
+            if (ss2 == expected_sync) {
+                sync_start += N;
+            }
+        }
+        auto corr_mag = [&](size_t idx, const std::complex<float>* ref) -> float {
+            std::complex<float> acc(0.f,0.f);
+            if (idx + N > aligned.size()) return 0.f;
+            for (uint32_t n = 0; n < N; ++n) acc += aligned[idx + n] * std::conj(ref[n]);
+            return std::abs(acc);
+        };
+        size_t s1 = sync_start + N;
+        size_t s2 = s1 + N;
+        float up1 = corr_mag(s1, ws.upchirp.data());
+        float dn1 = corr_mag(s1, ws.downchirp.data());
+        float up2 = corr_mag(s2, ws.upchirp.data());
+        float dn2 = corr_mag(s2, ws.downchirp.data());
+        if (dn1 > up1 && dn2 > up2) {
+            // Advance start by 2 downchirps + quarter symbol
+            sync_start += (2u * N + N/4u);
+        }
+    }
     // Data starts after sync
     auto data = std::span<const std::complex<float>>(aligned.data() + sync_start + N,
                                                      aligned.size() - (sync_start + N));
@@ -271,8 +403,12 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
         hdr[i] = (high << 4) | low;
     }
     auto lfsr = lora::utils::LfsrWhitening::pn9_default();
-    lfsr.apply(hdr.data(), hdr.size());
-    auto hdr_opt = parse_local_header_with_crc(hdr.data(), hdr.size());
+    std::vector<uint8_t> hdr_w = hdr;
+    lfsr.apply(hdr_w.data(), hdr_w.size());
+    auto hdr_opt = parse_local_header_with_crc(hdr_w.data(), hdr_w.size());
+    if (!hdr_opt) {
+        hdr_opt = parse_local_header_with_crc(hdr.data(), hdr.size());
+    }
     if (!hdr_opt) { lora::debug::set_fail(109); return {std::span<uint8_t>{}, false}; }
     const size_t payload_len = hdr_opt->payload_len;
     const size_t pay_crc_bytes = payload_len + 2;
@@ -393,8 +529,10 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
         hdr[i] = (high << 4) | low;
     }
     auto lfsr = lora::utils::LfsrWhitening::pn9_default();
-    lfsr.apply(hdr.data(), hdr.size());
-    auto hdr_opt = parse_local_header_with_crc(hdr.data(), hdr.size());
+    std::vector<uint8_t> hdr_w = hdr;
+    lfsr.apply(hdr_w.data(), hdr_w.size());
+    auto hdr_opt = parse_local_header_with_crc(hdr_w.data(), hdr_w.size());
+    if (!hdr_opt) hdr_opt = parse_local_header_with_crc(hdr.data(), hdr.size());
     return hdr_opt;
 }
 

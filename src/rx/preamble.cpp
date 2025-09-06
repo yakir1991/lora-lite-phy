@@ -217,12 +217,47 @@ std::optional<PreambleDetectResult> detect_preamble_os(Workspace& ws,
             auto decim = decimate_os_phase(samples, os, phase);
             if (auto pos = detect_preamble(ws, decim, sf, min_syms)) {
                 size_t start_raw = (*pos) * static_cast<size_t>(os) + static_cast<size_t>(phase);
-                // Compensate decimator group delay (L/2 taps) from decimate_os_phase
-                // L = max(32*os, 8*os) in decimate_os_phase → L = 32*os for os>=1
                 unsigned int L = static_cast<unsigned int>(std::max(32*os, 8*os));
                 size_t gd_raw = static_cast<size_t>(L/2); // samples at OS input rate
                 size_t adj_raw = start_raw > gd_raw ? (start_raw - gd_raw) : 0u;
                 return PreambleDetectResult{adj_raw, os, phase};
+            }
+            // Fallback: windowed correlation to find a run of upchirps
+            ws.init(sf);
+            uint32_t N = ws.N;
+            if (decim.size() < min_syms * N) continue;
+            std::vector<std::complex<float>> ref(N);
+            for (uint32_t n = 0; n < N; ++n) ref[n] = std::conj(ws.upchirp[n]);
+            float max_corr = 0.f;
+            size_t step = std::max<uint32_t>(1u, N/16);
+            for (size_t i = 0; i + N <= decim.size(); i += step) {
+                std::complex<float> acc(0.f,0.f);
+                const auto* blk = &decim[i];
+                for (uint32_t n = 0; n < N; ++n) acc += blk[n] * ref[n];
+                float mag = std::abs(acc);
+                if (mag > max_corr) max_corr = mag;
+            }
+            if (max_corr > 0.f) {
+                float thr = 0.7f * max_corr;
+                size_t best_pos = 0; bool have = false;
+                for (size_t i = 0; i + min_syms * N <= decim.size(); i += step) {
+                    bool ok = true;
+                    for (size_t k = 0; k < min_syms; ++k) {
+                        size_t idx = i + k * N;
+                        std::complex<float> acc(0.f,0.f);
+                        const auto* blk = &decim[idx];
+                        for (uint32_t n = 0; n < N; ++n) acc += blk[n] * ref[n];
+                        if (std::abs(acc) < thr) { ok = false; break; }
+                    }
+                    if (ok) { best_pos = i; have = true; break; }
+                }
+                if (have) {
+                    size_t start_raw = best_pos * static_cast<size_t>(os) + static_cast<size_t>(phase);
+                    unsigned int L = static_cast<unsigned int>(std::max(32*os, 8*os));
+                    size_t gd_raw = static_cast<size_t>(L/2);
+                    size_t adj_raw = start_raw > gd_raw ? (start_raw - gd_raw) : 0u;
+                    return PreambleDetectResult{adj_raw, os, phase};
+                }
             }
         }
     }

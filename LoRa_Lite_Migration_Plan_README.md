@@ -174,4 +174,15 @@
 
 **Reference:**  
 - liquid-dsp (FFT and DSP library): https://github.com/jgaeddert/liquid-dsp
+## GNURadio Original RX Notes (hierarchical vs. flowgraph)
+
+- We standardized on the hierarchical GNURadio path for the "original LoRa" validation: `lora_sdr_lora_tx` → channel → `lora_sdr_lora_rx`.
+- The alternative flowgraph runner (`tx_rx_simulation` + `file_source`) is unreliable headless: whitening/header framing via raw file_source lacks the proper PDU/tag lifecycle, often yielding malformed header length (and messages like `CRC not supported for payload smaller than 2 bytes`) with no payload written. It's kept only for reference with an explicit warning in `scripts/gr_orig_ascii_e2e.py`.
+- For headless runs, we enable a moderate `throttle` and raise `min_output_buffer` at the channel according to `2^SF * OS * margin`, so that `frame_sync` never requests more items than available.
+- Long matrices can exhaust GNURadio's shared memory (`vmcircbuf shmget ... No space left on device` → `std::bad_alloc`). To prevent this, tests are run in subprocess chunks and with `GR_VMCIRCBUF_DISABLE_SHM=1` and small pauses between chunks.
+
+### What’s implemented
+- `scripts/gr_original_e2e.py`: reliable hierarchical E2E, supports exact text (e.g., `Hello world: 0`) and collects both message and stream outputs.
+- `scripts/original_matrix.py`: hierarchical matrix with per-case subprocess, optional `--chunk` mode to spawn one process per SF group and a short `--chunk-pause` between groups.
+- `scripts/gr_orig_ascii_e2e.py`: flowgraph path kept for reference only (with a big warning), not used for CI/headless validation.
 

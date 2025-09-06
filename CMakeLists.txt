@@ -58,6 +58,10 @@ target_link_libraries(dbg_loopback_header_auto PRIVATE lora_phy)
 add_executable(lora_decode tools/lora_decode.cpp)
 target_link_libraries(lora_decode PRIVATE lora_phy)
 
+# IQ generator matching LoRa Lite framing (preamble + 1 sync + frame), with OS repeat
+add_executable(gen_lite_tx_iq tools/gen_lite_tx_iq.cpp)
+target_link_libraries(gen_lite_tx_iq PRIVATE lora_phy)
+
 # ---------- Tests ----------
 enable_testing()
 include(GoogleTest)
@@ -168,6 +172,18 @@ add_test(NAME cli.json.os1
   COMMAND bash -lc "${CMAKE_BINARY_DIR}/gen_frame_vectors --sf 7 --cr 45 --payload ${CMAKE_SOURCE_DIR}/vectors/sf7_cr45_payload.bin --out ${CMAKE_BINARY_DIR}/cli_os1.bin --os 1 --preamble 8 && ${CMAKE_BINARY_DIR}/lora_decode --in ${CMAKE_BINARY_DIR}/cli_os1.bin --sf 7 --cr 45 --format f32 --json"
 )
 set_tests_properties(cli.json.os1 PROPERTIES PASS_REGULAR_EXPRESSION "\"success\": true")
+
+
+add_test(NAME cli.json.os1.partial
+  COMMAND bash -lc "${CMAKE_BINARY_DIR}/gen_frame_vectors --sf 7 --cr 45 --payload ${CMAKE_SOURCE_DIR}/vectors/sf7_cr45_payload.bin --out ${CMAKE_BINARY_DIR}/cli_os1_hdr.bin --os 1 --preamble 8 && python3 ${CMAKE_SOURCE_DIR}/scripts/corrupt_tail.py --in ${CMAKE_BINARY_DIR}/cli_os1_hdr.bin --out ${CMAKE_BINARY_DIR}/cli_os1_hdr_corrupt.bin --tail-floats 256 && ${CMAKE_BINARY_DIR}/lora_decode --in ${CMAKE_BINARY_DIR}/cli_os1_hdr_corrupt.bin --sf 7 --cr 45 --format f32 --json --allow-partial"
+)
+set_tests_properties(cli.json.os1.partial PROPERTIES PASS_REGULAR_EXPRESSION ".*\"success\": false.*\"reason\": \"(payload_crc_failed|fec_decode_failed)\".*")
+
+# CLI OS4 partial decode (induce CRC failure and verify JSON reason)
+add_test(NAME cli.json.os4.partial
+  COMMAND bash -lc "${CMAKE_BINARY_DIR}/gen_frame_vectors --sf 7 --cr 45 --payload ${CMAKE_SOURCE_DIR}/vectors/sf7_cr45_payload.bin --out ${CMAKE_BINARY_DIR}/cli_os4_hdr.bin --os 4 --preamble 8 && python3 ${CMAKE_SOURCE_DIR}/scripts/corrupt_tail.py --in ${CMAKE_BINARY_DIR}/cli_os4_hdr.bin --out ${CMAKE_BINARY_DIR}/cli_os4_hdr_corrupt.bin --tail-floats 512 && ${CMAKE_BINARY_DIR}/lora_decode --in ${CMAKE_BINARY_DIR}/cli_os4_hdr_corrupt.bin --sf 7 --cr 45 --format f32 --json --allow-partial --sync auto"
+)
+set_tests_properties(cli.json.os4.partial PROPERTIES PASS_REGULAR_EXPRESSION ".*\"success\": false.*\"reason\": \"(payload_crc_failed|fec_decode_failed)\".*")
 add_executable(test_reference_vectors_header_os_varlen tests/test_reference_vectors_header_os_varlen.cpp)
 target_link_libraries(test_reference_vectors_header_os_varlen PRIVATE lora_phy GTest::gtest_main)
 gtest_discover_tests(test_reference_vectors_header_os_varlen
