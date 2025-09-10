@@ -4,7 +4,9 @@ import sys, os, json
 
 
 def run_rx_only(in_iq: str, sf: int, cr_lora: int, bw_hz: int, samp_rate_hz: int, pay_len: int, timeout: float,
-                out_rx_payload: str) -> dict:
+                out_rx_payload: str, sync_word: int,
+                out_predew: str = None, out_postdew: str = None,
+                out_hdr_gray: str = None, out_hdr_nibbles: str = None) -> dict:
     from gnuradio import gr, blocks
     # Use hierarchical RX to match reference behavior; will print CRC but not emit boolean
     from gnuradio.lora_sdr.lora_sdr_lora_rx import lora_sdr_lora_rx
@@ -20,30 +22,54 @@ def run_rx_only(in_iq: str, sf: int, cr_lora: int, bw_hz: int, samp_rate_hz: int
     src = blocks.file_source(gr.sizeof_gr_complex, in_iq, False)
     rx  = lora_sdr_lora_rx(center_freq=int(868.1e6), bw=int(bw_hz), cr=int(cr_api), has_crc=True,
                                impl_head=False, pay_len=int(pay_len), samp_rate=int(samp_rate_hz), sf=int(sf),
-                               sync_word=[0x12], soft_decoding=False, ldro_mode=2, print_rx=[False, False])
+                               sync_word=[int(sync_word)], soft_decoding=False, ldro_mode=2, print_rx=[False, False])
     sink_rx_payload = blocks.file_sink(gr.sizeof_char, out_rx_payload, False)
+    # Optional taps: pre-dewhitening stream is output of header_decoder (nibbles, 1 byte per nibble),
+    # we capture to a temporary .nib file and convert to bytes after the flow stops.
+    nib_path = (out_predew + ".nib") if out_predew else None
+    sink_predew = blocks.file_sink(gr.sizeof_char, nib_path, False) if out_predew else None
+    # Post-dewhitening bytes are emitted by the dewhitening block directly
+    sink_postdew = blocks.file_sink(gr.sizeof_char, out_postdew, False) if out_postdew else None
+    # Header-level taps: gray-coded symbols (from gray_mapping), and Hamming-decoded nibbles (from hamming_dec)
+    # gray_mapping outputs 16-bit symbols → use sizeof_short sink
+    sink_hdr_gray = blocks.file_sink(gr.sizeof_short, out_hdr_gray, False) if out_hdr_gray else None
+    sink_hdr_nibbles = blocks.file_sink(gr.sizeof_char, out_hdr_nibbles, False) if out_hdr_nibbles else None
     tb.connect(src, rx)
     tb.connect(rx, sink_rx_payload)
+    if sink_predew:
+        tb.connect(rx.lora_sdr_header_decoder_0, sink_predew)
+    if sink_postdew:
+        tb.connect(rx.lora_sdr_dewhitening_0, sink_postdew)
+    if sink_hdr_gray:
+        tb.connect(rx.lora_sdr_gray_mapping_0, sink_hdr_gray)
+    if sink_hdr_nibbles:
+        tb.connect(rx.lora_sdr_hamming_dec_0, sink_hdr_nibbles)
 
+    # Run the flowgraph to completion (file source is finite). Avoid waiting on CRC-dependent payload.
     try:
-        tb.start()
-        import time
-        start = time.time(); last_sz = -1
-        while True:
-            try:
-                sz = os.path.getsize(out_rx_payload)
-            except FileNotFoundError:
-                sz = 0
-            if sz != last_sz:
-                last_sz = sz
-            if sz > 0:
-                break
-            if time.time() - start > timeout:
-                break
-            time.sleep(0.05)
+        tb.start(); tb.wait()
     finally:
         try:
-            tb.stop(); tb.wait()
+            tb.stop()
+        except Exception:
+            pass
+
+    # If requested, convert captured nibbles to bytes for pre-dewhitening reference
+    if out_predew:
+        try:
+            with open(nib_path, 'rb') as f:
+                nib = f.read()
+        except FileNotFoundError:
+            nib = b''
+        # Group into pairs: [low, high] -> byte
+        outb = bytearray()
+        for i in range(0, len(nib) - 1, 2):
+            low = nib[i] & 0x0F
+            high = nib[i+1] & 0x0F
+            outb.append((high << 4) | low)
+        try:
+            with open(out_predew, 'wb') as f:
+                f.write(outb)
         except Exception:
             pass
 
@@ -62,6 +88,11 @@ def main():
     ap.add_argument('--pay-len', type=int, required=True)
     ap.add_argument('--timeout', type=float, default=10.0)
     ap.add_argument('--out-rx-payload', required=True)
+    ap.add_argument('--out-predew')
+    ap.add_argument('--out-postdew')
+    ap.add_argument('--sync', type=lambda x: int(x, 0), default=0x34)
+    ap.add_argument('--out-hdr-gray')
+    ap.add_argument('--out-hdr-nibbles')
     args = ap.parse_args()
 
     try:
@@ -72,7 +103,8 @@ def main():
 
     try:
         res = run_rx_only(args.in_iq, args.sf, args.cr, args.bw, args.samp_rate, args.pay_len, args.timeout,
-                          args.out_rx_payload)
+                          args.out_rx_payload, args.sync, args.out_predew, args.out_postdew,
+                          args.out_hdr_gray, args.out_hdr_nibbles)
         print(json.dumps(res))
         return 0
     except Exception as e:

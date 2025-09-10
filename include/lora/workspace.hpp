@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <liquid/liquid.h>
 #include "lora/utils/interleaver.hpp"
+#include "lora/utils/hamming.hpp"
 
 using liquid_fftplan = fftplan;
 
@@ -34,6 +35,28 @@ struct Workspace {
 
     // Cached interleaver maps indexed by (sf << 8) | cr_plus4
     std::unordered_map<uint32_t, lora::utils::InterleaverMap> interleavers;
+
+    // Debug/instrumentation buffers for RX (filled optionally by decoder)
+    std::vector<uint8_t> dbg_predew;   // Bytes after deinterleave+hamming (before dewhitening), len = payload_len+2
+    std::vector<uint8_t> dbg_postdew;  // Bytes after dewhitening (payload dewhitened + raw CRC)
+    uint16_t dbg_crc_calc{};           // CRC computed over payload bytes
+    uint16_t dbg_crc_rx_le{};          // CRC trailer interpreted as LE
+    uint16_t dbg_crc_rx_be{};          // CRC trailer interpreted as BE
+    bool     dbg_crc_ok_le{};
+    bool     dbg_crc_ok_be{};
+    uint32_t dbg_payload_len{};        // Payload length inferred from header
+    lora::utils::CodeRate dbg_cr_payload{lora::utils::CodeRate::CR45};
+
+    // Header debug
+    bool     dbg_hdr_filled{};         // set true when fields below are valid
+    uint32_t dbg_hdr_sf{};
+    // First 16 header symbols (raw peak bin, corrected, and gray-coded)
+    uint32_t dbg_hdr_syms_raw[16]{};
+    uint32_t dbg_hdr_syms_corr[16]{};
+    uint32_t dbg_hdr_gray[16]{};
+    // Hamming-decoded header nibbles for CR48 and CR45 attempts (10 nibbles each)
+    uint8_t  dbg_hdr_nibbles_cr48[10]{};
+    uint8_t  dbg_hdr_nibbles_cr45[10]{};
 
     ~Workspace();
     void init(uint32_t new_sf);

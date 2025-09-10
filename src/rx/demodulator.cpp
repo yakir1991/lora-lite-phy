@@ -48,8 +48,8 @@ std::pair<std::span<uint8_t>, bool> loopback_rx(Workspace& ws,
                 max_bin = k;
             }
         }
-        // GNU Radio RX uses gray_encode (despite the "mapping" name)
-        uint32_t sync_sym = lora::utils::gray_encode(max_bin);
+        // Decode Gray-mapped bin index back to symbol and compare to expected sync
+        uint32_t sync_sym = lora::utils::gray_decode(max_bin);
         if (sync_sym != expected_sync) {
             log_time();
             return {std::span<uint8_t>{}, false};

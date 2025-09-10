@@ -53,9 +53,9 @@ target_link_libraries(dbg_loopback_header_auto PRIVATE lora_phy)
 add_executable(lora_decode tools/lora_decode.cpp)
 target_link_libraries(lora_decode PRIVATE lora_phy)
 
-# Golden vector generator - creates vectors compatible with our decoder
-add_executable(create_golden_vectors tools/create_golden_vectors.cpp)
-target_link_libraries(create_golden_vectors PRIVATE lora_phy)
+# Golden vector generator (C++) was removed; target disabled
+# add_executable(create_golden_vectors tools/create_golden_vectors.cpp)
+# target_link_libraries(create_golden_vectors PRIVATE lora_phy)
 
 # ---------- Tests ----------
 enable_testing()
