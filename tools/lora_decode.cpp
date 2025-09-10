@@ -185,20 +185,80 @@ int main(int argc, char** argv) {
             }
             auto [reason, code] = map_exit(lora::debug::last_fail_step);
             if (json) {
+                // If we already produced payload diagnostics (A3/A4) due to a diagnostic fallback, emit them first
+                if (std::string(reason) == std::string("payload_crc_failed") && !ws.dbg_postdew.empty()) {
+                    auto to_hex_str = [](const std::vector<uint8_t>& v){
+                        static const char* H = "0123456789abcdef";
+                        std::string s; size_t lim = std::min<size_t>(v.size(), 32);
+                        s.reserve(lim*3);
+                        for (size_t i = 0; i < lim; ++i) { s.push_back(H[(v[i]>>4)&0xF]); s.push_back(H[v[i]&0xF]); if (i+1<lim) s.push_back(' '); }
+                        return s;
+                    };
+                    std::filesystem::create_directories("logs");
+                    if (!ws.dbg_predew.empty()) { std::ofstream f("logs/lite_rx_predew.bin", std::ios::binary); if (f) f.write((const char*)ws.dbg_predew.data(), (std::streamsize)ws.dbg_predew.size()); }
+                    if (!ws.dbg_postdew.empty()) { std::ofstream f("logs/lite_rx_postdew.bin", std::ios::binary); if (f) f.write((const char*)ws.dbg_postdew.data(), (std::streamsize)ws.dbg_postdew.size()); }
+                    int cr_denom = 4 + (int)ws.dbg_cr_payload;
+                    std::fprintf(stdout,
+                        "{\n  \"hdr\": {\"sf\":%d,\"cr_hdr\":\"4/8\",\"cr_payload\":\"4/%d\",\"payload_len\":%u},\n  \"predew_hex\": \"%s\",\n  \"postdew_hex\": \"%s\",\n  \"crc_calc\": \"%04x\",\n  \"crc_rx_le\": \"%04x\",\n  \"crc_rx_be\": \"%04x\",\n  \"crc_ok_le\": %s, \"crc_ok_be\": %s\n}\n",
+                        sf, cr_denom, (unsigned)ws.dbg_payload_len,
+                        to_hex_str(ws.dbg_predew).c_str(), to_hex_str(ws.dbg_postdew).c_str(),
+                        (unsigned)ws.dbg_crc_calc, (unsigned)ws.dbg_crc_rx_le, (unsigned)ws.dbg_crc_rx_be,
+                        ws.dbg_crc_ok_le?"true":"false", ws.dbg_crc_ok_be?"true":"false"
+                    );
+                    return code;
+                }
+
                 auto hdr2 = lora::rx::decode_header_with_preamble_cfo_sto_os(ws, span, static_cast<uint32_t>(sf), cr, static_cast<size_t>(min_pre), static_cast<uint8_t>(sync_hex & 0xFF));
                 if (hdr2.has_value()) {
-                    std::fprintf(stdout,
-                        "{\n  \"success\": false,\n  \"step\": %d,\n  \"reason\": \"%s\",\n  \"sf\": %d,\n  \"cr\": %d,\n  \"sync\": \"0x%02x\",\n  \"min_preamble\": %d,\n  \"detect_os\": %d,\n  \"detect_phase\": %d,\n  \"detect_start\": %zu,\n  \"header\": {\"len\": %u, \"cr\": %d, \"crc\": %s},\n  \"payload_len\": 0,\n  \"payload_hex\": \"\"\n}\n",
-                        lora::debug::last_fail_step, reason, sf, cr_int, (unsigned)(sync_hex & 0xFF), min_pre,
-                        det_os, det_phase, det_start,
-                        (unsigned)hdr2->payload_len, int(hdr2->cr), (hdr2->has_crc?"true":"false")
-                    );
+                    // If payload CRC failed, emit detailed instrumentation JSON and write dumps
+                    if (std::string(reason) == std::string("payload_crc_failed")) {
+                        auto to_hex_str = [](const std::vector<uint8_t>& v){
+                            static const char* H = "0123456789abcdef";
+                            std::string s; size_t lim = std::min<size_t>(v.size(), 32);
+                            s.reserve(lim*3);
+                            for (size_t i = 0; i < lim; ++i) { s.push_back(H[(v[i]>>4)&0xF]); s.push_back(H[v[i]&0xF]); if (i+1<lim) s.push_back(' '); }
+                            return s;
+                        };
+                        std::filesystem::create_directories("logs");
+                        if (!ws.dbg_predew.empty()) { std::ofstream f("logs/lite_rx_predew.bin", std::ios::binary); if (f) f.write((const char*)ws.dbg_predew.data(), (std::streamsize)ws.dbg_predew.size()); }
+                        if (!ws.dbg_postdew.empty()) { std::ofstream f("logs/lite_rx_postdew.bin", std::ios::binary); if (f) f.write((const char*)ws.dbg_postdew.data(), (std::streamsize)ws.dbg_postdew.size()); }
+                        int cr_denom = 4 + (int)ws.dbg_cr_payload;
+                        std::fprintf(stdout,
+                            "{\n  \"hdr\": {\"sf\":%d,\"cr_hdr\":\"4/8\",\"cr_payload\":\"4/%d\",\"payload_len\":%u},\n  \"predew_hex\": \"%s\",\n  \"postdew_hex\": \"%s\",\n  \"crc_calc\": \"%04x\",\n  \"crc_rx_le\": \"%04x\",\n  \"crc_rx_be\": \"%04x\",\n  \"crc_ok_le\": %s, \"crc_ok_be\": %s\n}\n",
+                            sf, cr_denom, (unsigned)ws.dbg_payload_len,
+                            to_hex_str(ws.dbg_predew).c_str(), to_hex_str(ws.dbg_postdew).c_str(),
+                            (unsigned)ws.dbg_crc_calc, (unsigned)ws.dbg_crc_rx_le, (unsigned)ws.dbg_crc_rx_be,
+                            ws.dbg_crc_ok_le?"true":"false", ws.dbg_crc_ok_be?"true":"false"
+                        );
+                    } else {
+                        // Header parsed but failure elsewhere; emit header info
+                        std::fprintf(stdout,
+                            "{\n  \"success\": false,\n  \"step\": %d,\n  \"reason\": \"%s\",\n  \"sf\": %d,\n  \"cr\": %d,\n  \"sync\": \"0x%02x\",\n  \"min_preamble\": %d,\n  \"detect_os\": %d,\n  \"detect_phase\": %d,\n  \"detect_start\": %zu,\n  \"header\": {\"len\": %u, \"cr\": %d, \"crc\": %s},\n  \"payload_len\": 0,\n  \"payload_hex\": \"\"\n}\n",
+                            lora::debug::last_fail_step, reason, sf, cr_int, (unsigned)(sync_hex & 0xFF), min_pre,
+                            det_os, det_phase, det_start,
+                            (unsigned)hdr2->payload_len, int(hdr2->cr), (hdr2->has_crc?"true":"false")
+                        );
+                    }
                 } else {
-                    std::fprintf(stdout,
-                        "{\n  \"success\": false,\n  \"step\": %d,\n  \"reason\": \"%s\",\n  \"sf\": %d,\n  \"cr\": %d,\n  \"sync\": \"0x%02x\",\n  \"min_preamble\": %d,\n  \"detect_os\": %d,\n  \"detect_phase\": %d,\n  \"detect_start\": %zu,\n  \"header\": null,\n  \"payload_len\": 0,\n  \"payload_hex\": \"\"\n}\n",
-                        lora::debug::last_fail_step, reason, sf, cr_int, (unsigned)(sync_hex & 0xFF), min_pre,
-                        det_os, det_phase, det_start
-                    );
+                    // Header decode failed: print header diagnostics if available
+                    if (ws.dbg_hdr_filled) {
+                        auto append_u32 = [](std::string& s, uint32_t v){ char buf[16]; std::snprintf(buf, sizeof(buf), "%u", v); if (!s.empty()) s += ","; s += buf; };
+                        auto append_hex = [](std::string& s, uint8_t v){ char buf[8]; std::snprintf(buf, sizeof(buf), "%x", v & 0xF); if (!s.empty()) s += " "; s += buf; };
+                        std::string syms_raw, syms_corr, syms_gray, n48, n45;
+                        for (int i = 0; i < 16; ++i) { append_u32(syms_raw, ws.dbg_hdr_syms_raw[i]); append_u32(syms_corr, ws.dbg_hdr_syms_corr[i]); append_u32(syms_gray, ws.dbg_hdr_gray[i]); }
+                        for (int i = 0; i < 10; ++i) { append_hex(n48, ws.dbg_hdr_nibbles_cr48[i]); append_hex(n45, ws.dbg_hdr_nibbles_cr45[i]); }
+                        std::fprintf(stdout,
+                            "{\n  \"success\": false,\n  \"step\": %d,\n  \"reason\": \"%s\",\n  \"sf\": %d,\n  \"cr\": %d,\n  \"sync\": \"0x%02x\",\n  \"min_preamble\": %d,\n  \"detect_os\": %d,\n  \"detect_phase\": %d,\n  \"detect_start\": %zu,\n  \"header\": null,\n  \"dbg_hdr\": {\"sf\": %u, \"syms_raw\": \"%s\", \"syms_corr\": \"%s\", \"syms_gray\": \"%s\", \"nibbles_cr48\": \"%s\", \"nibbles_cr45\": \"%s\"}\n}\n",
+                            lora::debug::last_fail_step, reason, sf, cr_int, (unsigned)(sync_hex & 0xFF), min_pre,
+                            det_os, det_phase, det_start,
+                            (unsigned)ws.dbg_hdr_sf, syms_raw.c_str(), syms_corr.c_str(), syms_gray.c_str(), n48.c_str(), n45.c_str());
+                    } else {
+                        std::fprintf(stdout,
+                            "{\n  \"success\": false,\n  \"step\": %d,\n  \"reason\": \"%s\",\n  \"sf\": %d,\n  \"cr\": %d,\n  \"sync\": \"0x%02x\",\n  \"min_preamble\": %d,\n  \"detect_os\": %d,\n  \"detect_phase\": %d,\n  \"detect_start\": %zu,\n  \"header\": null,\n  \"payload_len\": 0,\n  \"payload_hex\": \"\"\n}\n",
+                            lora::debug::last_fail_step, reason, sf, cr_int, (unsigned)(sync_hex & 0xFF), min_pre,
+                            det_os, det_phase, det_start
+                        );
+                    }
                 }
             } else {
                 std::fprintf(stderr,

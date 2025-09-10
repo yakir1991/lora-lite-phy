@@ -66,20 +66,16 @@ class GoldenVectorGenerator(gr.top_block):
         else:
             self.iq_sink = None
             
-        if out_payload_path:
-            self.payload_sink = blocks.file_sink(gr.sizeof_char, out_payload_path, False)
-        else:
-            self.payload_sink = None
+        # Do NOT write payload via RX; we'll write ground-truth TX payload after validation
+        self.payload_sink = None
 
         # Connections
         self.connect(self.tx, self.chan)
         self.connect(self.chan, self.rx)
-        
+
+        # For clean deterministic IQ, tap TX directly (channel is noiseless anyway)
         if self.iq_sink:
-            self.connect(self.chan, self.iq_sink)
-            
-        if self.payload_sink:
-            self.connect(self.rx, self.payload_sink)
+            self.connect(self.tx, self.iq_sink)
             
         self.msg_connect(self.msg_src, 'strobe', self.tx, 'in')
         self.msg_connect(self.rx, 'out', self.msg_dbg, 'store')
@@ -184,6 +180,13 @@ def main():
     )
     
     if success:
+        # Write intended TX payload directly to file
+        try:
+            with open(args.out_payload, 'wb') as f:
+                f.write(args.text.encode('ascii'))
+        except Exception as e:
+            print(f"Warning: failed to write payload file {args.out_payload}: {e}")
+
         print(f"✓ Golden vector created successfully!")
         print(f"  IQ file: {args.out_iq}")
         print(f"  Payload file: {args.out_payload}")
