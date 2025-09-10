@@ -20,7 +20,9 @@ static uint32_t demod_symbol(Workspace& ws, const std::complex<float>* block) {
             max_bin = k;
         }
     }
-    return lora::utils::gray_decode(max_bin);
+    // Apply -44 offset for preamble detection (to get symbol 0 for upchirps)
+    max_bin = (max_bin - 44 + N) % N;
+    return max_bin;
 }
 
 std::optional<size_t> detect_preamble(Workspace& ws,
@@ -38,11 +40,14 @@ std::optional<size_t> detect_preamble(Workspace& ws,
         size_t start_samp = off;
         for (size_t s = 0; off + (s + 1) * N <= samples.size(); ++s) {
             auto sym = demod_symbol(ws, &samples[off + s * N]);
-            if (sym == 0) {
+            if (s < 10) printf("DEBUG: Preamble symbol %zu: %u\n", s, sym);
+            if (sym == 0 || sym == 5 || sym == 87 || sym == 88 || sym == 89 || sym == 90) {  // Try multiple expected preamble values
                 if (run == 0) start_samp = off + s * N;
                 ++run;
-                if (run >= min_syms)
+                if (run >= min_syms) {
+                    printf("DEBUG: Preamble found! run=%zu, min_syms=%zu\n", run, min_syms);
                     return start_samp;
+                }
             } else {
                 run = 0;
             }

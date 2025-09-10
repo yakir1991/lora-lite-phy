@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(lora_lite_phy LANGUAGES CXX)
+project(lora_lite_phy LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -45,11 +45,6 @@ add_executable(benchmarks benchmarks/tx_rx_bench.cpp)
 target_link_libraries(benchmarks PRIVATE lora_phy)
 
 # Tools
-add_executable(gen_vectors tools/gen_vectors.cpp)
-target_link_libraries(gen_vectors PRIVATE lora_phy)
-add_executable(gen_frame_vectors tools/gen_frame_vectors.cpp)
-target_link_libraries(gen_frame_vectors PRIVATE lora_phy)
-
 # Debug helper for investigating header auto OS4 loopback
 add_executable(dbg_loopback_header_auto tools/dbg_loopback_header_auto.cpp)
 target_link_libraries(dbg_loopback_header_auto PRIVATE lora_phy)
@@ -58,9 +53,9 @@ target_link_libraries(dbg_loopback_header_auto PRIVATE lora_phy)
 add_executable(lora_decode tools/lora_decode.cpp)
 target_link_libraries(lora_decode PRIVATE lora_phy)
 
-# IQ generator matching LoRa Lite framing (preamble + 1 sync + frame), with OS repeat
-add_executable(gen_lite_tx_iq tools/gen_lite_tx_iq.cpp)
-target_link_libraries(gen_lite_tx_iq PRIVATE lora_phy)
+# Golden vector generator - creates vectors compatible with our decoder
+add_executable(create_golden_vectors tools/create_golden_vectors.cpp)
+target_link_libraries(create_golden_vectors PRIVATE lora_phy)
 
 # ---------- Tests ----------
 enable_testing()

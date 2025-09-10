@@ -67,7 +67,8 @@ std::span<const std::complex<float>> frame_tx(Workspace& ws,
         uint32_t val = 0;
         for (uint32_t b = 0; b < sf; ++b)
             val |= (uint32_t(inter[i * sf + b]) << b);
-        symbols[i] = lora::utils::gray_encode(val);
+        // GNU Radio TX uses gray_decode (despite the "demap" name) 
+        symbols[i] = lora::utils::gray_decode(val);
     }
 
     // Modulate symbols into chirps

@@ -15,8 +15,7 @@ void Workspace::init(uint32_t new_sf) {
     sf = new_sf;
     N  = 1u << sf;
 
-    if (plan)
-        fft_destroy_plan(plan);
+    // Old liquid-dsp plan removed, using kiss_fft now
 
     // Buffers and chirps
     upchirp.resize(N);
@@ -29,7 +28,9 @@ void Workspace::init(uint32_t new_sf) {
                            LIQUID_FFT_FORWARD,
                            0);
     for (uint32_t n = 0; n < N; ++n) {
-        float phase = static_cast<float>(M_PI) * n * n / N;
+        // Match GNU Radio original formula: phase = 2*PI*(n*n/(2*N) - 0.5*n)
+        // For upchirp with id=0: phase = 2*PI*(n*n/(2*N) + (0/N-0.5)*n)
+        float phase = 2.0f * static_cast<float>(M_PI) * (n * n / (2.0f * N) - 0.5f * n);
         upchirp[n]   = std::exp(std::complex<float>(0.0f, phase));
         downchirp[n] = std::conj(upchirp[n]);
     }
