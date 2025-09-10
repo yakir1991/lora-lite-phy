@@ -48,7 +48,8 @@ std::pair<std::span<uint8_t>, bool> loopback_rx(Workspace& ws,
                 max_bin = k;
             }
         }
-        uint32_t sync_sym = lora::utils::gray_decode(max_bin);
+        // GNU Radio RX uses gray_encode (despite the "mapping" name)
+        uint32_t sync_sym = lora::utils::gray_encode(max_bin);
         if (sync_sym != expected_sync) {
             log_time();
             return {std::span<uint8_t>{}, false};
@@ -75,7 +76,8 @@ std::pair<std::span<uint8_t>, bool> loopback_rx(Workspace& ws,
                 max_bin = k;
             }
         }
-        symbols[s_idx] = lora::utils::gray_decode(max_bin);
+        // GNU Radio RX uses gray_encode (despite the "mapping" name)
+        symbols[s_idx] = lora::utils::gray_encode(max_bin);
     }
 
     // Symbols -> bits

@@ -48,5 +48,41 @@ std::optional<LocalHeader> parse_local_header_with_crc(const uint8_t* hdr_with_c
     return h;
 }
 
+// Parse standard LoRa header format (5 bytes: 2 payload_len + 1 flags + 2 checksum)
+std::optional<LocalHeader> parse_standard_lora_header(const uint8_t* hdr, size_t len) {
+    if (len < 5) return std::nullopt; // 5 bytes total
+    
+    // Extract payload length (8 bits from first 2 bytes)
+    uint8_t payload_len = (hdr[0] << 4) + hdr[1];
+    
+    // Extract flags
+    uint8_t flags = hdr[2];
+    bool has_crc = (flags & 0x1u) != 0u;
+    uint8_t cr_idx = (flags >> 1) & 0x7u;
+    
+    // Extract header checksum (5 bits from last 2 bytes)
+    uint8_t header_chk = ((hdr[3] & 1) << 4) + hdr[4];
+    
+    // Verify header checksum using GNU Radio's algorithm
+    bool c4 = (hdr[0] & 0b1000) >> 3 ^ (hdr[0] & 0b0100) >> 2 ^ (hdr[0] & 0b0010) >> 1 ^ (hdr[0] & 0b0001);
+    bool c3 = (hdr[0] & 0b1000) >> 3 ^ (hdr[1] & 0b1000) >> 3 ^ (hdr[1] & 0b0100) >> 2 ^ (hdr[1] & 0b0010) >> 1 ^ (hdr[2] & 0b0001);
+    bool c2 = (hdr[0] & 0b0100) >> 2 ^ (hdr[1] & 0b1000) >> 3 ^ (hdr[1] & 0b0001) ^ (hdr[2] & 0b1000) >> 3 ^ (hdr[2] & 0b0010) >> 1;
+    bool c1 = (hdr[0] & 0b0010) >> 1 ^ (hdr[1] & 0b0100) >> 2 ^ (hdr[1] & 0b0001) ^ (hdr[2] & 0b0100) >> 2 ^ (hdr[2] & 0b0010) >> 1 ^ (hdr[2] & 0b0001);
+    bool c0 = (hdr[0] & 0b0001) ^ (hdr[1] & 0b0010) >> 1 ^ (hdr[2] & 0b1000) >> 3 ^ (hdr[2] & 0b0100) >> 2 ^ (hdr[2] & 0b0010) >> 1 ^ (hdr[2] & 0b0001);
+    
+    uint8_t calculated_chk = (c4 << 4) + (c3 << 3) + (c2 << 2) + (c1 << 1) + c0;
+    
+    // Check if header checksum is valid and payload length is not zero
+    if (header_chk != calculated_chk || payload_len == 0) {
+        return std::nullopt;
+    }
+    
+    LocalHeader h;
+    h.payload_len = payload_len;
+    h.has_crc = has_crc;
+    h.cr = index_to_cr(cr_idx);
+    return h;
+}
+
 } // namespace lora::rx
 

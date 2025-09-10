@@ -26,5 +26,8 @@ std::vector<uint8_t> make_local_header_with_crc(const LocalHeader& h);
 std::optional<LocalHeader> parse_local_header_with_crc(const uint8_t* hdr_with_crc,
                                                        size_t len_with_crc);
 
+// Parse standard LoRa header format (5 bytes: 2 payload_len + 1 flags + 2 checksum)
+std::optional<LocalHeader> parse_standard_lora_header(const uint8_t* hdr, size_t len);
+
 } // namespace lora::rx
 
