@@ -920,6 +920,105 @@ bash scripts/lite_run_vector.sh
 python3 scripts/scan_hdr_gr_cw.py
 ```
 
+### Updates (2025-09-11, continued 10)
+- Expanded the anchored fine scan for block1 and added mapping variants:
+  - Wider fine sample sweep for block1: `samp1 ∈ {±(N/64+d) | d∈[-8..8]} ∪ {±(3N/64+d) | d∈[-4..4]} ∪ {0}`; `off1 ∈ {0..7}`.
+  - Added row-rotation `rot1 ∈ {0..sf_app-1}`, row-reversal, and column-reversal on block1 rows before assembly.
+  - Added an alternate diagonal for block1 only: `r = (i + j + 1) mod sf_app`, with column order toggle.
+  - Kept baseline row-wise assembly for reference and for scan tooling.
+- Build: OK. Lite run prints extended `hdr_gr cwbytes` lines for the new variants.
+- Quantitative comparison vs GR target (first 10 header CW bytes = `00 74 c5 00 c5 1d 12 1b 12 00`):
+  - Previous best: `best cw distance: 5 (pattern 1blk)` at `samp=0 off=1 mode=raw`.
+  - Current best improved to 4 with a 2-block variant:
+    - Example 1: `pattern 2blk-var` → `at samp0 0 off0 1 samp1 -9 off1 0 mode raw rot1 2 rowrev1 0 colrev1 1`
+      - vals: `00 74 c5 00 c5 57 a5 e4 12 d9`
+    - Example 2 from earlier run: `pattern 2blk-var` → `at samp0 0 off0 1 samp1 5 off1 2 mode raw rot1 0 rowrev1 0 colrev1 1`
+      - vals: `00 74 c5 00 c5 47 ca 1b 51 6a`
+  - Column-assembly permutations and the alternate diagonal did not yet beat distance 4.
+- Header parse status:
+  - Some variants produce self-consistent bytes (e.g., `hdr_gr OK (2blk …) bytes: 36 0f 17 ee 10`), but the standard LoRa header checksum still fails for this vector (`reason=fec_decode_failed`).
+
+Interpretation
+- Block0 aligns (first 5 CWs match exactly) while block1 remains mis-anchored. The improved 4/10 suggests we are close; remaining differences likely stem from block1 diagonal origin and/or subtle sample/symbol boundary drift between the two 8‑symbol blocks.
+
+Immediate next actions
+- Targeted expansion around block1:
+  - Keep best block0 anchor dynamic (choose best `1blk` automatically) and, for that anchor, sweep a broader but bounded block1 neighborhood as above.
+  - Add an origin offset to block1 diagonal relation: try `r = (i - j - k) mod sf_app` for `k∈{0..sf_app-1}` (distinct from simple row rotation during assembly).
+  - When a 10/10 cw match is found, attempt Hamming→nibbles→bytes parse and confirm checksum passes; then lock a deterministic anchor and remove brute-force.
+- Validation loop:
+  - Re-run: `make -C build -j$(nproc) && bash scripts/lite_run_vector.sh && python3 scripts/scan_hdr_gr_cw.py`.
+  - Expect to see `best cw distance: 0` and a `hdr_gr OK … bytes:` line with a valid standard header.
+
+### Updates (2025-09-11, continued 11)
+- Added diagonal-origin sweep (full range) for block1 on the standard diagonal:
+  - In `src/rx/frame.cpp`, expanded `diagshift` from `{−1,+1}` to `0..sf_app−1` in the `2blk-diagvar` path, with row rotation, optional row reversal, and column shift/reversal.
+  - Extended the fine `samp1` set to include a neighborhood around `±N/16` as well (captures offsets like −12..−6 at SF7).
+- Extended scanner `scripts/scan_hdr_gr_cw.py` to parse and score: `2blk-varshift`, `2blk-diagvar` in addition to the earlier patterns.
+- Build/run results:
+  - Best improved to `best cw distance: 3 (pattern 2blk-diagvar)`:
+    - `at samp0 0 off0 1 samp1 13 off1 7 mode raw diagshift 0 rot1 0 rowrev1 0 colshift1 1 colrev1 0`
+    - vals: `00 74 c5 00 c5 a5 12 60 b6 00`
+  - Previous best remained at 4 for `2blk-var`; now `2blk-diagvar` is better.
+- Header parse still fails primary path (standard checksum); diagnostic CR45 fallback prints implausible header, confirming mapping mismatch remains on block1.
+
+Interpretation
+- We are closing in: first 5 CWs are exact; the `2blk-diagvar` path reduces the last-5 mismatch to 3 bytes with a simple column shift of 1 at block1 and `diagshift=0`.
+- Remaining misalignment likely requires a precise alignment for block1’s symbol window (samp1/off1) combined with a specific column permutation and possibly a different `diagshift` for this vector.
+
+Immediate next actions
+- Make block0 anchor dynamic (pick best 1blk automatically) before running the 2‑block sweep.
+- For block1, extend the search to include:
+  - Joint small adjustments of `off0` and `off1` together (to preserve total 16‑symbol alignment) rather than fixing off0.
+  - Full `diagshift ∈ {0..sf_app−1}`, `colshift1 ∈ {0..7}`, with `samp1` neighborhood narrowed around the best region (e.g., {11..15} at SF7), to reach 10/10.
+- Once 10/10 is achieved, lock a deterministic anchor and remove brute force; header parse should pass, then validate payload CRC end‑to‑end.
+
+Commands
+```bash
+make -C build -j$(nproc)
+bash scripts/lite_run_vector.sh
+python3 scripts/scan_hdr_gr_cw.py
+```
+
+### Updates (2025-09-11, continued 12)
+- Dynamic block0 anchor:
+  - In `src/rx/frame.cpp`, before the anchored 2‑block search, added a small 1‑block probe to choose `samp0/off0` that yields 5 decodable CWs (CR=4/8) for block0 (rows 0..sf_app-1). Prefer `mode=raw`; fallback to `mode=corr` if needed.
+  - Logs: `DEBUG: hdr_gr anchor (1blk) samp0=.. off0=..` when an anchor is established.
+- Build/run:
+  - The dynamic anchor selected `off0=4` in the latest run, and the subsequent 2‑block sweeps explored `var`, `varshift`, and `diagvar` families.
+  - Scanner now reports `best cw distance: 5 (pattern 1blk)` for this run; earlier runs (before anchor change) achieved `best=3 (2blk-diagvar)` with different `samp1/off1`. This suggests the global optimum still exists in the search space; next we’ll adapt the dynamic anchor to pick the best 1blk by a stronger metric or allow a small neighborhood around the best 1blk when scanning block1.
+
+Immediate next refinements
+- Anchor robustness: score 1blk candidates by (a) all 5 CW decodable and (b) minimal corrected bits across rows (prefer fewer corrections); tie‑break on proximity to earlier best (`off≈1`).
+- Neighborhood scan: for the chosen anchor, also scan `off0 ∈ {best−1..best+1}` while exploring block1 (`off1`, `samp1`) to allow joint micro‑adjustment of the 16‑symbol window.
+- Keep the narrowed `samp1` band from the previously best region (e.g., {11..15} at SF7) with full `diagshift` and `colshift1` to converge toward 10/10.
+
+Checkpoint
+- Once `best cw distance` hits 0 and `hdr_gr OK … bytes:` matches a valid standard header checksum, lock a deterministic anchor and remove brute‑force. Then proceed to payload + CRC verification.
+
+### Updates (2025-09-11, continued 13)
+- Stability first:
+  - Reverted exploratory C++ grid-search edits in `src/rx/frame.cpp` to restore a clean build. All targets compile and tests build green again.
+  - Rationale: the tight in-code grid attempts became complex and briefly broke compilation; better to drive the focused search from Python tooling, then apply a small, deterministic C++ change.
+- Current best (from scanner):
+  - `best cw distance: 4 (pattern 2blk-var)` at `samp0=0 off0=1 samp1=-9 off1=0 mode=raw rot1=2 rowrev1=0 colrev1=1` → `00 74 c5 00 c5 57 a5 e4 12 d9`
+  - Prior run (diagvar) reached distance 3 at `samp1=13 off1=7 diagshift=0 colshift1=1` (still short of 10/10).
+- Plan shift to Python-only focusing:
+  - Use/extend `scripts/scan_hdr_gr_cw.py` and `scripts/probe_header_map.py` to run a compact, targeted sweep around the promising block1 region without touching C++.
+  - Objective: find a 10/10 CW match (exact `00 74 c5 00 c5 1d 12 1b 12 00`) and record the minimal set of deterministic offsets/transforms (off0/off1/samp1 + block1 diag/row/col variant).
+- Next steps (concrete):
+  1) Freeze block0 to `samp0=0`, probe `off0 ∈ {0,1,2}` in the script.
+  2) Sweep block1 neighborhood: `samp1 ∈ {12..14} ∪ {−12..−10}`, `off1 ∈ {5..7}` with transforms: `diagshift ∈ {0..4}`, `rot1 ∈ {0..2}`, `rowrev1 ∈ {0,1}`, `colshift1 ∈ {0..7}`, `colrev1 ∈ {0,1}`.
+  3) Score last‑5 CWs vs `[1d 12 1b 12 00]`; pick global best; verify full 10/10 match.
+  4) Once parameters found, implement a small, deterministic C++ anchoring rule and re‑validate header parse + payload CRC.
+- Commands
+```bash
+make -C build -j$(nproc)
+bash scripts/lite_run_vector.sh
+python3 scripts/scan_hdr_gr_cw.py | tee logs/scan_hdr_gr_cw.out
+python3 scripts/probe_header_map.py | tee logs/probe_header_map.out
+```
+
 ### Updates (2025-09-11, continued 2)
 - Added header mapping experiments in `src/rx/frame.cpp`:
   - GR-style header path with `sf_app=sf-2` and diagonal deinterleave using LDRO shift determined by original `sf` (shift=1 for sf>=7). MSB-first bit assembly from `gnu_red=((raw_bin-1)>>2)`, Hamming(8,4) decode. Still no valid checksum on this vector; added debug printing of derived header nibbles on success.
@@ -952,3 +1051,75 @@ Next
 Plan (immediate)
 - Derive/port the exact LoRa Hamming(8,4) encode/decode used by OOT into the probe script, confirm that `(sf_app×8)` path reconstructs GR `gr_hdr_nibbles.bin` exactly, then mirror the same in `src/rx/frame.cpp`.
 - If needed, tune diagonal offset/row ordering to match OOT (verify against `gr_hdr_nibbles.bin`). Once header validates, CRC should pass.
+
+### Updates (2025-09-11, continued 10)
+- Ran both pipelines on the OS=2 vector and executed the anchored fine scan for block1.
+- `scripts/gr_run_vector.sh` produced GR taps; `scripts/lite_run_vector.sh` emitted extensive `hdr_gr cwbytes` (including 2blk/var/col variants).
+- `scripts/scan_hdr_gr_cw.py` result:
+  - `best cw distance: 4 (pattern 2blk-var)`
+  - At: `samp0=0 off0=1 samp1=-9 off1=0 mode=raw rot1=2 rowrev1=0 colrev1=1`
+  - Lite bytes: `00 74 c5 00 c5 57 a5 e4 12 d9`
+  - Target (GR first 10 CW): `00 74 c5 00 c5 1d 12 1b 12 00`
+
+Interpretation
+- Block0 remains perfectly aligned (first 5 CWs exact). Block1 is much closer (distance now 4 vs 5 previously) when applying a row rotation by 2 and column reversal on block1, with `samp1=-9` samples relative to the block boundary.
+- The remaining deltas suggest a subtle diagonal-origin/row-order and/or a residual sample offset in block1.
+
+Immediate next steps
+- Keep block0 anchor fixed at `samp0=0, off0=1` and refine around the identified block1 neighborhood:
+  - Sweep `samp1 ∈ {-12..-6}` and `off1 ∈ {0..7}` with `mode=raw`.
+  - Keep trying block1 transforms (row rotation/reversal, column reversal) and the alternate diagonal (`2blk-var2`).
+- Once a 10/10 CW match is observed, harden a deterministic anchor (no brute-force) and proceed to parse header and validate payload CRC.
+
+Commands
+```bash
+make -C build -j$(nproc)
+bash scripts/gr_run_vector.sh
+bash scripts/lite_run_vector.sh
+python3 scripts/scan_hdr_gr_cw.py
+```
+
+Artifacts
+- GR: `logs/gr_hdr_gray.bin`, `logs/gr_hdr_nibbles.bin`, `logs/gr_predew.bin`, `logs/gr_postdew.bin`, `logs/gr_deint_bits.bin`, `logs/gr_rx_payload.bin`.
+- Lite: `logs/lite_ld.json` includes new `hdr_gr cwbytes` 2blk/var/col lines; best variant parameters recorded above.
+
+### Updates (2025-09-11, continued 11)
+- Expanded the anchored scan:
+  - Added ±N/16 neighborhood to `samp1` candidates and a block1 column-shift variant (`2blk-varshift`).
+  - Rebuilt and reran Lite; updated `scripts/scan_hdr_gr_cw.py` to parse the new pattern.
+- Result remains: `best cw distance: 4 (pattern 2blk-var)` at `samp0=0 off0=1 samp1=-9 off1=0 mode=raw rot1=2 rowrev1=0 colrev1=1` → `00 74 c5 00 c5 57 a5 e4 12 d9` vs target `00 74 c5 00 c5 1d 12 1b 12 00`.
+
+Notes
+- The column-shift family didn’t improve beyond distance 4. This points to a diagonal-origin/row-order nuance across the block boundary more than a pure column shift.
+
+Next
+- Try explicit block-boundary phase tweak: adjust block1’s diagonal origin by ±1 relative to block0 (both `(i-j-1)` and `(i+j+1)` forms) combined with minor `samp1` around −9 and `off1∈{0..7}` under `mode=raw`.
+- If still short of 10/10, compute cw Hamming distance heatmaps over `(rot1,rowrev1,colrev1,colshift1)` × `(off1,samp1)` to pick a deterministic rule, then bake it into the non-bruteforce anchor.
+
+Commands
+```bash
+make -C build -j$(nproc)
+bash scripts/lite_run_vector.sh
+python3 scripts/scan_hdr_gr_cw.py
+```
+
+### Updates (2025-09-11, continued 12)
+- Variants and diagnostics:
+  - Added block1 diagonal-origin shift variant (`2blk-diagshift`: `diagshift ∈ {-1,+1}`).
+  - Added combined diagonal-origin + rotation/row/column-shift (`2blk-diagvar`).
+  - Kept `2blk-varshift` family.
+  - Removed early-return on `hdr_gr OK` so all variants print.
+  - Rebuilt; extended `scripts/scan_hdr_gr_cw.py` to parse new patterns.
+- Result: best CW distance still 4 (unchanged), with same best parameters under `2blk-var`.
+- One full-run attempt was canceled; current logs still show no variant at 10/10.
+
+Next (tight sweep)
+- Fix `samp0=0, off0=1`; sweep around `samp1=-9` with ±{0..2} and `off1∈{0..7}`, combining `diagshift`, `rot1`, `rowrev1`, `colrev1`, and `colshift1` under `mode=raw`.
+- On first 10/10 match: freeze deterministic anchor, parse header, then validate payload CRC vs GR.
+
+Commands
+```bash
+make -C build -j$(nproc)
+bash scripts/lite_run_vector.sh
+python3 scripts/scan_hdr_gr_cw.py
+```

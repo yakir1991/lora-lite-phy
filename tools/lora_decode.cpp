@@ -72,6 +72,7 @@ int main(int argc, char** argv) {
     bool user_min_pre = false;
     bool print_header = false; bool allow_partial = false; bool json = false;
     int force_hdr_len = -1; int force_hdr_cr = 0; int force_hdr_crc = -1;
+    bool hdr_scan = false;
 
     for (int i = 1; i < argc; ++i) {
         std::string a = argv[i];
@@ -92,6 +93,7 @@ int main(int argc, char** argv) {
         else if (a == "--print-header") print_header = true;
         else if (a == "--allow-partial") allow_partial = true;
         else if (a == "--json") json = true;
+        else if (a == "--hdr-scan") hdr_scan = true;
         else if (a == "--force-hdr-len" && i+1 < argc) force_hdr_len = std::stoi(argv[++i]);
         else if (a == "--force-hdr-cr" && i+1 < argc) force_hdr_cr = std::stoi(argv[++i]);
         else if (a == "--force-hdr-crc" && i+1 < argc) force_hdr_crc = std::stoi(argv[++i]);
@@ -119,6 +121,88 @@ int main(int argc, char** argv) {
     std::vector<std::complex<float>> iq;
     bool ok = (fmt == Format::F32) ? read_f32_iq(in_path, iq) : read_cs16_iq(in_path, iq);
     if (!ok) { std::fprintf(stderr, "Failed to read IQ from %s\n", in_path.c_str()); return 3; }
+
+    if (hdr_scan) {
+        // Perform a small header window scan and dump multiple syms_raw snapshots for offline analysis
+        lora::Workspace ws;
+        ws.init((uint32_t)sf);
+        // Detect OS and phase
+        auto det = lora::rx::detect_preamble_os(ws, std::span<const std::complex<float>>(iq.data(), iq.size()), (uint32_t)sf, (size_t)min_pre, {4,2,1,8});
+        if (!det) { std::fprintf(stderr, "[hdr-scan] preamble_os detect failed\n"); return 4; }
+        // Decimate to OS=1
+        auto decim = lora::rx::decimate_os_phase(std::span<const std::complex<float>>(iq.data(), iq.size()), det->os, det->phase);
+        size_t start_decim = det->start_sample / static_cast<size_t>(det->os);
+        if (start_decim >= decim.size()) { std::fprintf(stderr, "[hdr-scan] start_decim OOB\n"); return 4; }
+        auto aligned0 = std::span<const std::complex<float>>(decim.data() + start_decim, decim.size() - start_decim);
+        // Detect preamble on OS=1 span
+        auto pos0 = lora::rx::detect_preamble(ws, aligned0, (uint32_t)sf, (size_t)min_pre);
+        if (!pos0) { std::fprintf(stderr, "[hdr-scan] preamble detect (OS=1) failed\n"); return 4; }
+        // Estimate CFO and compensate
+        auto cfo = lora::rx::estimate_cfo_from_preamble(ws, aligned0, (uint32_t)sf, *pos0, (size_t)min_pre);
+        float cfo_val = cfo.has_value() ? *cfo : 0.0f;
+        std::vector<std::complex<float>> comp(aligned0.size());
+        {
+            float two_pi_eps = -2.0f * static_cast<float>(M_PI) * cfo_val;
+            std::complex<float> j(0.f, 1.f);
+            for (size_t n = 0; n < aligned0.size(); ++n)
+                comp[n] = aligned0[n] * std::exp(j * (two_pi_eps * static_cast<float>(n)));
+        }
+        // Estimate integer STO (optional)
+        auto sto = lora::rx::estimate_sto_from_preamble(ws, comp, (uint32_t)sf, *pos0, (size_t)min_pre, static_cast<int>(ws.N/8));
+        int shift = sto.has_value() ? *sto : 0;
+        size_t aligned_start = (shift >= 0) ? (*pos0 + static_cast<size_t>(shift)) : (*pos0 - static_cast<size_t>(-shift));
+        if (aligned_start >= comp.size()) { std::fprintf(stderr, "[hdr-scan] aligned_start OOB\n"); return 4; }
+        auto aligned = std::span<const std::complex<float>>(comp.data() + aligned_start, comp.size() - aligned_start);
+        // Header nominal start: sync + 2 downchirps + 0.25 symbol (2.25 symbols after min_pre)
+        ws.init((uint32_t)sf);
+        uint32_t N = ws.N;
+        size_t hdr_start_base = (size_t)min_pre * N + (2u * N + N/4u);
+        if (hdr_start_base + N > aligned.size()) { std::fprintf(stderr, "[hdr-scan] not enough samples for header base\n"); return 4; }
+        // Scan small sets
+        std::vector<int> samp_shifts = {0, (int)N/64, -(int)N/64, (int)N/32, -(int)N/32};
+        std::vector<int> off0_list = {0,1,2};
+        std::vector<int> off1_list = {0,1,2,3,4,5,6,7};
+        // Open output JSON
+        FILE* f = std::fopen("logs/lite_hdr_scan.json", "w");
+        if (!f) { std::fprintf(stderr, "[hdr-scan] failed to open logs/lite_hdr_scan.json\n"); return 5; }
+        std::fprintf(f, "[\n"); bool first = true;
+        for (int off0d : off0_list) {
+            for (int ss0 : samp_shifts) {
+                // index for block0
+                size_t idx0;
+                if (ss0 >= 0) { idx0 = hdr_start_base + (size_t)off0d * N + (size_t)ss0; }
+                else { size_t o = (size_t)(-ss0); if (hdr_start_base + (size_t)off0d * N < o) continue; idx0 = hdr_start_base + (size_t)off0d * N - o; }
+                if (idx0 + 8u * N > aligned.size()) continue;
+                // Demod 8 symbols for block0
+                uint32_t raw0[8]{};
+                for (size_t s = 0; s < 8; ++s) raw0[s] = demod_symbol_local(ws, &aligned[idx0 + s * N]);
+                for (int off1d : off1_list) {
+                    for (int ss1 : samp_shifts) {
+                        size_t idx1_base = hdr_start_base + 8u * N + (size_t)off1d * N;
+                        size_t idx1;
+                        if (ss1 >= 0) { idx1 = idx1_base + (size_t)ss1; }
+                        else { size_t o = (size_t)(-ss1); if (idx1_base < o) continue; idx1 = idx1_base - o; }
+                        if (idx1 + 8u * N > aligned.size()) continue;
+                        uint32_t raw1[8]{}; for (size_t s = 0; s < 8; ++s) raw1[s] = demod_symbol_local(ws, &aligned[idx1 + s * N]);
+                        // Emit JSON entry
+                        if (!first) std::fprintf(f, ",\n"); first = false;
+                        std::fprintf(f, "  {\"off0\":%d,\"samp0\":%d,\"off1\":%d,\"samp1\":%d,\"syms_raw\":[",
+                                     off0d, ss0, off1d, ss1);
+                        for (int i = 0; i < 16; ++i) {
+                            uint32_t v = (i < 8) ? raw0[i] : raw1[i-8];
+                            std::fprintf(f, "%u%s", (unsigned)v, (i+1<16)?",":"");
+                        }
+                        std::fprintf(f, "]}");
+                    }
+                }
+            }
+        }
+        std::fprintf(f, "\n]\n");
+        std::fclose(f);
+        std::fprintf(stderr, "[hdr-scan] wrote logs/lite_hdr_scan.json (%d off0 * %zu samp0 * %zu off1 * %zu samp1 combinations)\n",
+                      (int)off0_list.size(), samp_shifts.size(), off1_list.size(), samp_shifts.size());
+        return 0;
+    }
 
     lora::utils::CodeRate cr = lora::utils::CodeRate::CR45;
     switch (cr_int) { case 45: cr = lora::utils::CodeRate::CR45; break; case 46: cr = lora::utils::CodeRate::CR46; break; case 47: cr = lora::utils::CodeRate::CR47; break; case 48: cr = lora::utils::CodeRate::CR48; break; }
