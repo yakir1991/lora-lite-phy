@@ -1100,10 +1100,15 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
                 uint32_t raw0[8]{}; for (size_t s = 0; s < 8; ++s) raw0[s] = demod_symbol(ws, &aligned[idx0 + s * N]);
                 // Prepare fine-grained sample shifts for block1 around ±N/64 with ±1..±4 deltas (in samples)
                 std::vector<long> fine_samp1;
-                int base = static_cast<int>(N) / 64; // e.g., 2 at SF7
-                for (int d = -4; d <= 4; ++d) {
+                int base = static_cast<int>(N) / 64;        // e.g., 2 at SF7
+                int base3 = (3 * static_cast<int>(N)) / 64; // e.g., 6 at SF7
+                for (int d = -8; d <= 8; ++d) {
                     fine_samp1.push_back(static_cast<long>( base + d));
                     fine_samp1.push_back(static_cast<long>(-base + d));
+                }
+                for (int d = -4; d <= 4; ++d) {
+                    fine_samp1.push_back(static_cast<long>( base3 + d));
+                    fine_samp1.push_back(static_cast<long>(-base3 + d));
                 }
                 // Always include zero shift as well
                 fine_samp1.push_back(0);
@@ -1133,14 +1138,75 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
                             uint8_t b0[5][8]{}, b1[5][8]{};
                             make_block_cw(g0, 0, b0);
                             make_block_cw(g1, 0, b1);
-                            uint8_t cw_g[10]{};
-                            for (uint32_t r=0;r<sf_app;++r){ uint16_t cw=0; for(uint32_t i=0;i<8u;++i) cw=(cw<<1)|(b0[r][i]&1u); cw_g[r]=(uint8_t)(cw&0xFF);} 
-                            for (uint32_t r=0;r<sf_app;++r){ uint16_t cw=0; for(uint32_t i=0;i<8u;++i) cw=(cw<<1)|(b1[r][i]&1u); cw_g[sf_app+r]=(uint8_t)(cw&0xFF);} 
-                            printf("DEBUG: hdr_gr cwbytes (2blk samp0=%ld off0=%d samp1=%ld off1=%d mode=%s): ", samp0, off0, samp1, off1, (mode==0?"raw":"corr"));
-                            for (int k=0;k<10;++k) printf("%02x ", cw_g[k]); printf("\n");
-                            // Attempt Hamming-decode and header parse; early-exit if checksum validates
-                            std::vector<uint8_t> nibb; nibb.reserve(10); bool ok=true; for(int k=0;k<10;++k){ auto dec=lora::utils::hamming_decode4(cw_g[k],8u,lora::utils::CodeRate::CR48,Th); if(!dec){ok=false;break;} nibb.push_back(dec->first & 0x0F);} if(!ok) continue;
-                            for (int order=0; order<2; ++order){ std::vector<uint8_t> hdr_try(hdr_bytes); for(size_t i=0;i<hdr_bytes;++i){ uint8_t n0=nibb[i*2], n1=nibb[i*2+1]; uint8_t low=(order==0)?n0:n1; uint8_t high=(order==0)?n1:n0; hdr_try[i]=(uint8_t)((high<<4)|low);} if (auto okhdr=parse_standard_lora_header(hdr_try.data(), hdr_try.size())){ printf("DEBUG: hdr_gr OK (2blk samp0=%ld off0=%d samp1=%ld off1=%d mode=%s order=%d) bytes: %02x %02x %02x %02x %02x\n", samp0, off0, samp1, off1, (mode==0?"raw":"corr"), order, hdr_try[0], hdr_try[1], hdr_try[2], hdr_try[3], hdr_try[4]); return okhdr; } }
+                            // Baseline row-wise assembly (no transforms) for reference and scan tool compatibility
+                            {
+                                uint8_t cw_g[10]{};
+                                for (uint32_t r=0;r<sf_app;++r){ uint16_t cw=0; for(uint32_t i=0;i<8u;++i) cw=(cw<<1)|(b0[r][i]&1u); cw_g[r]=(uint8_t)(cw&0xFF);} 
+                                for (uint32_t r=0;r<sf_app;++r){ uint16_t cw=0; for(uint32_t i=0;i<8u;++i) cw=(cw<<1)|(b1[r][i]&1u); cw_g[sf_app+r]=(uint8_t)(cw&0xFF);} 
+                                printf("DEBUG: hdr_gr cwbytes (2blk samp0=%ld off0=%d samp1=%ld off1=%d mode=%s): ", samp0, off0, samp1, off1, (mode==0?"raw":"corr"));
+                                for (int k=0;k<10;++k) printf("%02x ", cw_g[k]); printf("\n");
+                            }
+                            // Variants: apply row rotation/reversal and column reversal on block1 only; try parse
+                            for (int rot1 = 0; rot1 < (int)sf_app; ++rot1) {
+                                for (int rowrev1 = 0; rowrev1 <= 1; ++rowrev1) {
+                                    for (int colrev1 = 0; colrev1 <= 1; ++colrev1) {
+                                        // Build transformed view of b1 into tb1
+                                        uint8_t tb1[5][8]{};
+                                        // Apply row rotation
+                                        for (uint32_t r=0; r<sf_app; ++r) {
+                                            uint32_t rr = (r + (uint32_t)rot1) % sf_app;
+                                            for (uint32_t c=0; c<8u; ++c) tb1[r][c] = b1[rr][c];
+                                        }
+                                        // Apply row reversal (after rotation)
+                                        if (rowrev1) {
+                                            uint8_t tmp[5][8]{};
+                                            for (uint32_t r=0; r<sf_app; ++r) for (uint32_t c=0;c<8u;++c) tmp[r][c]=tb1[sf_app-1u-r][c];
+                                            for (uint32_t r=0; r<sf_app; ++r) for (uint32_t c=0;c<8u;++c) tb1[r][c]=tmp[r][c];
+                                        }
+                                        // Assemble cw bytes with optional column reversal for block1
+                                        uint8_t cw_gv[10]{};
+                                        // Block0 unchanged (we already match it)
+                                        for (uint32_t r=0;r<sf_app;++r){ uint16_t cw=0; for(uint32_t i=0;i<8u;++i) cw=(cw<<1)|(b0[r][i]&1u); cw_gv[r]=(uint8_t)(cw&0xFF);} 
+                                        for (uint32_t r=0;r<sf_app;++r){ uint16_t cw=0; if (!colrev1) { for(uint32_t i=0;i<8u;++i) cw=(cw<<1)|(tb1[r][i]&1u);} else { for(int i=7;i>=0;--i) cw=(cw<<1)|(tb1[r][(uint32_t)i]&1u);} cw_gv[sf_app+r]=(uint8_t)(cw&0xFF);} 
+                                        printf("DEBUG: hdr_gr cwbytes (2blk-var samp0=%ld off0=%d samp1=%ld off1=%d mode=%s rot1=%d rowrev1=%d colrev1=%d): ", samp0, off0, samp1, off1, (mode==0?"raw":"corr"), rot1, rowrev1, colrev1);
+                                        for (int k=0;k<10;++k) printf("%02x ", cw_gv[k]); printf("\n");
+                                        // Try to parse this variant
+                                        std::vector<uint8_t> nibb; nibb.reserve(10); bool ok=true; for(int k=0;k<10;++k){ auto dec=lora::utils::hamming_decode4(cw_gv[k],8u,lora::utils::CodeRate::CR48,Th); if(!dec){ok=false;break;} nibb.push_back(dec->first & 0x0F);} if(!ok) continue;
+                                        for (int order=0; order<2; ++order){ std::vector<uint8_t> hdr_try(hdr_bytes); for(size_t i=0;i<hdr_bytes;++i){ uint8_t n0=nibb[i*2], n1=nibb[i*2+1]; uint8_t low=(order==0)?n0:n1; uint8_t high=(order==0)?n1:n0; hdr_try[i]=(uint8_t)((high<<4)|low);} if (auto okhdr=parse_standard_lora_header(hdr_try.data(), hdr_try.size())){ printf("DEBUG: hdr_gr OK (2blk-var samp0=%ld off0=%d samp1=%ld off1=%d mode=%s rot1=%d rowrev1=%d colrev1=%d order=%d) bytes: %02x %02x %02x %02x %02x\n", samp0, off0, samp1, off1, (mode==0?"raw":"corr"), rot1, rowrev1, colrev1, order, hdr_try[0], hdr_try[1], hdr_try[2], hdr_try[3], hdr_try[4]); return okhdr; } }
+                                    }
+                                }
+                            }
+                            // Additional variant: alternate diagonal for block1 (r = (i + j + 1) mod sf_app)
+                            {
+                                // Reconstruct tb1_alt directly from g1 with alternate deinterleave relation
+                                std::vector<std::vector<uint8_t>> inter_bin_alt(8u, std::vector<uint8_t>(sf_app, 0));
+                                for (uint32_t i = 0; i < 8u; ++i) {
+                                    uint32_t full = g1[i] & (N - 1u);
+                                    uint32_t g    = lora::utils::gray_encode(full);
+                                    uint32_t sub  = g & ((1u << sf_app) - 1u);
+                                    for (uint32_t j = 0; j < sf_app; ++j)
+                                        inter_bin_alt[i][j] = (uint8_t)((sub >> (sf_app - 1u - j)) & 1u);
+                                }
+                                uint8_t tb1_alt[5][8]{};
+                                for (uint32_t i = 0; i < 8u; ++i) {
+                                    for (uint32_t j = 0; j < sf_app; ++j) {
+                                        int r = static_cast<int>(i) + static_cast<int>(j) + 1;
+                                        r %= static_cast<int>(sf_app);
+                                        if (r < 0) r += static_cast<int>(sf_app);
+                                        tb1_alt[static_cast<size_t>(r)][i] = inter_bin_alt[i][j];
+                                    }
+                                }
+                                // Assemble with both column orders for block1
+                                for (int colrev1 = 0; colrev1 <= 1; ++colrev1) {
+                                    uint8_t cw_gv2[10]{};
+                                    for (uint32_t r=0;r<sf_app;++r){ uint16_t cw=0; for(uint32_t i=0;i<8u;++i) cw=(cw<<1)|(b0[r][i]&1u); cw_gv2[r]=(uint8_t)(cw&0xFF);} 
+                                    for (uint32_t r=0;r<sf_app;++r){ uint16_t cw=0; if (!colrev1) { for(uint32_t i=0;i<8u;++i) cw=(cw<<1)|(tb1_alt[r][i]&1u);} else { for(int i=7;i>=0;--i) cw=(cw<<1)|(tb1_alt[r][(uint32_t)i]&1u);} cw_gv2[sf_app+r]=(uint8_t)(cw&0xFF);} 
+                                    printf("DEBUG: hdr_gr cwbytes (2blk-var2 samp0=%ld off0=%d samp1=%ld off1=%d mode=%s altdiag=1 colrev1=%d): ", samp0, off0, samp1, off1, (mode==0?"raw":"corr"), colrev1);
+                                    for (int k=0;k<10;++k) printf("%02x ", cw_gv2[k]); printf("\n");
+                                    std::vector<uint8_t> nibb; nibb.reserve(10); bool ok=true; for(int k=0;k<10;++k){ auto dec=lora::utils::hamming_decode4(cw_gv2[k],8u,lora::utils::CodeRate::CR48,Th); if(!dec){ok=false;break;} nibb.push_back(dec->first & 0x0F);} if(!ok) continue;
+                                    for (int order=0; order<2; ++order){ std::vector<uint8_t> hdr_try(hdr_bytes); for(size_t i=0;i<hdr_bytes;++i){ uint8_t n0=nibb[i*2], n1=nibb[i*2+1]; uint8_t low=(order==0)?n0:n1; uint8_t high=(order==0)?n1:n0; hdr_try[i]=(uint8_t)((high<<4)|low);} if (auto okhdr=parse_standard_lora_header(hdr_try.data(), hdr_try.size())){ printf("DEBUG: hdr_gr OK (2blk-var2 samp0=%ld off0=%d samp1=%ld off1=%d mode=%s altdiag=1 colrev1=%d order=%d) bytes: %02x %02x %02x %02x %02x\n", samp0, off0, samp1, off1, (mode==0?"raw":"corr"), colrev1, order, hdr_try[0], hdr_try[1], hdr_try[2], hdr_try[3], hdr_try[4]); return okhdr; } }
+                                }
+                            }
                         }
                     }
                 }
