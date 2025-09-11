@@ -181,6 +181,10 @@ add_test(NAME cli.json.os4.partial
 set_tests_properties(cli.json.os4.partial PROPERTIES PASS_REGULAR_EXPRESSION ".*\"success\": false.*\"reason\": \"(payload_crc_failed|fec_decode_failed)\".*")
 add_executable(test_reference_vectors_header_os_varlen tests/test_reference_vectors_header_os_varlen.cpp)
 target_link_libraries(test_reference_vectors_header_os_varlen PRIVATE lora_phy GTest::gtest_main)
+
+# Tool: gen_frame_vectors
+add_executable(gen_frame_vectors tools/gen_frame_vectors.cpp)
+target_link_libraries(gen_frame_vectors PRIVATE lora_phy)
 gtest_discover_tests(test_reference_vectors_header_os_varlen
   TEST_PREFIX "reference_os_hdr_len."
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}

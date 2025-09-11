@@ -19,3 +19,4 @@ vectors/*.bin
 *.log
 logs/
 tests/perf/*.log
+*.Zone.Identifier

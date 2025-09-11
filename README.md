@@ -51,9 +51,14 @@ cmake --build build --target lora_decode
 # Float32 IQ with preamble+sync+header+payload (OS=4 file)
 ./build/lora_decode --in vectors/sf7_cr45_iq_os4_hdr.bin --sf 7 --cr 45 --format f32
 
-# Float32 IQ (OS=1, generated locally)
-./build/gen_frame_vectors --sf 7 --cr 45 --payload vectors/sf7_cr45_payload.bin --out /tmp/f.bin --os 1 --preamble 8
-./build/lora_decode --in /tmp/f.bin --sf 7 --cr 45 --format f32
+# Float32 IQ (generated locally)
+# OS=1
+./build/gen_frame_vectors --sf 7 --cr 45 --payload vectors/sf7_cr45_payload.bin --out /tmp/f_os1.bin --os 1 --preamble 8
+./build/lora_decode --in /tmp/f_os1.bin --sf 7 --cr 45 --format f32
+
+# OS=4 (includes two sync upchirps and two downchirps before the frame)
+./build/gen_frame_vectors --sf 7 --cr 45 --payload vectors/sf7_cr45_payload.bin --out /tmp/f_os4.bin --os 4 --preamble 8
+./build/lora_decode --in /tmp/f_os4.bin --sf 7 --cr 45 --format f32
 
 # CS16 IQ
 ./build/lora_decode --in capture_cs16.bin --sf 7 --cr 45 --format cs16 --out payload.bin
@@ -146,3 +151,21 @@ CROSS_SFS="7,8,9" CROSS_CRS="45,48" CROSS_LENGTHS="16,48" CROSS_REPS=2 \
 #  - cross_validate.csv
 #  - success_rate_heatmap.png, decode_time_heatmap.png (if matplotlib available)
 ```
+
+## Current Status: Header Alignment (2025-09-10)
+- RX header path now supports GR-style mapping for the standard LoRa header (CR=4/8):
+  - corr = (raw − 44) mod N → gray(symbol)
+  - GR mapping: gnu = ((gray + (1<<sf) − 1) & (N−1)) >> 2, with sf_app = sf − 2
+  - Deinterleaver geometry matches GR (diagonal), Hamming(8,4) over exactly 5×2 codewords
+  - Added intra-symbol bit_shift search to find the correct nibble boundary
+- Current issue: header checksum still fails on the clean OS=4 vector; GR-direct bytes observed: `8b b9 69 f4 0c` (and swapped `b8 9b 96 4f c0`).
+
+### Next steps
+- Align TX header emission to match the GR header bit layout exactly:
+  - Emit sf_app=sf−2 bits per header symbol (post `(gray−1)/4`) into the interleaver columns
+  - Use the same diagonal interleaver as RX/GR for header (CR=4/8) before modulating
+- After TX alignment, re-run the reference script:
+```bash
+bash scripts/temp/run_ref_os4_sfdq.sh
+```
+- Expectation: standard header parses; then payload CRC should validate on the clean generator vector.

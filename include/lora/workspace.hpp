@@ -44,6 +44,15 @@ struct Workspace {
     uint16_t dbg_crc_rx_be{};          // CRC trailer interpreted as BE
     bool     dbg_crc_ok_le{};
     bool     dbg_crc_ok_be{};
+    uint16_t dbg_crc_calc_init0000{};  // CRC computed with init=0x0000
+    bool     dbg_crc_ok_le_init0000{};
+    bool     dbg_crc_ok_be_init0000{};
+    uint16_t dbg_crc_calc_refboth{};   // CRC with ref_in=ref_out=true
+    bool     dbg_crc_ok_le_refboth{};
+    bool     dbg_crc_ok_be_refboth{};
+    uint16_t dbg_crc_calc_xorffff{};   // CRC with xorout=0xFFFF
+    bool     dbg_crc_ok_le_xorffff{};
+    bool     dbg_crc_ok_be_xorffff{};
     uint32_t dbg_payload_len{};        // Payload length inferred from header
     lora::utils::CodeRate dbg_cr_payload{lora::utils::CodeRate::CR45};
 
