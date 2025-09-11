@@ -6,7 +6,8 @@ import sys, os, json
 def run_rx_only(in_iq: str, sf: int, cr_lora: int, bw_hz: int, samp_rate_hz: int, pay_len: int, timeout: float,
                 out_rx_payload: str, sync_word: int,
                 out_predew: str = None, out_postdew: str = None,
-                out_hdr_gray: str = None, out_hdr_nibbles: str = None) -> dict:
+                out_hdr_gray: str = None, out_hdr_nibbles: str = None,
+                out_raw_bins: str = None, out_deint_bits: str = None) -> dict:
     from gnuradio import gr, blocks
     # Use hierarchical RX to match reference behavior; will print CRC but not emit boolean
     from gnuradio.lora_sdr.lora_sdr_lora_rx import lora_sdr_lora_rx
@@ -34,6 +35,8 @@ def run_rx_only(in_iq: str, sf: int, cr_lora: int, bw_hz: int, samp_rate_hz: int
     # gray_mapping outputs 16-bit symbols → use sizeof_short sink
     sink_hdr_gray = blocks.file_sink(gr.sizeof_short, out_hdr_gray, False) if out_hdr_gray else None
     sink_hdr_nibbles = blocks.file_sink(gr.sizeof_char, out_hdr_nibbles, False) if out_hdr_nibbles else None
+    sink_raw_bins = blocks.file_sink(gr.sizeof_short, out_raw_bins, False) if out_raw_bins else None
+    sink_deint = blocks.file_sink(gr.sizeof_char, out_deint_bits, False) if out_deint_bits else None
     tb.connect(src, rx)
     tb.connect(rx, sink_rx_payload)
     if sink_predew:
@@ -44,6 +47,10 @@ def run_rx_only(in_iq: str, sf: int, cr_lora: int, bw_hz: int, samp_rate_hz: int
         tb.connect(rx.lora_sdr_gray_mapping_0, sink_hdr_gray)
     if sink_hdr_nibbles:
         tb.connect(rx.lora_sdr_hamming_dec_0, sink_hdr_nibbles)
+    if sink_raw_bins:
+        tb.connect(rx.lora_sdr_fft_demod_0, sink_raw_bins)
+    if sink_deint:
+        tb.connect(rx.lora_sdr_deinterleaver_0, sink_deint)
 
     # Run the flowgraph to completion (file source is finite). Avoid waiting on CRC-dependent payload.
     try:
@@ -93,6 +100,8 @@ def main():
     ap.add_argument('--sync', type=lambda x: int(x, 0), default=0x34)
     ap.add_argument('--out-hdr-gray')
     ap.add_argument('--out-hdr-nibbles')
+    ap.add_argument('--out-raw-bins')
+    ap.add_argument('--out-deint-bits')
     args = ap.parse_args()
 
     try:
@@ -104,7 +113,7 @@ def main():
     try:
         res = run_rx_only(args.in_iq, args.sf, args.cr, args.bw, args.samp_rate, args.pay_len, args.timeout,
                           args.out_rx_payload, args.sync, args.out_predew, args.out_postdew,
-                          args.out_hdr_gray, args.out_hdr_nibbles)
+                          args.out_hdr_gray, args.out_hdr_nibbles, args.out_raw_bins, args.out_deint_bits)
         print(json.dumps(res))
         return 0
     except Exception as e:

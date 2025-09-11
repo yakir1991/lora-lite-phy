@@ -48,35 +48,43 @@ std::optional<LocalHeader> parse_local_header_with_crc(const uint8_t* hdr_with_c
     return h;
 }
 
-// Parse standard LoRa header format (5 bytes: 2 payload_len + 1 flags + 2 checksum)
+// Parse standard LoRa header format represented as 5 nibble-coded bytes:
+// hdr[0] = len_hi (low 4 bits used)
+// hdr[1] = len_lo (low 4 bits used)
+// hdr[2] = flags  (low 4 bits used): bit0=has_crc, bits[3:1]=cr_idx (1..4)
+// hdr[3] = checksum MSB (only bit0 used -> c4)
+// hdr[4] = checksum LSB nibble (c3..c0 in low 4 bits)
 std::optional<LocalHeader> parse_standard_lora_header(const uint8_t* hdr, size_t len) {
-    if (len < 5) return std::nullopt; // 5 bytes total
-    
-    // Extract payload length (8 bits from first 2 bytes)
-    uint8_t payload_len = (hdr[0] << 4) + hdr[1];
-    
-    // Extract flags
-    uint8_t flags = hdr[2];
-    bool has_crc = (flags & 0x1u) != 0u;
-    uint8_t cr_idx = (flags >> 1) & 0x7u;
-    
-    // Extract header checksum (5 bits from last 2 bytes)
-    uint8_t header_chk = ((hdr[3] & 1) << 4) + hdr[4];
-    
-    // Verify header checksum using GNU Radio's algorithm
-    bool c4 = (hdr[0] & 0b1000) >> 3 ^ (hdr[0] & 0b0100) >> 2 ^ (hdr[0] & 0b0010) >> 1 ^ (hdr[0] & 0b0001);
-    bool c3 = (hdr[0] & 0b1000) >> 3 ^ (hdr[1] & 0b1000) >> 3 ^ (hdr[1] & 0b0100) >> 2 ^ (hdr[1] & 0b0010) >> 1 ^ (hdr[2] & 0b0001);
-    bool c2 = (hdr[0] & 0b0100) >> 2 ^ (hdr[1] & 0b1000) >> 3 ^ (hdr[1] & 0b0001) ^ (hdr[2] & 0b1000) >> 3 ^ (hdr[2] & 0b0010) >> 1;
-    bool c1 = (hdr[0] & 0b0010) >> 1 ^ (hdr[1] & 0b0100) >> 2 ^ (hdr[1] & 0b0001) ^ (hdr[2] & 0b0100) >> 2 ^ (hdr[2] & 0b0010) >> 1 ^ (hdr[2] & 0b0001);
-    bool c0 = (hdr[0] & 0b0001) ^ (hdr[1] & 0b0010) >> 1 ^ (hdr[2] & 0b1000) >> 3 ^ (hdr[2] & 0b0100) >> 2 ^ (hdr[2] & 0b0010) >> 1 ^ (hdr[2] & 0b0001);
-    
-    uint8_t calculated_chk = (c4 << 4) + (c3 << 3) + (c2 << 2) + (c1 << 1) + c0;
-    
-    // Check if header checksum is valid and payload length is not zero
-    if (header_chk != calculated_chk || payload_len == 0) {
-        return std::nullopt;
-    }
-    
+    if (len < 5) return std::nullopt; // need 5 entries
+
+    // Extract nibble-coded fields
+    const uint8_t n0 = (hdr[0] & 0x0F); // len_hi
+    const uint8_t n1 = (hdr[1] & 0x0F); // len_lo
+    const uint8_t n2 = (hdr[2] & 0x0F); // flags nibble
+    const uint8_t chk_rx = static_cast<uint8_t>(((hdr[3] & 0x01) << 4) | (hdr[4] & 0x0F));
+
+    // Reconstruct payload length (8 bits)
+    const uint8_t payload_len = static_cast<uint8_t>((n0 << 4) | n1);
+
+    // Flags
+    const bool has_crc = (n2 & 0x1u) != 0u;
+    const uint8_t cr_idx = static_cast<uint8_t>((n2 >> 1) & 0x7u);
+
+    // Compute checksum bits as used in TX generation
+    const bool c4 = ((n0 & 0b1000) >> 3) ^ ((n0 & 0b0100) >> 2) ^ ((n0 & 0b0010) >> 1) ^ (n0 & 0b0001);
+    const bool c3 = ((n0 & 0b1000) >> 3) ^ ((n1 & 0b1000) >> 3) ^ ((n1 & 0b0100) >> 2) ^ ((n1 & 0b0010) >> 1) ^ (n2 & 0x1);
+    const bool c2 = ((n0 & 0b0100) >> 2) ^ ((n1 & 0b1000) >> 3) ^ (n1 & 0x1) ^ ((n2 & 0b1000) >> 3) ^ ((n2 & 0b0010) >> 1);
+    const bool c1 = ((n0 & 0b0010) >> 1) ^ ((n1 & 0b0100) >> 2) ^ (n1 & 0x1) ^ ((n2 & 0b0100) >> 2) ^ ((n2 & 0b0010) >> 1) ^ (n2 & 0x1);
+    const bool c0 = (n0 & 0x1) ^ ((n1 & 0b0010) >> 1) ^ ((n2 & 0b1000) >> 3) ^ ((n2 & 0b0100) >> 2) ^ ((n2 & 0b0010) >> 1) ^ (n2 & 0x1);
+    const uint8_t chk_calc = static_cast<uint8_t>((c4 ? 0x10 : 0x00) |
+                                                 (c3 ? 0x08 : 0x00) |
+                                                 (c2 ? 0x04 : 0x00) |
+                                                 (c1 ? 0x02 : 0x00) |
+                                                 (c0 ? 0x01 : 0x00));
+
+    if (chk_rx != chk_calc) return std::nullopt;
+    if (payload_len == 0) return std::nullopt;
+
     LocalHeader h;
     h.payload_len = payload_len;
     h.has_crc = has_crc;

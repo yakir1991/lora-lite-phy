@@ -67,14 +67,27 @@ int main(int argc, char** argv) {
     auto iq_frame = lora::tx::frame_tx(ws, payload, static_cast<uint32_t>(sf), cr, hdr);
     ws.init(sf);
     uint32_t N = ws.N;
-    // Build preamble + sync + frame
+    // Build preamble + sync (two upchirps at hi<<3 and lo<<3) + two downchirps + frame
     std::vector<std::complex<float>> sig;
-    sig.resize((pre_len + 1) * N + iq_frame.size());
+    const uint8_t sync = static_cast<uint8_t>(lora::LORA_SYNC_WORD_PUBLIC & 0xFF);
+    const uint32_t net1 = ((sync & 0xF0u) >> 4) << 3; // hi nibble << 3
+    const uint32_t net2 = (sync & 0x0Fu) << 3;        // lo nibble << 3
+    const int sync_syms = 4; // two up + two down
+    // Reserve space for preamble + sync (2 up) + 2 down + quarter upchirp + frame
+    sig.resize((pre_len + sync_syms) * N + N/4 + iq_frame.size());
+    // Preamble (upchirps)
     for (int s = 0; s < pre_len; ++s)
         for (uint32_t n = 0; n < N; ++n) sig[s * N + n] = ws.upchirp[n];
-    uint32_t sync_sym = lora::utils::gray_encode(static_cast<uint32_t>(lora::LORA_SYNC_WORD_PUBLIC));
-    for (uint32_t n = 0; n < N; ++n) sig[pre_len * N + n] = ws.upchirp[(n + sync_sym) % N];
-    std::copy(iq_frame.begin(), iq_frame.end(), sig.begin() + (pre_len + 1) * N);
+    // Sync upchirps: hi then lo
+    for (uint32_t n = 0; n < N; ++n) sig[(pre_len + 0) * N + n] = ws.upchirp[(n + net1) % N];
+    for (uint32_t n = 0; n < N; ++n) sig[(pre_len + 1) * N + n] = ws.upchirp[(n + net2) % N];
+    // Two downchirps after sync (SFD-like)
+    for (uint32_t n = 0; n < N; ++n) sig[(pre_len + 2) * N + n] = ws.downchirp[n];
+    for (uint32_t n = 0; n < N; ++n) sig[(pre_len + 3) * N + n] = ws.downchirp[n];
+    // Quarter upchirp tail for SFD (improves header anchor alignment at sync + 2.25 symbols)
+    for (uint32_t n = 0; n < N/4; ++n) sig[(pre_len + sync_syms) * N + n] = ws.upchirp[n];
+    // Append frame after sync + downchirps + quarter upchirp
+    std::copy(iq_frame.begin(), iq_frame.end(), sig.begin() + (pre_len + sync_syms) * N + N/4);
     // Upsample if needed (select method)
     std::vector<std::complex<float>> sig_os;
     if (interp == "repeat") sig_os = upsample_repeat(std::span<const std::complex<float>>(sig.data(), sig.size()), os);
@@ -82,5 +95,19 @@ int main(int argc, char** argv) {
     // Write float32 IQ
     std::ofstream of(out_path, std::ios::binary); if (!of) { std::cerr << "out open failed\n"; return 1; }
     for (auto c : sig_os) { float re = c.real(), im = c.imag(); of.write(reinterpret_cast<const char*>(&re), sizeof(float)); of.write(reinterpret_cast<const char*>(&im), sizeof(float)); }
+    // Debug: print GR-direct header bytes from first 10 header symbols (5 bytes)
+    if (ws.tx_symbols.size() >= 10) {
+        std::vector<uint8_t> nibb; nibb.reserve(10);
+        for (size_t s = 0; s < 10; ++s) {
+            uint32_t raw = ws.tx_symbols[s] & (N - 1);
+            uint32_t corr = (raw + N - 44u) % N;
+            uint32_t g = lora::utils::gray_encode(corr);
+            uint32_t gnu = ((g + (1u << sf) - 1u) & (N - 1u)) >> 2u;
+            nibb.push_back(static_cast<uint8_t>(gnu & 0x0F));
+        }
+        uint8_t b[5]{};
+        for (int i = 0; i < 5; ++i) b[i] = static_cast<uint8_t>((nibb[2*i+1] << 4) | nibb[2*i]);
+        std::fprintf(stderr, "[gen] TX GR-direct header bytes: %02x %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3], b[4]);
+    }
     return 0;
 }
