@@ -54,13 +54,4 @@ https://pubs.gnuradio.org/index.php/grcon/article/download/145/123/
 https://www.epfl.ch/labs/tcl/wp-content/uploads/2020/02/Reverse_Eng_Report.pdf
 [6] Differential and Pulsed Measurements
 https://interreg-interop.project.tuwien.ac.at/wp-content/uploads/2024/06/lorawebinar-lora-1.pdf
-L57:https://interreg-interop.project.tuwien.ac.at/wp-content/uploads/2024/06/lorawebinar-lora-1.pdf
-L58:
-L59:---
-L60:## Execution Log — 2025-09-12
-L61:- Applied MSB-first symbol bit extraction for payload in `src/rx/demodulator.cpp`.
-L62:- Changed dewhitening to exclude CRC trailer (payload-only PN9) in `src/rx/demodulator.cpp`.
-L63:- Switched CRC check to compute CRC-CCITT-FALSE over dewhitened payload and accept LE/BE trailer ordering; still expect LE to match.
-L64:- Build and run (canonical vector) result: header parsed `{len=66, cr=2, has_crc=true}` but FEC decode failed for payload (`exit step=111`). This indicates header block-1 mapping still diverges earlier on some runs; proceeding to bake GR-accurate per-block mapping with block-1 reset in `src/rx/frame.cpp` per Track A of the plan.
-L65:- Next: implement GR mapping reset for header block-1 in `src/rx/frame.cpp`, re-run header CW comparison, then re-verify payload CRC path on vectors where header parses.
-L66:- Applied GR-accurate header mapping per block in `src/rx/frame.cpp` (gnu=((raw-1)&(N-1))>>2 → Gray(gnu) → take sf_app MSB→LSB; deinterleave r=(i-j-1) mod sf_app; header bytes assembled as high-nibble first). Preparing build+run of the canonical vector to validate 10/10 CW match and stable header parse without wide scans.
+See [docs/reference_vector_exec_log.md](docs/reference_vector_exec_log.md) for run history.
