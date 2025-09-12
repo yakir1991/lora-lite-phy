@@ -5,6 +5,7 @@
 #include "lora/rx/preamble.hpp"
 #include "lora/utils/crc.hpp"
 #include "lora/rx/decimate.hpp"
+#include "lora/debug.hpp"
 #include <vector>
 
 namespace lora::rx {
@@ -135,6 +136,105 @@ std::pair<std::vector<uint8_t>, bool> decode_payload_no_crc_with_preamble_cfo_st
         auto lfsr2 = lora::utils::LfsrWhitening::pn9_default();
         lfsr2.apply(out.data(), payload_len);
     }
+    return {out, true};
+}
+
+// Decode payload symbols given header information and verify CRC.
+// `symbols` should start at the first payload symbol.
+std::pair<std::vector<uint8_t>, bool> decode_payload_with_crc(
+    Workspace& ws,
+    std::span<const std::complex<float>> symbols_cplx,
+    uint32_t sf,
+    const LocalHeader& header) {
+    ws.init(sf);
+    uint32_t N = ws.N;
+    size_t payload_len = header.payload_len;
+    uint32_t cr_plus4 = static_cast<uint32_t>(header.cr) + 4u;
+    size_t pay_crc_bytes = payload_len + (header.has_crc ? 2u : 0u);
+    size_t pay_bits_exact = pay_crc_bytes * 2u * cr_plus4;
+    uint32_t block_bits = sf * cr_plus4;
+    size_t pay_bits_padded = pay_bits_exact;
+    if (pay_bits_padded % block_bits)
+        pay_bits_padded = ((pay_bits_padded / block_bits) + 1u) * block_bits;
+    size_t pay_nsym = pay_bits_padded / sf;
+    if (symbols_cplx.size() < pay_nsym * N) {
+        lora::debug::set_fail(110);
+        return {{}, false};
+    }
+
+    ws.ensure_rx_buffers(pay_nsym, sf, cr_plus4);
+
+    auto& symbols = ws.rx_symbols; symbols.resize(pay_nsym);
+    for (size_t s = 0; s < pay_nsym; ++s) {
+        uint32_t raw_symbol = demod_symbol_peak(ws, &symbols_cplx[s * N]);
+        symbols[s] = lora::utils::gray_encode(raw_symbol);
+    }
+
+    auto& bits = ws.rx_bits; bits.resize(pay_nsym * sf);
+    size_t bix = 0;
+    for (size_t s = 0; s < pay_nsym; ++s) {
+        uint32_t sym = symbols[s];
+        for (int b = (int)sf - 1; b >= 0; --b) bits[bix++] = (sym >> b) & 1u;
+    }
+
+    const auto& M = ws.get_interleaver(sf, cr_plus4);
+    auto& deint = ws.rx_deint; deint.resize(bix);
+    for (size_t off = 0; off + M.n_in <= bix; off += M.n_in)
+        for (uint32_t i = 0; i < M.n_out; ++i)
+            deint[off + M.map[i]] = bits[off + i];
+
+    auto& nibbles = ws.rx_nibbles; nibbles.resize(pay_crc_bytes * 2u);
+    size_t nib_idx = 0;
+    static lora::utils::HammingTables T = lora::utils::make_hamming_tables();
+    bool fec_failed = false;
+    for (size_t i = 0; i < pay_bits_exact; i += cr_plus4) {
+        uint16_t cw = 0; for (uint32_t b = 0; b < cr_plus4; ++b) cw = (cw << 1) | deint[i + b];
+        auto dec = lora::utils::hamming_decode4(cw, cr_plus4, header.cr, T);
+        if (!dec) { fec_failed = true; nibbles[nib_idx++] = 0u; }
+        else { nibbles[nib_idx++] = dec->first & 0x0F; }
+        if (nib_idx >= pay_crc_bytes * 2u) break;
+    }
+
+    std::vector<uint8_t> pay(pay_crc_bytes);
+    for (size_t i = 0; i < pay_crc_bytes; ++i) {
+        uint8_t low  = (i*2   < nib_idx) ? nibbles[i*2]     : 0u;
+        uint8_t high = (i*2+1 < nib_idx) ? nibbles[i*2 + 1] : 0u;
+        pay[i] = (uint8_t)((high << 4) | low);
+    }
+
+    ws.dbg_predew = pay;
+
+    auto pay_dw = pay;
+    if (payload_len > 0) {
+        auto lfsr2 = lora::utils::LfsrWhitening::pn9_default();
+        lfsr2.apply(pay_dw.data(), payload_len);
+    }
+
+    bool crc_ok = true;
+    if (header.has_crc) {
+        lora::utils::Crc16Ccitt c;
+        uint8_t crc_lo = pay[payload_len];
+        uint8_t crc_hi = pay[payload_len + 1];
+        ws.dbg_crc_rx_le = static_cast<uint16_t>(crc_lo) | (static_cast<uint16_t>(crc_hi) << 8);
+        ws.dbg_crc_rx_be = static_cast<uint16_t>(crc_hi) << 8 | static_cast<uint16_t>(crc_lo);
+        uint16_t crc_calc = c.compute(pay_dw.data(), payload_len);
+        ws.dbg_crc_calc = crc_calc;
+        ws.dbg_crc_ok_le = (crc_calc == ws.dbg_crc_rx_le);
+        ws.dbg_crc_ok_be = (crc_calc == ws.dbg_crc_rx_be);
+        crc_ok = ws.dbg_crc_ok_be;
+    }
+
+    if (fec_failed) {
+        lora::debug::set_fail(111);
+        return {{}, false};
+    }
+    if (header.has_crc && !crc_ok) {
+        lora::debug::set_fail(112);
+        return {{}, false};
+    }
+
+    std::vector<uint8_t> out(payload_len);
+    std::copy(pay_dw.begin(), pay_dw.begin() + payload_len, out.begin());
     return {out, true};
 }
 
