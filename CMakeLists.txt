@@ -187,6 +187,15 @@ set_tests_properties(cli.json.os4.partial PROPERTIES PASS_REGULAR_EXPRESSION ".*
 add_executable(test_reference_vectors_header_os_varlen tests/test_reference_vectors_header_os_varlen.cpp)
 target_link_libraries(test_reference_vectors_header_os_varlen PRIVATE lora_phy GTest::gtest_main)
 
+# Validate known CW sequence from canonical vector
+add_executable(test_reference_vector_cw tests/test_reference_vector_cw.cpp)
+target_link_libraries(test_reference_vector_cw PRIVATE lora_phy GTest::gtest_main)
+gtest_discover_tests(test_reference_vector_cw
+  TEST_PREFIX "reference_cw."
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  DISCOVERY_TIMEOUT 60
+)
+
 # Tool: gen_frame_vectors
 add_executable(gen_frame_vectors tools/gen_frame_vectors.cpp)
 target_link_libraries(gen_frame_vectors PRIVATE lora_phy)
