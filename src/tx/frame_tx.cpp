@@ -41,21 +41,22 @@ std::span<const std::complex<float>> frame_tx(Workspace& ws,
     // Header bytes are nibble-coded as single-nibble bytes
     std::vector<uint8_t> hdr_bytes = { n0, n1, n2, n3, n4 };
 
-    // Payload CRC trailer (big endian)
+    // Payload CRC trailer (little endian)
     lora::utils::Crc16Ccitt crc16;
-    auto trailer = crc16.make_trailer_be(payload.data(), payload.size());
+    uint16_t crc = crc16.compute(payload.data(), payload.size());
+    uint8_t crc_lo = static_cast<uint8_t>(crc & 0xFF);
+    uint8_t crc_hi = static_cast<uint8_t>((crc >> 8) & 0xFF);
 
     std::vector<uint8_t> frame;
     frame.reserve(hdr_bytes.size() + payload.size() + 2);
     frame.insert(frame.end(), hdr_bytes.begin(), hdr_bytes.end());
     frame.insert(frame.end(), payload.begin(), payload.end());
-    frame.push_back(trailer.first);
-    frame.push_back(trailer.second);
+    frame.push_back(crc_lo);
+    frame.push_back(crc_hi);
 
-    // Whitening: apply PN9 to payload bytes ONLY (do not whiten header or CRC trailer)
+    // Whitening: apply PN9 to payload and CRC (header remains unwhitened)
     auto lfsr = lora::utils::LfsrWhitening::pn9_default();
-    if (!payload.empty())
-        lfsr.apply(frame.data() + hdr_bytes.size(), payload.size());
+    lfsr.apply(frame.data() + hdr_bytes.size(), payload.size() + 2);
 
     // Prepare header and payload segments separately (header uses CR=4/8 per LoRa spec)
     static lora::utils::HammingTables T = lora::utils::make_hamming_tables();

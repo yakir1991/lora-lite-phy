@@ -129,18 +129,17 @@ std::pair<std::span<uint8_t>, bool> loopback_rx(Workspace& ws,
         return {std::span<uint8_t>{}, false};
     }
 
-    // Dewhiten payload ONLY (CRC trailer must remain unmodified)
+    // Dewhiten payload and CRC trailer before verification
     auto lfsr = lora::utils::LfsrWhitening::pn9_default();
-    if (payload_len > 0) lfsr.apply(data.data(), payload_len);
+    lfsr.apply(data.data(), payload_len + 2);
 
-    // CRC verify (CRC-CCITT-FALSE over dewhitened payload; accept LE on the wire, log/accept BE as fallback)
+    // CRC verify (CRC-CCITT-FALSE over dewhitened payload; compare with
+    // dewhitened trailer in little-endian order)
     lora::utils::Crc16Ccitt crc16;
     uint16_t crc_calc = crc16.compute(data.data(), payload_len);
-    uint8_t crc_lo = data[payload_len];
-    uint8_t crc_hi = data[payload_len + 1];
-    uint16_t crc_rx_le = static_cast<uint16_t>(crc_lo) | (static_cast<uint16_t>(crc_hi) << 8);
-    uint16_t crc_rx_be = (static_cast<uint16_t>(crc_hi) << 8) | static_cast<uint16_t>(crc_lo);
-    if (!(crc_calc == crc_rx_le || crc_calc == crc_rx_be)) {
+    uint16_t crc_rx = static_cast<uint16_t>(data[payload_len]) |
+                      (static_cast<uint16_t>(data[payload_len + 1]) << 8);
+    if (crc_calc != crc_rx) {
         log_time();
         return {std::span<uint8_t>{}, false};
     }
