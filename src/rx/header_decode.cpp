@@ -10,6 +10,7 @@
 #include <vector>
 #include <complex>
 #include <cstdio>
+#include <algorithm>
 
 namespace lora::rx {
 
