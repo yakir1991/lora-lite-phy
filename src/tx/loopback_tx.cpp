@@ -17,7 +17,9 @@ std::span<const std::complex<float>> loopback_tx(Workspace& ws,
 
     // Prepare helpers
     lora::utils::Crc16Ccitt crc16;
-    auto trailer = crc16.make_trailer_be(payload.data(), payload.size());
+    uint16_t crc = crc16.compute(payload.data(), payload.size());
+    uint8_t crc_lo = static_cast<uint8_t>(crc & 0xFF);
+    uint8_t crc_hi = static_cast<uint8_t>((crc >> 8) & 0xFF);
     auto lfsr = lora::utils::LfsrWhitening::pn9_default();
     static lora::utils::HammingTables T = lora::utils::make_hamming_tables();
 
@@ -37,8 +39,8 @@ std::span<const std::complex<float>> loopback_tx(Workspace& ws,
     };
     for (uint8_t b : payload)
         encode_byte(b);
-    encode_byte(trailer.first);
-    encode_byte(trailer.second);
+    encode_byte(crc_lo);
+    encode_byte(crc_hi);
 
     size_t nbits = bit_idx;
     uint32_t block_bits = sf * cr_plus4;
