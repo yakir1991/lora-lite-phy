@@ -23,13 +23,14 @@ std::span<const std::complex<float>> loopback_tx(Workspace& ws,
     auto lfsr = lora::utils::LfsrWhitening::pn9_default();
     static lora::utils::HammingTables T = lora::utils::make_hamming_tables();
 
-    // Encode payload+CRC directly into bit buffer with whitening
+    // Encode payload with whitening; append CRC without whitening
     auto& bits = ws.tx_bits;
     size_t bit_idx = 0;
-    auto encode_byte = [&](uint8_t b) {
-        lfsr.apply(&b, 1);
-        uint8_t n1 = b & 0x0F;
-        uint8_t n2 = b >> 4;
+    auto encode_byte = [&](uint8_t b, bool whiten) {
+        uint8_t tmp = b;
+        if (whiten) lfsr.apply(&tmp, 1);
+        uint8_t n1 = tmp & 0x0F;
+        uint8_t n2 = tmp >> 4;
         auto enc1 = lora::utils::hamming_encode4(n1, cr, T);
         auto enc2 = lora::utils::hamming_encode4(n2, cr, T);
         for (int i = enc1.second - 1; i >= 0; --i)
@@ -38,9 +39,9 @@ std::span<const std::complex<float>> loopback_tx(Workspace& ws,
             bits[bit_idx++] = (enc2.first >> i) & 1;
     };
     for (uint8_t b : payload)
-        encode_byte(b);
-    encode_byte(crc_lo);
-    encode_byte(crc_hi);
+        encode_byte(b, true);
+    encode_byte(crc_lo, false);
+    encode_byte(crc_hi, false);
 
     size_t nbits = bit_idx;
     uint32_t block_bits = sf * cr_plus4;

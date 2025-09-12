@@ -129,12 +129,12 @@ std::pair<std::span<uint8_t>, bool> loopback_rx(Workspace& ws,
         return {std::span<uint8_t>{}, false};
     }
 
-    // Dewhiten payload and CRC trailer before verification
+    // Dewhiten payload (exclude CRC trailer) before verification
     auto lfsr = lora::utils::LfsrWhitening::pn9_default();
-    lfsr.apply(data.data(), payload_len + 2);
+    lfsr.apply(data.data(), payload_len);
 
-    // CRC verify (CRC-CCITT-FALSE over dewhitened payload; compare with
-    // dewhitened trailer in little-endian order)
+    // CRC verify (CRC-CCITT-FALSE over dewhitened payload; trailer is
+    // transmitted little-endian without whitening)
     lora::utils::Crc16Ccitt crc16;
     uint16_t crc_calc = crc16.compute(data.data(), payload_len);
     uint16_t crc_rx = static_cast<uint16_t>(data[payload_len]) |
