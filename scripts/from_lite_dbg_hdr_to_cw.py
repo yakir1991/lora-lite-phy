@@ -157,36 +157,47 @@ def main():
         try:
             tgt = read_bytes('logs/gr_deint_bits.bin', 10)
         except FileNotFoundError:
-            print('Missing logs/gr_deint_bits.bin; run GR tap first')
-            return 2
+            # Fallback target for the known SF7 reference vector
+            tgt = [0x00, 0x74, 0xC5, 0x00, 0xC5, 0x1D, 0x12, 0x1B, 0x12, 0x00]
+            print('Missing logs/gr_deint_bits.bin; using fallback target CWs for SF7 vector')
         scans = json.loads(scan_path.read_text())
-        best = (999, None)
+        # Score all scans by timing-only diff
+        scored_all = []
         for e in scans:
             raw = e.get('syms_raw', [])
             if len(raw) < 16:
                 continue
-            gvals = [gray_encode(((r - 1) & (N - 1)) >> 2, bits=SF) for r in raw]
+            # Header path: reduce to gnu=(raw-1)>>2 (sf_app bits), then Gray-encode over sf_app bits
+            gvals = [gray_encode(((r - 1) & (N - 1)) >> 2, bits=SF_APP) for r in raw]
             cw = rx_cw_from_gray(gvals)
             d = sum(1 for a,b in zip(cw, tgt) if a!=b)
-            if d < best[0]: best = (d, (e, cw, gvals))
+            scored_all.append((d, e, cw, gvals))
+        scored_all.sort(key=lambda x: x[0])
+        best = scored_all[0]
         print('Best across hdr-scan (timing only): full_diff=', best[0])
-        if best[1]:
-            e, cw, gvals = best[1]
-            print(' best params:', {k:e[k] for k in ('off0','samp0','off1','samp1')})
-            print('   lite cw  :', ' '.join(f'{x:02x}' for x in cw))
-            print('   gr   cw  :', ' '.join(f'{x:02x}' for x in tgt))
-            # Try block1 variants on the best timing
+        e, cw, gvals = best[1], best[2], best[3]
+        print(' best params:', {k:e[k] for k in ('off0','samp0','off1','samp1')})
+        print('   lite cw  :', ' '.join(f'{x:02x}' for x in cw))
+        print('   gr   cw  :', ' '.join(f'{x:02x}' for x in tgt))
+
+        # Try block1 variants for the top-K timing candidates and report global best
+        TOPK = min(len(scored_all), 2048)
+        global_best = None
+        for d, e, cw, gvals in scored_all[:TOPK]:
             variants = rx_cw_with_block1_variants(gvals)
-            scored = []
             for params, cwv in variants:
                 full = sum(1 for a,b in zip(cwv, tgt) if a!=b)
                 last5 = sum(1 for a,b in zip(cwv[5:], tgt[5:]) if a!=b)
-                scored.append((full, last5, params, cwv))
-            scored.sort(key=lambda x: (x[0], x[1]))
-            full, last5, params, cwbest = scored[0]
+                item = (full, last5, e, params, cwv)
+                if (global_best is None) or (item[:2] < global_best[:2]):
+                    global_best = item
+        if global_best:
+            full, last5, ebest, params, cwbest = global_best
             diagshift, rot1, rowrev, colrev, colshift = params
-            print(' Best with block1 variants: full_diff=%d last5_diff=%d' % (full, last5))
-            print('  params: diagshift=%d rot1=%d rowrev=%d colrev=%d colshift=%d' % (diagshift, rot1, rowrev, colrev, colshift))
+            print('Best with block1 variants across top-%d timings:' % TOPK)
+            print(' params:', {k:ebest[k] for k in ('off0','samp0','off1','samp1')})
+            print('  diagshift=%d rot1=%d rowrev=%d colrev=%d colshift=%d' % (diagshift, rot1, rowrev, colrev, colshift))
+            print('  full_diff=%d last5_diff=%d' % (full, last5))
             print('  cwbytes:', ' '.join(f'{x:02x}' for x in cwbest))
         return 0
     # Else, evaluate last lite_ld.json / DEBUG
@@ -203,7 +214,7 @@ def main():
         raw = parse_debug_raw_from_log('logs/lite_ld.json')
     vals = None
     if raw is not None:
-        gvals = [gray_encode(((r - 1) & (N - 1)) >> 2, bits=SF) for r in raw]
+        gvals = [gray_encode(((r - 1) & (N - 1)) >> 2, bits=SF_APP) for r in raw]
         cw = rx_cw_from_gray(gvals)
         vsrc = gvals
     else:
@@ -222,11 +233,11 @@ def main():
             return 3
         cw = rx_cw_from_gray(vals)
         vsrc = vals
-    try:
-        tgt = read_bytes('logs/gr_deint_bits.bin', 10)
-    except FileNotFoundError:
-        print('Missing logs/gr_deint_bits.bin; run GR tap first')
-        tgt = None
+        try:
+            tgt = read_bytes('logs/gr_deint_bits.bin', 10)
+        except FileNotFoundError:
+            tgt = [0x00, 0x74, 0xC5, 0x00, 0xC5, 0x1D, 0x12, 0x1B, 0x12, 0x00]
+            print('Missing logs/gr_deint_bits.bin; using fallback target CWs for SF7 vector')
     print('Lite cwbytes:', ' '.join(f'{x:02x}' for x in cw))
     if tgt:
         print(' GR  cwbytes:', ' '.join(f'{x:02x}' for x in tgt))

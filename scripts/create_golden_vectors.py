@@ -16,7 +16,8 @@ import pmt
 
 
 class GoldenVectorGenerator(gr.top_block):
-    def __init__(self, sf: int, cr_lora: int, payload_text: str,
+    def __init__(self, sf: int, cr_lora: int, payload_text: str | None,
+                 payload_bytes: bytes | None,
                  bw_hz: int, samp_rate_hz: int,
                  sync_word: int = 0x12, preamble_len: int = 8,
                  out_iq_path: str = None, out_payload_path: str = None):
@@ -56,7 +57,13 @@ class GoldenVectorGenerator(gr.top_block):
         self.chan.set_min_output_buffer(int((2**sf + 2) * samp_rate_hz / bw_hz))
         
         # Message source and sinks
-        self.msg_src = blocks.message_strobe(pmt.intern(payload_text), 1000)
+        if payload_bytes is not None:
+            u8 = pmt.init_u8vector(len(payload_bytes), payload_bytes)
+            pdu = pmt.cons(pmt.PMT_NIL, u8)
+            self.msg_src = blocks.message_strobe(pdu, 1000)
+        else:
+            assert payload_text is not None
+            self.msg_src = blocks.message_strobe(pmt.intern(payload_text), 1000)
         self.msg_dbg = blocks.message_debug()
         
         # File sinks
@@ -81,7 +88,7 @@ class GoldenVectorGenerator(gr.top_block):
         self.msg_connect(self.rx, 'out', self.msg_dbg, 'store')
 
 
-def create_golden_vector(sf: int, cr: int, payload_text: str, 
+def create_golden_vector(sf: int, cr: int, payload_text: str | None, payload_bytes: bytes | None,
                         bw: int = 125000, samp_rate: int = 125000,
                         sync_word: int = 0x12, preamble_len: int = 8,
                         out_iq: str = None, out_payload: str = None,
@@ -89,11 +96,14 @@ def create_golden_vector(sf: int, cr: int, payload_text: str,
     """Create a golden vector and validate it decodes correctly."""
     
     print(f"Creating golden vector: SF={sf}, CR={cr}, sync=0x{sync_word:02x}")
-    print(f"Payload: '{payload_text}'")
+    if payload_bytes is not None:
+        print(f"Payload: {len(payload_bytes)} bytes (binary)")
+    else:
+        print(f"Payload: '{payload_text}'")
     
     # Create the flowgraph
     tb = GoldenVectorGenerator(
-        sf=sf, cr_lora=cr, payload_text=payload_text,
+        sf=sf, cr_lora=cr, payload_text=payload_text, payload_bytes=payload_bytes,
         bw_hz=bw, samp_rate_hz=samp_rate,
         sync_word=sync_word, preamble_len=preamble_len,
         out_iq_path=out_iq, out_payload_path=out_payload
@@ -109,14 +119,18 @@ def create_golden_vector(sf: int, cr: int, payload_text: str,
             if tb.msg_dbg.num_messages() > 0:
                 # Check if we got the expected payload
                 msg = tb.msg_dbg.get_message(0)
-                if pmt.is_symbol(msg):
+                if pmt.is_symbol(msg) and payload_text is not None:
                     decoded_text = pmt.symbol_to_string(msg)
-                    if decoded_text == payload_text:
-                        print(f"✓ Success! Decoded payload matches: '{decoded_text}'")
-                        return True
-                    else:
-                        print(f"✗ Mismatch! Expected: '{payload_text}', Got: '{decoded_text}'")
-                        return False
+                    ok = (decoded_text == payload_text)
+                    print(("✓ Success!" if ok else "✗ Mismatch!") + f" Decoded payload: '{decoded_text}'")
+                    return ok
+                elif pmt.is_pair(msg) and payload_bytes is not None:
+                    v = pmt.cdr(msg)
+                    if pmt.is_u8vector(v):
+                        got = bytes(pmt.u8vector_elements(v))
+                        ok = (got == payload_bytes)
+                        print(("✓ Success!" if ok else "✗ Mismatch!") + f" Decoded {len(got)} bytes")
+                        return ok
             time.sleep(0.1)
         
         print("✗ Timeout waiting for decoded payload")
@@ -137,7 +151,9 @@ def main():
     parser = argparse.ArgumentParser(description='Create golden LoRa vectors')
     parser.add_argument('--sf', type=int, required=True, help='Spreading factor (7-12)')
     parser.add_argument('--cr', type=int, required=True, help='Coding rate (45,46,47,48)')
-    parser.add_argument('--text', type=str, required=True, help='Payload text')
+    g = parser.add_mutually_exclusive_group(required=True)
+    g.add_argument('--text', type=str, help='Payload text (ASCII)')
+    g.add_argument('--zeros', type=int, help='Generate payload of N zero bytes')
     parser.add_argument('--bw', type=int, default=125000, help='Bandwidth (Hz)')
     parser.add_argument('--samp-rate', type=int, default=125000, help='Sampling rate (Hz)')
     parser.add_argument('--sync', type=lambda x: int(x, 0), default=0x12, help='Sync word (0x12 or 0x34)')
@@ -171,8 +187,9 @@ def main():
     os.makedirs(os.path.dirname(args.out_iq), exist_ok=True)
     
     # Create the golden vector
+    payload_bytes = (b"\x00" * args.zeros) if args.zeros is not None else None
     success = create_golden_vector(
-        sf=args.sf, cr=args.cr, payload_text=args.text,
+        sf=args.sf, cr=args.cr, payload_text=args.text, payload_bytes=payload_bytes,
         bw=args.bw, samp_rate=args.samp_rate,
         sync_word=args.sync, preamble_len=args.preamble_len,
         out_iq=args.out_iq, out_payload=args.out_payload,
@@ -181,11 +198,18 @@ def main():
     
     if success:
         # Write intended TX payload directly to file
-        try:
-            with open(args.out_payload, 'wb') as f:
-                f.write(args.text.encode('ascii'))
-        except Exception as e:
-            print(f"Warning: failed to write payload file {args.out_payload}: {e}")
+        if args.text is not None:
+            try:
+                with open(args.out_payload, 'wb') as f:
+                    f.write(args.text.encode('ascii'))
+            except Exception as e:
+                print(f"Warning: failed to write payload file {args.out_payload}: {e}")
+        elif args.zeros is not None:
+            try:
+                with open(args.out_payload, 'wb') as f:
+                    f.write(b"\x00" * args.zeros)
+            except Exception as e:
+                print(f"Warning: failed to write payload file {args.out_payload}: {e}")
 
         print(f"✓ Golden vector created successfully!")
         print(f"  IQ file: {args.out_iq}")

@@ -34,6 +34,9 @@ add_library(lora_phy
     src/rx/demodulator.cpp
     src/rx/decimate.cpp
     src/rx/preamble.cpp
+    src/rx/frame_decode.cpp
+    src/rx/header_decode.cpp
+    src/rx/payload_decode.cpp
     src/rx/frame.cpp
     src/rx/header.cpp
 )

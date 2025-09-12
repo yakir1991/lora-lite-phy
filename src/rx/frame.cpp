@@ -1,4 +1,6 @@
 #include "lora/rx/frame.hpp"
+#include "lora/rx/header_decode.hpp"
+#include "lora/rx/payload_decode.hpp"
 #include "lora/utils/gray.hpp"
 #include "lora/utils/crc.hpp"
 #include "lora/utils/whitening.hpp"
@@ -23,211 +25,11 @@ static uint32_t demod_symbol(Workspace& ws, const std::complex<float>* block) {
     return max_bin;
 }
 
-std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble(
-    Workspace& ws,
-    std::span<const std::complex<float>> samples,
-    uint32_t sf,
-    lora::utils::CodeRate cr,
-    size_t payload_len,
-    size_t min_preamble_syms,
-    uint8_t expected_sync) {
-    auto pos = detect_preamble(ws, samples, sf, min_preamble_syms);
-    if (!pos) return {std::span<uint8_t>{}, false};
-    ws.init(sf);
-    uint32_t N = ws.N;
-    // Check sync symbol with small elastic search (±2 symbols and small sample shifts)
-    // GNU Radio encodes sync byte into two upchirp bins: hi<<3 and lo<<3
-    uint32_t net1 = ((expected_sync & 0xF0u) >> 4) << 3; // first sync bin
-    uint32_t net2 = (expected_sync & 0x0Fu) << 3;        // second sync bin
-    size_t sync_start = 0;
-    bool found_sync = false;
-    int sym_shifts_os1[5] = {0, -1, 1, -2, 2};
-    int samp_shifts_os1[5] = {0, -(int)N/32, (int)N/32, -(int)N/16, (int)N/16};
-    for (int s : sym_shifts_os1) {
-        size_t base = (s >= 0) ? (*pos + (min_preamble_syms + (size_t)s) * N)
-                               : (*pos + (min_preamble_syms - (size_t)(-s)) * N);
-        for (int so : samp_shifts_os1) {
-            if (so >= 0) {
-                if (base + (size_t)so + N > samples.size()) continue;
-                size_t idx = base + (size_t)so;
-                uint32_t ss = demod_symbol(ws, &samples[idx]);
-                if (std::abs(int(ss) - int(net1)) <= 2 || std::abs(int(ss) - int(net2)) <= 2) { found_sync = true; sync_start = idx; break; }
-            } else {
-                size_t offs = (size_t)(-so);
-                if (base < offs) continue;
-                size_t idx = base - offs;
-                if (idx + N > samples.size()) continue;
-                uint32_t ss = demod_symbol(ws, &samples[idx]);
-                if (std::abs(int(ss) - int(net1)) <= 2 || std::abs(int(ss) - int(net2)) <= 2) { found_sync = true; sync_start = idx; break; }
-            }
-        }
-        if (found_sync) break;
-    }
-    if (!found_sync) {
-        // Fallback: windowed correlation around expected sync region
-        // Build expected sync symbol (time-domain upchirp shifted by expected_sync)
-        std::vector<std::complex<float>> ref(N);
-        for (uint32_t n = 0; n < N; ++n)
-            ref[n] = std::conj(ws.upchirp[(n + net1) % N]);
-        long best_off = 0; float best_mag = -1.f;
-        int range = (int)N/8; int step = std::max<int>(1, (int)N/64);
-        size_t base = *pos + min_preamble_syms * N;
-        for (int off = -range; off <= range; off += step) {
-            if (off >= 0) {
-                if (base + (size_t)off + N > samples.size()) continue;
-                size_t idx = base + (size_t)off;
-                std::complex<float> acc(0.f,0.f);
-                for (uint32_t n = 0; n < N; ++n) acc += samples[idx + n] * ref[n];
-                float mag = std::abs(acc);
-                if (mag > best_mag) { best_mag = mag; best_off = off; }
-            } else {
-                size_t offs = (size_t)(-off);
-                if (base < offs) continue;
-                size_t idx = base - offs;
-                if (idx + N > samples.size()) continue;
-                std::complex<float> acc(0.f,0.f);
-                for (uint32_t n = 0; n < N; ++n) acc += samples[idx + n] * ref[n];
-                float mag = std::abs(acc);
-                if (mag > best_mag) { best_mag = mag; best_off = off; }
-            }
-        }
-        if (best_mag > 0.f) {
-            sync_start = (best_off >= 0) ? (base + (size_t)best_off)
-                                        : (base - (size_t)(-best_off));
-            found_sync = true;
-        }
-    }
-    if (!found_sync) return {std::span<uint8_t>{}, false};
+// moved to src/rx/frame_decode.cpp
 
-    // Data starts after sync
-    auto data = std::span<const std::complex<float>>(samples.data() + sync_start + N,
-                                                     samples.size() - (sync_start + N));
+// moved to src/rx/frame_decode.cpp
 
-    // Demodulate all symbols needed to cover header(4)+payload+CRC(2)
-    uint32_t cr_plus4 = static_cast<uint32_t>(cr) + 4;
-    size_t frame_bytes = 4 + payload_len + 2;
-    size_t needed_bits = frame_bytes * 2 * cr_plus4;
-    uint32_t block_bits = sf * cr_plus4;
-    if (needed_bits % block_bits) needed_bits = ((needed_bits / block_bits) + 1) * block_bits;
-    size_t nsym = needed_bits / sf;
-    if (data.size() < nsym * N) return {std::span<uint8_t>{}, false};
-
-    ws.ensure_rx_buffers(nsym, sf, cr_plus4);
-    auto& symbols = ws.rx_symbols;
-    for (size_t s = 0; s < nsym; ++s) {
-        uint32_t raw_symbol = demod_symbol(ws, &data[s * N]);
-        symbols[s] = lora::utils::gray_encode(raw_symbol);  // Apply Gray encoding like GNU Radio
-        printf("DEBUG: Header symbol %zu: raw=%u, gray=%u\n", s, raw_symbol, symbols[s]);
-    }
-    auto& bits = ws.rx_bits;
-    size_t bit_idx = 0;
-    for (size_t s = 0; s < nsym; ++s) {
-        uint32_t sym = symbols[s];
-        for (uint32_t b = 0; b < sf; ++b) bits[bit_idx++] = (sym >> b) & 1;
-    }
-    // Deinterleave
-    const auto& M = ws.get_interleaver(sf, cr_plus4);
-    auto& deint = ws.rx_deint;
-    for (size_t off = 0; off < bit_idx; off += M.n_in)
-        for (uint32_t i = 0; i < M.n_out; ++i) deint[off + M.map[i]] = bits[off + i];
-
-    // Hamming decode
-    static lora::utils::HammingTables T = lora::utils::make_hamming_tables();
-    auto& nibbles = ws.rx_nibbles;
-    size_t nib_idx = 0;
-    for (size_t i = 0; i < needed_bits; i += cr_plus4) {
-        uint16_t cw = 0;
-        for (uint32_t b = 0; b < cr_plus4; ++b) cw = (cw << 1) | deint[i + b];
-        auto dec = lora::utils::hamming_decode4(cw, cr_plus4, cr, T);
-        if (!dec) return {std::span<uint8_t>{}, false};
-        nibbles[nib_idx++] = dec->first & 0x0F;
-        printf("DEBUG: Hamming decode: cw=0x%04x -> nibble=0x%x\n", cw, dec->first & 0x0F);
-    }
-    // Nibbles -> bytes
-    printf("DEBUG: All nibbles: ");
-    for (size_t i = 0; i < nib_idx; ++i) printf("0x%x ", nibbles[i]);
-    printf("\n");
-    
-    auto& frame = ws.rx_data;
-    size_t frame_len = (nib_idx + 1) / 2;
-    frame.resize(frame_len);
-    for (size_t i = 0; i < frame_len; ++i) {
-        uint8_t low  = (i * 2 < nib_idx) ? nibbles[i * 2] : 0;
-        uint8_t high = (i * 2 + 1 < nib_idx) ? nibbles[i * 2 + 1] : 0;
-        frame[i] = (high << 4) | low;
-        printf("DEBUG: Byte %zu: nibbles [0x%x, 0x%x] -> 0x%02x\n", i, low, high, frame[i]);
-    }
-
-    // Dewhiten entire frame
-    auto lfsr = lora::utils::LfsrWhitening::pn9_default();
-    lfsr.apply(frame.data(), frame_len);
-
-    // Parse header
-    if (frame_len < 4) return {std::span<uint8_t>{}, false};
-    auto hdr_opt = parse_local_header_with_crc(frame.data(), 4);
-    if (!hdr_opt) return {std::span<uint8_t>{}, false};
-    if (hdr_opt->payload_len != payload_len) return {std::span<uint8_t>{}, false};
-    // Verify payload CRC
-    if (frame_len < 4 + payload_len + 2) return {std::span<uint8_t>{}, false};
-    lora::utils::Crc16Ccitt c;
-    auto ok = c.verify_with_trailer_be(frame.data() + 4, payload_len + 2);
-    if (!ok.first) return {std::span<uint8_t>{}, false};
-    // Return payload span
-    return { std::span<uint8_t>(frame.data() + 4, payload_len), true };
-}
-
-std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto(
-    Workspace& ws,
-    std::span<const std::complex<float>> samples,
-    uint32_t sf,
-    lora::utils::CodeRate cr,
-    size_t payload_len,
-    size_t min_preamble_syms,
-    uint8_t expected_sync) {
-    auto pos = detect_preamble(ws, samples, sf, min_preamble_syms);
-    if (!pos) return {std::span<uint8_t>{}, false};
-    auto cfo = estimate_cfo_from_preamble(ws, samples, sf, *pos, min_preamble_syms);
-    if (!cfo) return {std::span<uint8_t>{}, false};
-    std::vector<std::complex<float>> comp(samples.size());
-    float two_pi_eps = -2.0f * static_cast<float>(M_PI) * (*cfo);
-    std::complex<float> j(0.f, 1.f);
-    for (size_t n = 0; n < samples.size(); ++n)
-        comp[n] = samples[n] * std::exp(j * (two_pi_eps * static_cast<float>(n)));
-    auto sto = estimate_sto_from_preamble(ws, comp, sf, *pos, min_preamble_syms, static_cast<int>(ws.N/8));
-    if (!sto) return {std::span<uint8_t>{}, false};
-    int shift = *sto;
-    size_t aligned_start = (shift >= 0) ? (*pos + static_cast<size_t>(shift))
-                                        : (*pos - static_cast<size_t>(-shift));
-    if (aligned_start >= comp.size()) return {std::span<uint8_t>{}, false};
-    auto aligned = std::span<const std::complex<float>>(comp.data() + aligned_start,
-                                                        comp.size() - aligned_start);
-    return decode_frame_with_preamble(ws, aligned, sf, cr, payload_len, min_preamble_syms, expected_sync);
-}
-
-std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os(
-    Workspace& ws,
-    std::span<const std::complex<float>> samples,
-    uint32_t sf,
-    lora::utils::CodeRate cr,
-    size_t payload_len,
-    size_t min_preamble_syms,
-    uint8_t expected_sync) {
-    auto det = detect_preamble_os(ws, samples, sf, min_preamble_syms, {4,2,1,8});
-    if (!det) { lora::debug::set_fail(100); return {std::span<uint8_t>{}, false}; }
-    auto decim = decimate_os_phase(samples, det->os, det->phase);
-    // Compensate decimator group delay by padding zeros at the tail so that
-    // we don't lose frame symbols due to front trimming.
-    {
-        unsigned int L = static_cast<unsigned int>(std::max(32*det->os, 8*det->os));
-        size_t pad_os1 = static_cast<size_t>((L/2) / std::max(det->os,1));
-        decim.insert(decim.end(), pad_os1, std::complex<float>(0.f, 0.f));
-    }
-    size_t start_decim = det->start_sample / static_cast<size_t>(det->os);
-    if (start_decim >= decim.size()) { lora::debug::set_fail(101); return {std::span<uint8_t>{}, false}; }
-    auto aligned = std::span<const std::complex<float>>(decim.data() + start_decim,
-                                                        decim.size() - start_decim);
-    return decode_frame_with_preamble_cfo_sto(ws, aligned, sf, cr, payload_len, min_preamble_syms, expected_sync);
-}
+// moved to src/rx/frame_decode.cpp
 
 // Auto-length from header: OS-aware detect/align, then decode header to get payload length,
 // then decode payload+CRC and verify.
@@ -239,14 +41,8 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
     size_t min_preamble_syms,
     uint8_t expected_sync) {
     
-    static int call_count = 0;
-    call_count++;
-    printf("DEBUG: decode_frame_with_preamble_cfo_sto_os_auto called #%d\n", call_count);
-    
-    // Skip the unsuccessful calls to focus on the correct header parsing
-    if (call_count > 1) {
-        printf("DEBUG: Skipping call #%d to focus on first successful run\n", call_count);
-        return {std::span<uint8_t>{}, false};
+    if (std::getenv("LORA_DEBUG")) {
+        printf("DEBUG: decode_frame_with_preamble_cfo_sto_os_auto called\n");
     }
     
     // Detect OS and phase
@@ -376,16 +172,14 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
         const float ratio = 2.0f;
         // Regardless of correlation strength, header begins after the two downchirps + quarter
         sync_start += (2u * N + N/4u);
-        printf("DEBUG: Advancing to header start at sync+2.25 symbols (sync_start=%zu)\n", sync_start);
+        if (__dbg) printf("DEBUG: Advancing to header start at sync+2.25 symbols (sync_start=%zu)\n", sync_start);
     }
     // Data starts exactly at computed header start (after 2.25 symbols from sync)
     auto data = std::span<const std::complex<float>>(aligned.data() + sync_start,
                                                      aligned.size() - sync_start);
     
-    printf("DEBUG: Signal info - aligned.size()=%zu, sync_start=%zu, N=%u\n", 
-           aligned.size(), sync_start, N);
-    printf("DEBUG: Data span - offset=%zu, data.size()=%zu\n", 
-           sync_start + 3*N, data.size());
+    if (__dbg) printf("DEBUG: Signal info - aligned.size()=%zu, sync_start=%zu, N=%u\n", aligned.size(), sync_start, N);
+    if (__dbg) printf("DEBUG: Data span - offset=%zu, data.size()=%zu\n", sync_start + 3*N, data.size());
     
     // Streamed decode across interleaver blocks to avoid per-part padding.
     // LoRa standard: HEADER is always encoded at fixed CR=4/8 (cr_plus4=8)
@@ -394,8 +188,7 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
     const uint32_t block_syms = header_cr_plus4;       // symbols per interleaver block (header)
     const size_t   total_syms = data.size() / ws.N;
     
-    printf("DEBUG: Block info - block_bits=%u, block_syms=%u, total_syms=%zu\n", 
-           block_bits, block_syms, total_syms);
+    if (__dbg) printf("DEBUG: Block info - block_bits=%u, block_syms=%u, total_syms=%zu\n", block_bits, block_syms, total_syms);
     const auto& M = ws.get_interleaver(sf, header_cr_plus4);
     static lora::utils::HammingTables T = lora::utils::make_hamming_tables();
 
@@ -410,28 +203,25 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
     size_t sym_consumed = 0;
     auto demod_block_append = [&](void) -> bool {
         if (sym_consumed + block_syms > total_syms) {
-            printf("DEBUG: demod_block_append failed - sym_consumed=%zu, block_syms=%u, total_syms=%zu\n", 
-                   sym_consumed, block_syms, total_syms);
+            if (__dbg) printf("DEBUG: demod_block_append failed - sym_consumed=%zu, block_syms=%u, total_syms=%zu\n", sym_consumed, block_syms, total_syms);
             return false;
         }
-        
-        printf("DEBUG: demod_block_append processing block at sym_consumed=%zu, will add %u bits\n", 
-               sym_consumed, block_bits);
-        
-        // Build inter_bin (cw_len x sf_app) with GR mapping:
-        // g = gray_encode(corr(raw - 44)); gnu = ((g + N - 1) % N) >> 2;
-        // Use sf_app = sf-2 bits MSB-first per symbol.
+        if (__dbg) printf("DEBUG: demod_block_append processing block at sym_consumed=%zu, will add %u bits\n", sym_consumed, block_bits);
+        // Build inter_bin (cw_len x sf_app) with confirmed GR mapping per block:
+        // 1) gnu = ((raw - 1) mod N) >> 2
+        // 2) g = Gray(gnu)
+        // 3) Take sf_app bits MSB→LSB from g
         const uint32_t cw_len = header_cr_plus4; // 8
         std::vector<std::vector<uint8_t>> inter_bin(cw_len, std::vector<uint8_t>(sf_app));
         for (uint32_t s = 0; s < block_syms; ++s) {
             uint32_t raw_sym = demod_symbol(ws, &data[(sym_consumed + s) * ws.N]);
-            uint32_t corr = (raw_sym + ws.N - 44u) % ws.N;
-            uint32_t g = lora::utils::gray_encode(corr);
-            uint32_t gnu = ((g + (1u << sf) - 1u) & ((1u << sf) - 1u)) >> 2; // divide-by-4 after -1 mod N
-            if (sym_consumed + s < 10) printf("DEBUG: Symbol %zu: raw=%u corr=%u gray=%u gnu=%u\n", sym_consumed + s, raw_sym, corr, g, gnu);
+            uint32_t gnu = ((raw_sym + ws.N - 1u) & (ws.N - 1u)) >> 2; // drop 2 LSB after −1
+            uint32_t g    = lora::utils::gray_encode(gnu);
+            uint32_t sub  = g & ((1u << sf_app) - 1u);
+            if (__dbg && sym_consumed + s < 10) printf("DEBUG: Symbol %zu: raw=%u gnu=%u gray(gnu)=%u sub=0x%x\n", sym_consumed + s, raw_sym, gnu, g, sub);
             for (uint32_t j = 0; j < sf_app; ++j) {
-                // MSB-first over sf_app bits
-                uint32_t bit = (gnu >> (sf_app - 1u - j)) & 1u;
+                // MSB-first over the sf_app bits of Gray(gnu)
+                uint32_t bit = (sub >> (sf_app - 1u - j)) & 1u;
                 inter_bin[s][j] = static_cast<uint8_t>(bit);
             }
         }
@@ -451,8 +241,7 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
                 stream_bits.push_back(deinter_bin[r][c]);
         sym_consumed += block_syms;
         
-        printf("DEBUG: After block append - added %u bits (sf_app*8), stream_bits.size()=%zu, sym_consumed=%zu\n", 
-               block_bits_app, stream_bits.size(), sym_consumed);
+        if (__dbg) printf("DEBUG: After block append - added %u bits (sf_app*8), stream_bits.size()=%zu, sym_consumed=%zu\n", block_bits_app, stream_bits.size(), sym_consumed);
         return true;
     };
 
@@ -472,9 +261,9 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
         nibbles[nib_idx++] = dec->first & 0x0F;
     }
     for (size_t i = 0; i < hdr_bytes; ++i) {
-        uint8_t low  = nibbles[i*2];
-        uint8_t high = nibbles[i*2+1];
-        hdr[i] = (high << 4) | low;
+        uint8_t high = nibbles[i*2];
+        uint8_t low  = nibbles[i*2+1];
+        hdr[i] = (high << 4) | low; // header transmits high nibble first
     }
     
         // Debug print the header nibbles
@@ -483,6 +272,13 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
             printf("0x%x ", nibbles[i]);
         }
         printf("\n");
+
+        // Try to parse deterministic GR header immediately
+        std::optional<lora::rx::LocalHeader> hdr_opt = parse_standard_lora_header(hdr.data(), hdr.size());
+        if (hdr_opt) {
+            printf("DEBUG: Deterministic GR header OK: len=%u cr=%d has_crc=%s\n",
+                   (unsigned)hdr_opt->payload_len, (int)hdr_opt->cr, hdr_opt->has_crc?"true":"false");
+        }
 
         // GNU Radio header_decoder expects nibbles directly!
         // payload_len = (nibbles[0] << 4) + nibbles[1]
@@ -513,8 +309,8 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
             }
         }
         
-        // Prepare hdr_opt for payload processing
-        std::optional<lora::rx::LocalHeader> hdr_opt;
+        // Prepare hdr_opt for payload processing (use deterministic result if available)
+        // (hdr_opt may already be set above)
         
         // GNU Radio divides header symbols by 4! Let's try direct header symbol parsing
         printf("DEBUG: Trying GNU Radio direct symbol parsing (divide by 4)\n");
@@ -620,7 +416,7 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
         }
         
         // Try parsing GNU Radio style from direct symbols
-        if (direct_nibbles.size() >= 3) {
+        if (!hdr_opt && direct_nibbles.size() >= 3) {
             uint8_t payload_len = (direct_nibbles[0] << 4) + direct_nibbles[1];
             uint8_t has_crc = direct_nibbles[2] & 1;
             uint8_t cr_parsed = direct_nibbles[2] >> 1;
@@ -837,7 +633,12 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
     lora::utils::CodeRate cr,
     size_t min_preamble_syms,
     uint8_t expected_sync) {
-    printf("DEBUG: decode_header_with_preamble_cfo_sto_os called!\n");
+    if (std::getenv("LORA_DEBUG")) printf("DEBUG: decode_header_with_preamble_cfo_sto_os called!\n");
+    // Delegate first to the extracted implementation when explicitly enabled.
+    if (const char* use_impl = std::getenv("LORA_HDR_IMPL"); use_impl && use_impl[0] == '1' && use_impl[1] == '\0') {
+        if (auto hdr_impl = decode_header_with_preamble_cfo_sto_os_impl(ws, samples, sf, cr, min_preamble_syms, expected_sync))
+            return hdr_impl;
+    }
     // Reuse the OS-aware alignment path from decode_frame_with_preamble_cfo_sto_os_auto
     auto det = detect_preamble_os(ws, samples, sf, min_preamble_syms, {4,2,1,8});
     if (!det) return std::nullopt;
@@ -969,13 +770,153 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
             ws.dbg_hdr_gray[s]      = symbols[s];
         }
     }
+    // Initialize header parse result before conditional attempts
+    std::optional<lora::rx::LocalHeader> hdr_opt;
     // First, try a precise GR header mapping using sf_app = sf-2 and GR deinterleave
-    {
+    if (!hdr_opt) {
+        const char* __scan_env = std::getenv("LORA_HDR_SCAN");
+        bool __hdr_scan = (__scan_env && __scan_env[0]=='1' && __scan_env[1]=='\0');
         static lora::utils::HammingTables Th = lora::utils::make_hamming_tables();
         const uint32_t sf_app = (sf > 2u) ? (sf - 2u) : sf;
         const uint32_t cw_len = 8u;
-        // Build reduced-rate symbols using two candidate derivations and small start offset search
+        // Optional: bounded two-block variant search (guarded by env LORA_HDR_BOUND=1)
+        if (false) {
+        // Bounded two-block search around deterministic anchor (fresh origin for block1)
+        auto build_block_rows = [&](const uint32_t* gnu, size_t blk_idx, uint8_t (&rows)[5][8]) {
+            std::vector<std::vector<uint8_t>> inter_bin(cw_len, std::vector<uint8_t>(sf_app, 0));
+            for (uint32_t i = 0; i < cw_len; ++i) {
+                uint32_t full = gnu[blk_idx * cw_len + i] & (N - 1u);
+                uint32_t g    = lora::utils::gray_encode(full);
+                uint32_t sub  = g & ((1u << sf_app) - 1u);
+                for (uint32_t j = 0; j < sf_app; ++j)
+                    inter_bin[i][j] = (uint8_t)((sub >> (sf_app - 1u - j)) & 1u);
+            }
+            std::vector<std::vector<uint8_t>> deinter_bin(sf_app, std::vector<uint8_t>(cw_len, 0));
+            for (uint32_t i = 0; i < cw_len; ++i) {
+                for (uint32_t j = 0; j < sf_app; ++j) {
+                    int r = static_cast<int>(i) - static_cast<int>(j) - 1;
+                    r %= static_cast<int>(sf_app);
+                    if (r < 0) r += static_cast<int>(sf_app);
+                    deinter_bin[static_cast<size_t>(r)][i] = inter_bin[i][j];
+                }
+            }
+            for (uint32_t r = 0; r < sf_app; ++r)
+                for (uint32_t c = 0; c < cw_len; ++c)
+                    rows[r][c] = deinter_bin[r][c];
+        };
+        auto try_parse_two_block = [&](int off0, long samp0, int off1, long samp1) -> std::optional<lora::rx::LocalHeader> {
+            if (hdr_nsym < 16 || sf_app < 3) return std::nullopt;
+            // Block0 index
+            size_t idx0;
+            if (samp0 >= 0) {
+                idx0 = hdr_start_base + static_cast<size_t>(off0) * N + static_cast<size_t>(samp0);
+                if (idx0 + 8u * N > aligned.size()) return std::nullopt;
+            } else {
+                size_t o = static_cast<size_t>(-samp0);
+                size_t base0 = hdr_start_base + static_cast<size_t>(off0) * N;
+                if (base0 < o) return std::nullopt;
+                idx0 = base0 - o;
+                if (idx0 + 8u * N > aligned.size()) return std::nullopt;
+            }
+            // Block1 index
+            size_t base1 = hdr_start_base + 8u * N + static_cast<size_t>(off1) * N;
+            size_t idx1;
+            if (samp1 >= 0) {
+                idx1 = base1 + static_cast<size_t>(samp1);
+                if (idx1 + 8u * N > aligned.size()) return std::nullopt;
+            } else {
+                size_t o = static_cast<size_t>(-samp1);
+                if (base1 < o) return std::nullopt;
+                idx1 = base1 - o;
+                if (idx1 + 8u * N > aligned.size()) return std::nullopt;
+            }
+            // Demod and reduce
+            uint32_t raw0[8]{}, raw1[8]{};
+            for (size_t s = 0; s < 8; ++s) { raw0[s] = demod_symbol(ws, &aligned[idx0 + s * N]); raw1[s] = demod_symbol(ws, &aligned[idx1 + s * N]); }
+            uint32_t gnu_both[16]{};
+            for (size_t s = 0; s < 8; ++s) gnu_both[s]      = ((raw0[s] + N - 1u) & (N - 1u)) >> 2;
+            for (size_t s = 0; s < 8; ++s) gnu_both[8 + s]  = ((raw1[s] + N - 1u) & (N - 1u)) >> 2;
+            uint8_t blk0[5][8]{}, blk1[5][8]{};
+            build_block_rows(gnu_both, 0, blk0);
+            build_block_rows(gnu_both, 1, blk1);
+            auto assemble_and_try = [&](const uint8_t b0[5][8], const uint8_t b1[5][8], const char* tag)->std::optional<lora::rx::LocalHeader> {
+                uint8_t cw_local[10]{};
+                for (uint32_t r = 0; r < sf_app; ++r) { uint16_t c = 0; for (uint32_t i = 0; i < 8u; ++i) c = (c << 1) | (b0[r][i] & 1u); cw_local[r] = (uint8_t)(c & 0xFF); }
+                for (uint32_t r = 0; r < sf_app; ++r) { uint16_t c = 0; for (uint32_t i = 0; i < 8u; ++i) c = (c << 1) | (b1[r][i] & 1u); cw_local[sf_app + r] = (uint8_t)(c & 0xFF); }
+                std::vector<uint8_t> nibb; nibb.reserve(10);
+                for (int k = 0; k < 10; ++k) { auto dec = lora::utils::hamming_decode4(cw_local[k], 8u, lora::utils::CodeRate::CR48, Th); if (!dec) return std::nullopt; nibb.push_back(dec->first & 0x0F); }
+                for (int order = 0; order < 2; ++order) {
+                    std::vector<uint8_t> hdr_try(5);
+                    for (int i = 0; i < 5; ++i) {
+                        uint8_t n0 = nibb[i*2], n1 = nibb[i*2 + 1];
+                        uint8_t low  = (order==0)? n0 : n1;
+                        uint8_t high = (order==0)? n1 : n0;
+                        hdr_try[i] = (uint8_t)((high << 4) | low);
+                    }
+                    if (auto okhdr = parse_standard_lora_header(hdr_try.data(), hdr_try.size())) {
+                        printf("DEBUG: hdr_gr OK (bounded two-block/%s) off0=%d samp0=%ld off1=%d samp1=%ld order=%d bytes: %02x %02x %02x %02x %02x\n",
+                               tag, off0, samp0, off1, samp1, order, hdr_try[0], hdr_try[1], hdr_try[2], hdr_try[3], hdr_try[4]);
+                        return okhdr;
+                    }
+                }
+                return std::nullopt;
+            };
+            // Baseline assembly
+            if (auto ok = assemble_and_try(blk0, blk1, "base")) return ok;
+            // Small block1-only variants: row rotation (0..sf_app-1), row reversal, column reversal, column shift (0..7)
+            for (uint32_t rot1 = 0; rot1 < sf_app; ++rot1) {
+                uint8_t t1[5][8]{};
+                for (uint32_t r = 0; r < sf_app; ++r) {
+                    uint32_t rr = (r + rot1) % sf_app;
+                    for (uint32_t c = 0; c < 8u; ++c) t1[r][c] = blk1[rr][c];
+                }
+                if (auto ok = assemble_and_try(blk0, t1, "rot")) return ok;
+                // row-reversed
+                uint8_t tr[5][8]{};
+                for (uint32_t r = 0; r < sf_app; ++r) for (uint32_t c = 0; c < 8u; ++c) tr[r][c] = t1[sf_app - 1u - r][c];
+                if (auto ok = assemble_and_try(blk0, tr, "rot_rowrev")) return ok;
+                // column-reversed variants for both
+                uint8_t t1c[5][8]{}; for (uint32_t r = 0; r < sf_app; ++r) for (uint32_t c = 0; c < 8u; ++c) t1c[r][c] = t1[r][7u - c];
+                if (auto ok = assemble_and_try(blk0, t1c, "rot_colrev")) return ok;
+                uint8_t trc[5][8]{}; for (uint32_t r = 0; r < sf_app; ++r) for (uint32_t c = 0; c < 8u; ++c) trc[r][c] = tr[r][7u - c];
+                if (auto ok = assemble_and_try(blk0, trc, "rot_rowrev_colrev")) return ok;
+                // column-shifted variants (with and without colrev)
+                for (uint32_t sh = 1; sh < 8u; ++sh) {
+                    uint8_t ts[5][8]{};
+                    for (uint32_t r = 0; r < sf_app; ++r) for (uint32_t c = 0; c < 8u; ++c) ts[r][c] = t1[r][(c + sh) & 7u];
+                    if (auto ok = assemble_and_try(blk0, ts, "rot_colshift")) return ok;
+                    uint8_t tsc[5][8]{};
+                    for (uint32_t r = 0; r < sf_app; ++r) for (uint32_t c = 0; c < 8u; ++c) tsc[r][c] = ts[r][7u - c];
+                    if (auto ok = assemble_and_try(blk0, tsc, "rot_colshift_colrev")) return ok;
+                }
+            }
+            return std::nullopt;
+        };
+        // Bounded offsets and sample nudges (stop on first valid header)
         if (hdr_nsym >= 16 && sf_app >= 3) {
+            std::vector<int> off0_list = {1,2,3};
+            std::vector<int> off1_list = {-1,0,1,2};
+            std::vector<long> samp_list = {
+                0,
+                (long)N/64,  -(long)N/64,
+                (long)N/32,  -(long)N/32,
+                (long)N/16,  -(long)N/16,
+                (long)(3*N/64),  -(long)(3*N/64),
+                (long)(5*N/64),  -(long)(5*N/64),
+                (long)(3*N/32),  -(long)(3*N/32),
+                (long)N/8,   -(long)N/8,
+                (long)N/4,   -(long)N/4,
+                (long)N/4 - 4,  -((long)N/4 - 4),
+                (long)N/4 - 2,  -((long)N/4 - 2)
+            };
+            for (int off0 : off0_list) for (int off1 : off1_list) for (long s0 : samp_list) for (long s1 : samp_list)
+                if (auto ok = try_parse_two_block(off0, s0, off1, s1)) return ok;
+        }
+        } // end guarded bounded two-block search
+        // Build reduced-rate symbols using two candidate derivations and small start offset search (enabled only when LORA_HDR_SCAN=1)
+        const char* __scan = std::getenv("LORA_HDR_SCAN");
+        bool __do_scan = (__scan && __scan[0]=='1' && __scan[1]=='\0');
+        if (false && __do_scan && hdr_nsym >= 16 && sf_app >= 3) {
             auto make_block_cw = [&](const uint32_t* gnu, size_t blk_idx, uint8_t (&rows)[5][8]) {
                 // inter_bin[i][j]
                 std::vector<std::vector<uint8_t>> inter_bin(cw_len, std::vector<uint8_t>(sf_app, 0));
@@ -1098,6 +1039,7 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
                 size_t idx0 = base0 + static_cast<size_t>(off0) * N;
                 if (idx0 + 8u * N > aligned.size()) goto AFTER_FINE_SEARCH;
                 uint32_t raw0[8]{}; for (size_t s = 0; s < 8; ++s) raw0[s] = demod_symbol(ws, &aligned[idx0 + s * N]);
+                if (!__hdr_scan) goto AFTER_FINE_SEARCH; // skip heavy scan unless enabled
                 // Prepare fine-grained sample shifts for block1 around ±N/64 with ±1..±4 deltas (in samples)
                 std::vector<long> fine_samp1;
                 int base = static_cast<int>(N) / 64;        // e.g., 2 at SF7
@@ -1139,7 +1081,7 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
                             make_block_cw(g0, 0, b0);
                             make_block_cw(g1, 0, b1);
                             // Baseline row-wise assembly (no transforms) for reference and scan tool compatibility
-                            {
+                            if (__hdr_scan) {
                                 uint8_t cw_g[10]{};
                                 for (uint32_t r=0;r<sf_app;++r){ uint16_t cw=0; for(uint32_t i=0;i<8u;++i) cw=(cw<<1)|(b0[r][i]&1u); cw_g[r]=(uint8_t)(cw&0xFF);} 
                                 for (uint32_t r=0;r<sf_app;++r){ uint16_t cw=0; for(uint32_t i=0;i<8u;++i) cw=(cw<<1)|(b1[r][i]&1u); cw_g[sf_app+r]=(uint8_t)(cw&0xFF);} 
@@ -1168,8 +1110,7 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
                                         // Block0 unchanged (we already match it)
                                         for (uint32_t r=0;r<sf_app;++r){ uint16_t cw=0; for(uint32_t i=0;i<8u;++i) cw=(cw<<1)|(b0[r][i]&1u); cw_gv[r]=(uint8_t)(cw&0xFF);} 
                                         for (uint32_t r=0;r<sf_app;++r){ uint16_t cw=0; if (!colrev1) { for(uint32_t i=0;i<8u;++i) cw=(cw<<1)|(tb1[r][i]&1u);} else { for(int i=7;i>=0;--i) cw=(cw<<1)|(tb1[r][(uint32_t)i]&1u);} cw_gv[sf_app+r]=(uint8_t)(cw&0xFF);} 
-                                        printf("DEBUG: hdr_gr cwbytes (2blk-var samp0=%ld off0=%d samp1=%ld off1=%d mode=%s rot1=%d rowrev1=%d colrev1=%d): ", samp0, off0, samp1, off1, (mode==0?"raw":"corr"), rot1, rowrev1, colrev1);
-                                        for (int k=0;k<10;++k) printf("%02x ", cw_gv[k]); printf("\n");
+                                        if (__hdr_scan) { printf("DEBUG: hdr_gr cwbytes (2blk-var samp0=%ld off0=%d samp1=%ld off1=%d mode=%s rot1=%d rowrev1=%d colrev1=%d): ", samp0, off0, samp1, off1, (mode==0?"raw":"corr"), rot1, rowrev1, colrev1); for (int k=0;k<10;++k) printf("%02x ", cw_gv[k]); printf("\n"); }
                                         // Try to parse this variant
                                         std::vector<uint8_t> nibb; nibb.reserve(10); bool ok=true; for(int k=0;k<10;++k){ auto dec=lora::utils::hamming_decode4(cw_gv[k],8u,lora::utils::CodeRate::CR48,Th); if(!dec){ok=false;break;} nibb.push_back(dec->first & 0x0F);} if(!ok) continue;
                                         for (int order=0; order<2; ++order){ std::vector<uint8_t> hdr_try(hdr_bytes); for(size_t i=0;i<hdr_bytes;++i){ uint8_t n0=nibb[i*2], n1=nibb[i*2+1]; uint8_t low=(order==0)?n0:n1; uint8_t high=(order==0)?n1:n0; hdr_try[i]=(uint8_t)((high<<4)|low);} if (auto okhdr=parse_standard_lora_header(hdr_try.data(), hdr_try.size())){ printf("DEBUG: hdr_gr OK (2blk-var samp0=%ld off0=%d samp1=%ld off1=%d mode=%s rot1=%d rowrev1=%d colrev1=%d order=%d) bytes: %02x %02x %02x %02x %02x\n", samp0, off0, samp1, off1, (mode==0?"raw":"corr"), rot1, rowrev1, colrev1, order, hdr_try[0], hdr_try[1], hdr_try[2], hdr_try[3], hdr_try[4]); return okhdr; } }
@@ -1201,8 +1142,7 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
                                     uint8_t cw_gv2[10]{};
                                     for (uint32_t r=0;r<sf_app;++r){ uint16_t cw=0; for(uint32_t i=0;i<8u;++i) cw=(cw<<1)|(b0[r][i]&1u); cw_gv2[r]=(uint8_t)(cw&0xFF);} 
                                     for (uint32_t r=0;r<sf_app;++r){ uint16_t cw=0; if (!colrev1) { for(uint32_t i=0;i<8u;++i) cw=(cw<<1)|(tb1_alt[r][i]&1u);} else { for(int i=7;i>=0;--i) cw=(cw<<1)|(tb1_alt[r][(uint32_t)i]&1u);} cw_gv2[sf_app+r]=(uint8_t)(cw&0xFF);} 
-                                    printf("DEBUG: hdr_gr cwbytes (2blk-var2 samp0=%ld off0=%d samp1=%ld off1=%d mode=%s altdiag=1 colrev1=%d): ", samp0, off0, samp1, off1, (mode==0?"raw":"corr"), colrev1);
-                                    for (int k=0;k<10;++k) printf("%02x ", cw_gv2[k]); printf("\n");
+                                    if (__hdr_scan) { printf("DEBUG: hdr_gr cwbytes (2blk-var2 samp0=%ld off0=%d samp1=%ld off1=%d mode=%s altdiag=1 colrev1=%d): ", samp0, off0, samp1, off1, (mode==0?"raw":"corr"), colrev1); for (int k=0;k<10;++k) printf("%02x ", cw_gv2[k]); printf("\n"); }
                                     std::vector<uint8_t> nibb; nibb.reserve(10); bool ok=true; for(int k=0;k<10;++k){ auto dec=lora::utils::hamming_decode4(cw_gv2[k],8u,lora::utils::CodeRate::CR48,Th); if(!dec){ok=false;break;} nibb.push_back(dec->first & 0x0F);} if(!ok) continue;
                                     for (int order=0; order<2; ++order){ std::vector<uint8_t> hdr_try(hdr_bytes); for(size_t i=0;i<hdr_bytes;++i){ uint8_t n0=nibb[i*2], n1=nibb[i*2+1]; uint8_t low=(order==0)?n0:n1; uint8_t high=(order==0)?n1:n0; hdr_try[i]=(uint8_t)((high<<4)|low);} if (auto okhdr=parse_standard_lora_header(hdr_try.data(), hdr_try.size())){ printf("DEBUG: hdr_gr OK (2blk-var2 samp0=%ld off0=%d samp1=%ld off1=%d mode=%s altdiag=1 colrev1=%d order=%d) bytes: %02x %02x %02x %02x %02x\n", samp0, off0, samp1, off1, (mode==0?"raw":"corr"), colrev1, order, hdr_try[0], hdr_try[1], hdr_try[2], hdr_try[3], hdr_try[4]); return okhdr; } }
                                 }
@@ -1244,8 +1184,7 @@ AFTER_FINE_SEARCH:
                             uint8_t cw_g[10]{};
                             for (uint32_t r=0;r<sf_app;++r){ uint16_t cw=0; for(uint32_t i=0;i<8u;++i) cw=(cw<<1)|(blk0r[r][i]&1u); cw_g[r]=(uint8_t)(cw&0xFF);} 
                             for (uint32_t r=0;r<sf_app;++r){ uint16_t cw=0; for(uint32_t i=0;i<8u;++i) cw=(cw<<1)|(blk1r[r][i]&1u); cw_g[sf_app+r]=(uint8_t)(cw&0xFF);} 
-                            printf("DEBUG: hdr_gr cwbytes (2blk samp0=%ld off0=%d samp1=%ld off1=%d mode=%s): ", samp0, off0, samp1, off1, (mode==0?"raw":"corr"));
-                            for (int k=0;k<10;++k) printf("%02x ", cw_g[k]); printf("\n");
+                            if (__hdr_scan) { printf("DEBUG: hdr_gr cwbytes (2blk samp0=%ld off0=%d samp1=%ld off1=%d mode=%s): ", samp0, off0, samp1, off1, (mode==0?"raw":"corr")); for (int k=0;k<10;++k) printf("%02x ", cw_g[k]); printf("\n"); }
                             // Column-assembly variants: try column order and row order permutations
                             for (int col_rev = 0; col_rev <= 1; ++col_rev) {
                                 for (int row_rev = 0; row_rev <= 1; ++row_rev) {
@@ -1269,18 +1208,18 @@ AFTER_FINE_SEARCH:
                                         else           { for (int j=7;j>=0;--j)     c8 = (c8<<1) | (blk1r[r8][(uint32_t)j] & 1u); for (int j=7;j>=0;--j)     c9 = (c9<<1) | (blk1r[r9][(uint32_t)j] & 1u); }
                                         cw_col[8] = (uint8_t)(c8 & 0xFF);
                                         cw_col[9] = (uint8_t)(c9 & 0xFF);
-                                        printf("DEBUG: hdr_gr cwbytes (2blk-col samp0=%ld off0=%d samp1=%ld off1=%d mode=%s colrev=%d rowrev=%d swap=%d): ", samp0, off0, samp1, off1, (mode==0?"raw":"corr"), col_rev, row_rev, extra_swap);
-                                        for (int k=0;k<10;++k) printf("%02x ", cw_col[k]); printf("\n");
+                                        if (__hdr_scan) { printf("DEBUG: hdr_gr cwbytes (2blk-col samp0=%ld off0=%d samp1=%ld off1=%d mode=%s colrev=%d rowrev=%d swap=%d): ", samp0, off0, samp1, off1, (mode==0?"raw":"corr"), col_rev, row_rev, extra_swap); for (int k=0;k<10;++k) printf("%02x ", cw_col[k]); printf("\n"); }
                                     }
                                 }
                             }
                             // Use row-wise for Hamming decode & header parse (more stable)
                             std::vector<uint8_t> nibb; nibb.reserve(10); bool ok=true; for(int k=0;k<10;++k){ auto dec=lora::utils::hamming_decode4(cw_g[k],8u,lora::utils::CodeRate::CR48,Th); if(!dec){ok=false;break;} nibb.push_back(dec->first & 0x0F);} if(!ok) continue;
-                            for (int order=0; order<2; ++order){ std::vector<uint8_t> hdr_try(hdr_bytes); for(size_t i=0;i<hdr_bytes;++i){ uint8_t n0=nibb[i*2], n1=nibb[i*2+1]; uint8_t low=(order==0)?n0:n1; uint8_t high=(order==0)?n1:n0; hdr_try[i]=(uint8_t)((high<<4)|low);} if (auto okhdr=parse_standard_lora_header(hdr_try.data(), hdr_try.size())){ printf("DEBUG: hdr_gr OK (2blk samp0=%ld off0=%d samp1=%ld mode=%s order=%d) bytes: %02x %02x %02x %02x %02x\n", samp0, off0, samp1, (mode==0?"raw":"corr"), order, hdr_try[0], hdr_try[1], hdr_try[2], hdr_try[3], hdr_try[4]); return okhdr; } }
+                            for (int order=0; order<2; ++order){ std::vector<uint8_t> hdr_try(hdr_bytes); for(size_t i=0;i<hdr_bytes;++i){ uint8_t n0=nibb[i*2], n1=nibb[i*2+1]; uint8_t low=(order==0)?n0:n1; uint8_t high=(order==0)?n1:n0; hdr_try[i]=(uint8_t)((high<<4)|low);} if (auto okhdr=parse_standard_lora_header(hdr_try.data(), hdr_try.size())){ if (__hdr_scan) printf("DEBUG: hdr_gr OK (2blk samp0=%ld off0=%d samp1=%ld mode=%s order=%d) bytes: %02x %02x %02x %02x %02x\n", samp0, off0, samp1, (mode==0?"raw":"corr"), order, hdr_try[0], hdr_try[1], hdr_try[2], hdr_try[3], hdr_try[4]); return okhdr; } }
                     }
                     }
                 }
             }
+AFTER_FINE_SEARCH:
         }
     }
 
@@ -1750,122 +1689,6 @@ std::pair<std::vector<uint8_t>, bool> decode_payload_no_crc_with_preamble_cfo_st
     lora::utils::CodeRate cr,
     size_t min_preamble_syms,
     uint8_t expected_sync) {
-    // Align and decode header first
-    auto det = detect_preamble_os(ws, samples, sf, min_preamble_syms, {1,2,4,8});
-    if (!det) return {{}, false};
-    auto decim = decimate_os_phase(samples, det->os, det->phase);
-    size_t start_decim = det->start_sample / static_cast<size_t>(det->os);
-    if (start_decim >= decim.size()) return {{}, false};
-    auto aligned0 = std::span<const std::complex<float>>(decim.data() + start_decim,
-                                                         decim.size() - start_decim);
-    auto pos0 = detect_preamble(ws, aligned0, sf, min_preamble_syms);
-    if (!pos0) return {{}, false};
-    auto cfo = estimate_cfo_from_preamble(ws, aligned0, sf, *pos0, min_preamble_syms);
-    if (!cfo) return {{}, false};
-    std::vector<std::complex<float>> comp(aligned0.size());
-    float two_pi_eps = -2.0f * static_cast<float>(M_PI) * (*cfo);
-    std::complex<float> j(0.f, 1.f);
-    for (size_t n = 0; n < aligned0.size(); ++n)
-        comp[n] = aligned0[n] * std::exp(j * (two_pi_eps * static_cast<float>(n)));
-    auto sto = estimate_sto_from_preamble(ws, comp, sf, *pos0, min_preamble_syms, static_cast<int>(ws.N/8));
-    if (!sto) return {{}, false};
-    int shift = *sto;
-    size_t aligned_start = (shift >= 0) ? (*pos0 + static_cast<size_t>(shift))
-                                        : (*pos0 - static_cast<size_t>(-shift));
-    if (aligned_start >= comp.size()) return {{}, false};
-    auto aligned = std::span<const std::complex<float>>(comp.data() + aligned_start,
-                                                        comp.size() - aligned_start);
-    ws.init(sf);
-    uint32_t N = ws.N;
-    size_t sync_start = min_preamble_syms * N;
-    if (sync_start + N > aligned.size()) return {{}, false};
-    uint32_t net1 = ((expected_sync & 0xF0u) >> 4) << 3;
-    uint32_t net2 = (expected_sync & 0x0Fu) << 3;
-    uint32_t sync_sym = demod_symbol(ws, &aligned[sync_start]);
-    if (!(std::abs(int(sync_sym) - int(net1)) <= 2 || std::abs(int(sync_sym) - int(net2)) <= 2)) return {{}, false};
-    // 2.25 symbol advance like GR
-    auto data = std::span<const std::complex<float>>(aligned.data() + sync_start + (2u * N + N/4u),
-                                                     aligned.size() - (sync_start + (2u * N + N/4u)));
-    // Decode header
-    uint32_t cr_plus4 = static_cast<uint32_t>(cr) + 4;
-    size_t hdr_bytes = 5;  // Standard LoRa header is 5 bytes
-    size_t hdr_bits = hdr_bytes * 2 * cr_plus4;
-    uint32_t block_bits = sf * cr_plus4;
-    if (hdr_bits % block_bits) hdr_bits = ((hdr_bits / block_bits) + 1) * block_bits;
-    size_t hdr_nsym = hdr_bits / sf;
-    if (data.size() < hdr_nsym * N) return {{}, false};
-    ws.ensure_rx_buffers(hdr_nsym, sf, cr_plus4);
-    auto& symbols = ws.rx_symbols;
-    for (size_t s = 0; s < hdr_nsym; ++s) {
-        uint32_t raw_symbol = demod_symbol(ws, &data[s * N]);
-        symbols[s] = lora::utils::gray_encode(raw_symbol);  // Apply Gray encoding like GNU Radio
-    }
-    auto& bits = ws.rx_bits; auto& deint = ws.rx_deint; auto& nibbles = ws.rx_nibbles;
-    size_t bit_idx = 0;
-    for (size_t s = 0; s < hdr_nsym; ++s) {
-        uint32_t sym = symbols[s];
-        for (uint32_t b = 0; b < sf; ++b) bits[bit_idx++] = (sym >> b) & 1;
-    }
-    const auto& M = ws.get_interleaver(sf, cr_plus4);
-    for (size_t off = 0; off < bit_idx; off += M.n_in)
-        for (uint32_t i = 0; i < M.n_out; ++i) deint[off + M.map[i]] = bits[off + i];
-    static lora::utils::HammingTables T = lora::utils::make_hamming_tables();
-    size_t nib_idx = 0;
-    for (size_t i = 0; i < hdr_bits; i += cr_plus4) {
-        uint16_t cw = 0; for (uint32_t b = 0; b < cr_plus4; ++b) cw = (cw << 1) | deint[i + b];
-        auto dec = lora::utils::hamming_decode4(cw, cr_plus4, cr, T);
-        if (!dec) return {{}, false};
-        nibbles[nib_idx++] = dec->first & 0x0F;
-    }
-    std::vector<uint8_t> hdr(hdr_bytes);
-    for (size_t i = 0; i < hdr_bytes; ++i) {
-        uint8_t low  = nibbles[i*2];
-        uint8_t high = nibbles[i*2+1];
-        hdr[i] = (high << 4) | low;
-    }
-    auto lfsr = lora::utils::LfsrWhitening::pn9_default();
-    lfsr.apply(hdr.data(), hdr.size());
-    auto hdr_opt = parse_local_header_with_crc(hdr.data(), hdr.size());
-    if (!hdr_opt) return {{}, false};
-    size_t payload_len = hdr_opt->payload_len;
-
-    // Decode payload without enforcing CRC
-    size_t pay_crc_bytes = payload_len + 2;
-    size_t pay_bits = pay_crc_bytes * 2 * cr_plus4;
-    if (pay_bits % block_bits) pay_bits = ((pay_bits / block_bits) + 1) * block_bits;
-    size_t pay_nsym = pay_bits / sf;
-    if (data.size() < (hdr_nsym + pay_nsym) * N) return {{}, true};
-    ws.ensure_rx_buffers(pay_nsym, sf, cr_plus4);
-    for (size_t s = 0; s < pay_nsym; ++s) {
-        uint32_t raw_symbol = demod_symbol(ws, &data[(hdr_nsym + s) * N]);
-        symbols[s] = lora::utils::gray_encode(raw_symbol);  // Apply Gray encoding like GNU Radio
-    }
-    bit_idx = 0;
-    for (size_t s = 0; s < pay_nsym; ++s) {
-        uint32_t sym = symbols[s];
-        for (uint32_t b = 0; b < sf; ++b) bits[bit_idx++] = (sym >> b) & 1;
-    }
-    for (size_t off = 0; off < bit_idx; off += M.n_in)
-        for (uint32_t i = 0; i < M.n_out; ++i) deint[off + M.map[i]] = bits[off + i];
-    nib_idx = 0;
-    for (size_t i = 0; i < pay_bits; i += cr_plus4) {
-        uint16_t cw = 0; for (uint32_t b = 0; b < cr_plus4; ++b) cw = (cw << 1) | deint[i + b];
-        auto dec = lora::utils::hamming_decode4(cw, cr_plus4, cr, T);
-        if (!dec) return {{}, true};
-        nibbles[nib_idx++] = dec->first & 0x0F;
-    }
-    std::vector<uint8_t> pay(pay_crc_bytes);
-    for (size_t i = 0; i < pay_crc_bytes; ++i) {
-        uint8_t low  = nibbles[i*2];
-        uint8_t high = nibbles[i*2+1];
-        pay[i] = (high << 4) | low;
-    }
-    // Dewhiten starting from header state (reuse lfsr from header)
-    lfsr.apply(pay.data(), pay.size());
-    // Return only payload bytes (ignore CRC result)
-    std::vector<uint8_t> out(payload_len);
-    if (payload_len > 0 && pay.size() >= payload_len)
-        std::copy(pay.begin(), pay.begin() + payload_len, out.begin());
-    return { std::move(out), true };
+    return decode_payload_no_crc_with_preamble_cfo_sto_os_impl(ws, samples, sf, cr, min_preamble_syms, expected_sync);
 }
 } // namespace lora::rx

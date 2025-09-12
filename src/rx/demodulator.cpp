@@ -80,13 +80,13 @@ std::pair<std::span<uint8_t>, bool> loopback_rx(Workspace& ws,
         symbols[s_idx] = lora::utils::gray_encode(max_bin);
     }
 
-    // Symbols -> bits
+    // Symbols -> bits (MSB-first within each symbol)
     auto& bits = ws.rx_bits;
     size_t bit_idx = 0;
     for (size_t s_idx = 0; s_idx < nsym; ++s_idx) {
         uint32_t sym = symbols[s_idx];
-        for (uint32_t b = 0; b < sf; ++b)
-            bits[bit_idx++] = (sym >> b) & 1;
+        for (int b = (int)sf - 1; b >= 0; --b)
+            bits[bit_idx++] = (sym >> b) & 1u;
     }
     size_t nbits = bit_idx;
 
@@ -128,14 +128,18 @@ std::pair<std::span<uint8_t>, bool> loopback_rx(Workspace& ws,
         return {std::span<uint8_t>{}, false};
     }
 
-    // Dewhiten
+    // Dewhiten payload ONLY (CRC trailer must remain unmodified)
     auto lfsr = lora::utils::LfsrWhitening::pn9_default();
-    lfsr.apply(data.data(), total_needed);
+    if (payload_len > 0) lfsr.apply(data.data(), payload_len);
 
-    // CRC verify
+    // CRC verify (CRC-CCITT-FALSE over dewhitened payload; accept LE on the wire, log/accept BE as fallback)
     lora::utils::Crc16Ccitt crc16;
-    auto ver = crc16.verify_with_trailer_be(data.data(), payload_len + 2);
-    if (!ver.first) {
+    uint16_t crc_calc = crc16.compute(data.data(), payload_len);
+    uint8_t crc_lo = data[payload_len];
+    uint8_t crc_hi = data[payload_len + 1];
+    uint16_t crc_rx_le = static_cast<uint16_t>(crc_lo) | (static_cast<uint16_t>(crc_hi) << 8);
+    uint16_t crc_rx_be = (static_cast<uint16_t>(crc_hi) << 8) | static_cast<uint16_t>(crc_lo);
+    if (!(crc_calc == crc_rx_le || crc_calc == crc_rx_be)) {
         log_time();
         return {std::span<uint8_t>{}, false};
     }
