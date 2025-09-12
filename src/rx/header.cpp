@@ -1,4 +1,5 @@
 #include "lora/rx/header.hpp"
+#include "lora/utils/crc.hpp"
 
 namespace lora::rx {
 
@@ -71,16 +72,7 @@ std::optional<LocalHeader> parse_standard_lora_header(const uint8_t* hdr, size_t
     const uint8_t cr_idx = static_cast<uint8_t>((n2 >> 1) & 0x7u);
 
     // Compute checksum bits as used in TX generation
-    const bool c4 = ((n0 & 0b1000) >> 3) ^ ((n0 & 0b0100) >> 2) ^ ((n0 & 0b0010) >> 1) ^ (n0 & 0b0001);
-    const bool c3 = ((n0 & 0b1000) >> 3) ^ ((n1 & 0b1000) >> 3) ^ ((n1 & 0b0100) >> 2) ^ ((n1 & 0b0010) >> 1) ^ (n2 & 0x1);
-    const bool c2 = ((n0 & 0b0100) >> 2) ^ ((n1 & 0b1000) >> 3) ^ (n1 & 0x1) ^ ((n2 & 0b1000) >> 3) ^ ((n2 & 0b0010) >> 1);
-    const bool c1 = ((n0 & 0b0010) >> 1) ^ ((n1 & 0b0100) >> 2) ^ (n1 & 0x1) ^ ((n2 & 0b0100) >> 2) ^ ((n2 & 0b0010) >> 1) ^ (n2 & 0x1);
-    const bool c0 = (n0 & 0x1) ^ ((n1 & 0b0010) >> 1) ^ ((n2 & 0b1000) >> 3) ^ ((n2 & 0b0100) >> 2) ^ ((n2 & 0b0010) >> 1) ^ (n2 & 0x1);
-    const uint8_t chk_calc = static_cast<uint8_t>((c4 ? 0x10 : 0x00) |
-                                                 (c3 ? 0x08 : 0x00) |
-                                                 (c2 ? 0x04 : 0x00) |
-                                                 (c1 ? 0x02 : 0x00) |
-                                                 (c0 ? 0x01 : 0x00));
+    const uint8_t chk_calc = lora::utils::crc_header(n0, n1, n2);
 
     if (chk_rx != chk_calc) return std::nullopt;
     if (payload_len == 0) return std::nullopt;
