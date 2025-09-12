@@ -8,15 +8,10 @@
 #include "lora/debug.hpp"
 #include "lora/rx/decimate.hpp"
 #include "lora/rx/sync.hpp"
+#include "lora/rx/demod.hpp"
 #include <algorithm>
 
 namespace lora::rx {
-
-// moved to src/rx/frame_decode.cpp
-
-// moved to src/rx/frame_decode.cpp
-
-// moved to src/rx/frame_decode.cpp
 
 // Auto-length from header: OS-aware detect/align, then decode header to get payload length,
 // then decode payload+CRC and verify.
@@ -44,7 +39,7 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
         uint32_t N = ws.N;
         // Second sync check
         if (sync_start + N + N <= aligned.size()) {
-            uint32_t ss2 = demod_symbol(ws, &aligned[sync_start + N]);
+            uint32_t ss2 = demod_symbol_peak(ws, &aligned[sync_start + N]);
             if (ss2 == expected_sync) {
                 sync_start += N;
             }
@@ -128,7 +123,7 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
     ws.ensure_rx_buffers(pay_nsym, sf, payload_cr_plus4);
     auto& symbols_pay = ws.rx_symbols; symbols_pay.resize(pay_nsym);
     for (size_t s = 0; s < pay_nsym; ++s) {
-        uint32_t raw_symbol = demod_symbol(ws, &data[(hdr_nsym_pad + s) * ws.N]);
+        uint32_t raw_symbol = demod_symbol_peak(ws, &data[(hdr_nsym_pad + s) * ws.N]);
         symbols_pay[s] = lora::utils::gray_encode(raw_symbol);
     }
     auto& bits_pay = ws.rx_bits; bits_pay.resize(pay_nsym * sf);
@@ -285,14 +280,14 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
             if (so >= 0) {
                 if (base + (size_t)so + N > aligned.size()) continue;
                 size_t idx = base + (size_t)so;
-                uint32_t ss = demod_symbol(ws, &aligned[idx]);
+                uint32_t ss = demod_symbol_peak(ws, &aligned[idx]);
                 if (std::abs(int(ss) - int(net1)) <= 2 || std::abs(int(ss) - int(net2)) <= 2) { found_sync = true; sync_start = idx; break; }
             } else {
                 size_t offs = (size_t)(-so);
                 if (base < offs) continue;
                 size_t idx = base - offs;
                 if (idx + N > aligned.size()) continue;
-                uint32_t ss = demod_symbol(ws, &aligned[idx]);
+                uint32_t ss = demod_symbol_peak(ws, &aligned[idx]);
                 if (std::abs(int(ss) - int(net1)) <= 2 || std::abs(int(ss) - int(net2)) <= 2) { found_sync = true; sync_start = idx; break; }
             }
         }
@@ -334,7 +329,7 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
     if (!found_sync) return std::nullopt;
     // If a second sync follows, skip it
     if (sync_start + N + N <= aligned.size()) {
-        uint32_t ss2 = demod_symbol(ws, &aligned[sync_start + N]);
+        uint32_t ss2 = demod_symbol_peak(ws, &aligned[sync_start + N]);
         if (std::abs(int(ss2) - int(net1)) <= 2 || std::abs(int(ss2) - int(net2)) <= 2) {
             sync_start += N;
             printf("DEBUG: Second sync detected; advancing by 1 symbol to sync_start=%zu\n", sync_start);
@@ -363,7 +358,7 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
     ws.ensure_rx_buffers(hdr_nsym, sf, header_cr_plus4);
     auto& symbols = ws.rx_symbols;
     for (size_t s = 0; s < hdr_nsym; ++s) {
-        uint32_t raw_symbol = demod_symbol(ws, &data[s * N]);
+        uint32_t raw_symbol = demod_symbol_peak(ws, &data[s * N]);
         uint32_t corr = (raw_symbol + ws.N - 44u) % ws.N;   // align to symbol origin like GR
         symbols[s] = lora::utils::gray_encode(corr);        // GR-style Gray-coded symbol
         printf("DEBUG: Header symbol %zu: raw=%u, corr=%u, gray=%u\n", s, raw_symbol, corr, symbols[s]);
@@ -437,7 +432,7 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
             }
             // Demod and reduce
             uint32_t raw0[8]{}, raw1[8]{};
-            for (size_t s = 0; s < 8; ++s) { raw0[s] = demod_symbol(ws, &aligned[idx0 + s * N]); raw1[s] = demod_symbol(ws, &aligned[idx1 + s * N]); }
+            for (size_t s = 0; s < 8; ++s) { raw0[s] = demod_symbol_peak(ws, &aligned[idx0 + s * N]); raw1[s] = demod_symbol_peak(ws, &aligned[idx1 + s * N]); }
             uint32_t gnu_both[16]{};
             for (size_t s = 0; s < 8; ++s) gnu_both[s]      = ((raw0[s] + N - 1u) & (N - 1u)) >> 2;
             for (size_t s = 0; s < 8; ++s) gnu_both[8 + s]  = ((raw1[s] + N - 1u) & (N - 1u)) >> 2;
@@ -574,7 +569,7 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
                     if (start_idx + 16u * N > aligned.size()) continue;
                     // Demod 16 raw symbols from this start
                     uint32_t raw_syms[16]{};
-                    for (size_t s = 0; s < 16; ++s) raw_syms[s] = demod_symbol(ws, &aligned[start_idx + s * N]);
+                    for (size_t s = 0; s < 16; ++s) raw_syms[s] = demod_symbol_peak(ws, &aligned[start_idx + s * N]);
                     for (int mode = 0; mode < 2; ++mode) {
                         uint32_t gnu[16]{};
                         for (size_t s = 0; s < 16; ++s) {
@@ -643,7 +638,7 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
                 else { size_t offs = static_cast<size_t>(-samp0); if (hdr_start_base < offs) goto AFTER_FINE_SEARCH; base0 = hdr_start_base - offs; }
                 size_t idx0 = base0 + static_cast<size_t>(off0) * N;
                 if (idx0 + 8u * N > aligned.size()) goto AFTER_FINE_SEARCH;
-                uint32_t raw0[8]{}; for (size_t s = 0; s < 8; ++s) raw0[s] = demod_symbol(ws, &aligned[idx0 + s * N]);
+                uint32_t raw0[8]{}; for (size_t s = 0; s < 8; ++s) raw0[s] = demod_symbol_peak(ws, &aligned[idx0 + s * N]);
                 if (!__hdr_scan) goto AFTER_FINE_SEARCH; // skip heavy scan unless enabled
                 // Prepare fine-grained sample shifts for block1 around ±N/64 with ±1..±4 deltas (in samples)
                 std::vector<long> fine_samp1;
@@ -670,7 +665,7 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
                         if (samp1 >= 0) { idx1 = idx1_off + static_cast<size_t>(samp1); }
                         else { size_t o = static_cast<size_t>(-samp1); if (idx1_off < o) continue; idx1 = idx1_off - o; }
                         if (idx1 + 8u * N > aligned.size()) continue;
-                        uint32_t raw1[8]{}; for (size_t s = 0; s < 8; ++s) raw1[s] = demod_symbol(ws, &aligned[idx1 + s * N]);
+                        uint32_t raw1[8]{}; for (size_t s = 0; s < 8; ++s) raw1[s] = demod_symbol_peak(ws, &aligned[idx1 + s * N]);
                         for (int mode = 0; mode < 2; ++mode) {
                             uint32_t g0[8]{}, g1[8]{};
                             for (size_t s = 0; s < 8; ++s) {
@@ -766,7 +761,7 @@ AFTER_FINE_SEARCH:
                 for (int off0 = 0; off0 <= 7; ++off0) {
                     size_t idx0 = base0 + static_cast<size_t>(off0) * N;
                     if (idx0 + 8u * N > aligned.size()) continue;
-                    uint32_t raw0[8]{}; for (size_t s = 0; s < 8; ++s) raw0[s] = demod_symbol(ws, &aligned[idx0 + s * N]);
+                    uint32_t raw0[8]{}; for (size_t s = 0; s < 8; ++s) raw0[s] = demod_symbol_peak(ws, &aligned[idx0 + s * N]);
                     for (int ss1 = 0; ss1 < 19; ++ss1) {
                         long samp1 = samp_shifts[ss1];
                     size_t idx1_base = idx0 + 8u * N;
@@ -776,7 +771,7 @@ AFTER_FINE_SEARCH:
                         if (samp1 >= 0) { idx1 = idx1_off + static_cast<size_t>(samp1); }
                         else { size_t o = static_cast<size_t>(-samp1); if (idx1_off < o) continue; idx1 = idx1_off - o; }
                         if (idx1 + 8u * N > aligned.size()) continue;
-                        uint32_t raw1[8]{}; for (size_t s = 0; s < 8; ++s) raw1[s] = demod_symbol(ws, &aligned[idx1 + s * N]);
+                        uint32_t raw1[8]{}; for (size_t s = 0; s < 8; ++s) raw1[s] = demod_symbol_peak(ws, &aligned[idx1 + s * N]);
                         for (int mode = 0; mode < 2; ++mode) {
                             uint32_t gnu0[8]{}, gnu1[8]{};
                             for (size_t s = 0; s < 8; ++s) {
@@ -938,7 +933,7 @@ AFTER_FINE_SEARCH:
                 std::vector<std::vector<uint8_t>> inter_bin(cw_len, std::vector<uint8_t>(sf_app));
                 for (uint32_t s = 0; s < cw_len; ++s) {
                     size_t sym_index = blk * cw_len + s;
-                    uint32_t raw_symbol = demod_symbol(ws, &data[sym_index * N]);
+                    uint32_t raw_symbol = demod_symbol_peak(ws, &data[sym_index * N]);
                     uint32_t corr = (raw_symbol + ws.N - 44u) % ws.N;
                     uint32_t g = lora::utils::gray_encode(corr);
                     uint32_t gnu = ((g + (1u << sf) - 1u) & ((1u << sf) - 1u)) >> 2; // GR header mapping
@@ -1001,7 +996,7 @@ AFTER_FINE_SEARCH:
             std::vector<uint8_t> bits2(hdr_nsym * sf);
             size_t bit_idx2 = 0;
             for (size_t s = 0; s < hdr_nsym; ++s) {
-                uint32_t raw_symbol = demod_symbol(ws, &data[s * N]);
+                uint32_t raw_symbol = demod_symbol_peak(ws, &data[s * N]);
                 uint32_t sym = lora::utils::gray_encode(raw_symbol);
                 for (int b = static_cast<int>(sf) - 1; b >= 0; --b)
                     bits2[bit_idx2++] = (sym >> b) & 1u;
@@ -1130,7 +1125,7 @@ AFTER_FINE_SEARCH:
             // Rebuild symbols with chosen bin offset and gray map
             std::vector<uint32_t> syms(hdr_nsym);
             for (size_t s = 0; s < hdr_nsym; ++s) {
-                uint32_t raw_symbol = demod_symbol(ws, &data[s * N]);
+                uint32_t raw_symbol = demod_symbol_peak(ws, &data[s * N]);
                 uint32_t mapped = (raw_symbol + N + (uint32_t)bin_offset) % N;
                 uint32_t mapped_sym = use_gray_decode ? lora::utils::gray_decode(mapped)
                                                       : lora::utils::gray_encode(mapped);
@@ -1223,7 +1218,7 @@ AFTER_FINE_SEARCH:
                 // Demod payload symbols after header span
                 auto& symbols_pay = ws.rx_symbols; symbols_pay.resize(pay_nsym);
                 for (size_t s = 0; s < pay_nsym; ++s) {
-                    uint32_t raw_symbol = demod_symbol(ws, &data[(hdr_nsym + s) * N]);
+                    uint32_t raw_symbol = demod_symbol_peak(ws, &data[(hdr_nsym + s) * N]);
                     symbols_pay[s] = lora::utils::gray_encode(raw_symbol);
                 }
                 // Bits MSB-first to mirror header mapping and GR behavior
