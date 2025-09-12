@@ -201,11 +201,14 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os_impl(
             return std::nullopt;
         };
         if (hdr_nsym >= 16 && sf_app >= 3) {
-            std::vector<int> off0_list = {1,2,3};
-            std::vector<int> off1_list = {-1,0,1,2};
-            std::vector<long> samp_list = {0, (long)N/64, -(long)N/64, (long)N/32, -(long)N/32};
-            for (int off0 : off0_list) for (int off1 : off1_list) for (long s0 : samp_list) for (long s1 : samp_list)
-                if (auto ok = try_parse_two_block(off0, s0, off1, s1)) return ok;
+            std::vector<int> sym_offsets = {0, -1, 1, -2, 2};
+            std::vector<long> samp_offsets = {0, (long)N/64, -(long)N/64,
+                                             (long)N/32, -(long)N/32,
+                                             (long)N/16, -(long)N/16};
+            for (int off : sym_offsets)
+                for (long samp : samp_offsets)
+                    if (auto ok = try_parse_two_block(off, samp, off, samp))
+                        return ok;
         }
     }
 
