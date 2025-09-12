@@ -34,7 +34,7 @@ TEST(HeaderEndToEnd, PreambleSyncDecode) {
     sig[pre_len * N + n] = ws.upchirp[(n + sync_sym) % N];
   std::copy(iq.begin(), iq.end(), sig.begin() + (pre_len + 1) * N);
 
-  auto out = lora::rx::decode_frame_with_preamble(ws, sig, sf, cr, payload.size(), pre_len);
+  auto out = lora::rx::decode_frame_with_preamble_cfo_sto_os_auto(ws, sig, sf, cr, pre_len);
   ASSERT_TRUE(out.second);
   ASSERT_EQ(out.first.size(), payload.size());
   EXPECT_TRUE(std::equal(out.first.begin(), out.first.end(), payload.begin()));
