@@ -34,11 +34,11 @@ add_library(lora_phy
     src/rx/demodulator.cpp
     src/rx/decimate.cpp
     src/rx/preamble.cpp
-    src/rx/frame_decode.cpp
     src/rx/header_decode.cpp
     src/rx/payload_decode.cpp
     src/rx/frame.cpp
     src/rx/header.cpp
+    src/rx/sync.cpp
 )
 target_link_libraries(lora_phy PUBLIC lora_utils liquid)
 target_include_directories(lora_phy PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
