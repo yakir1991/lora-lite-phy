@@ -29,6 +29,7 @@ Important: Treat block 1 as an independent block (fresh origin). Do not carry bl
   - Apply measured CFO/STO (from preamble) before sampling header symbols.
 - Minimal bounded retry on checksum failure:
   - Sample nudges of ±1/64, ±1/32, ±1/16 symbol, and symbol offsets ±1..±2. Stop at first valid checksum.
+  - Implementation loops over these offsets and computes `lora::utils::crc_header` at each step, exiting as soon as the checksum matches.
 - Exact GR mapping per block (reset per block):
   1) `gnu = ((raw - 1) & (N-1)) >> 2`
   2) Gray(gnu), take `sf_app` MSB→LSB bits per symbol
