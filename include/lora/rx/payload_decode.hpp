@@ -19,4 +19,12 @@ std::pair<std::vector<uint8_t>, bool> decode_payload_no_crc_with_preamble_cfo_st
     size_t min_preamble_syms = 8,
     uint8_t expected_sync = lora::LORA_SYNC_WORD_PUBLIC);
 
+// Decode payload symbols using header parameters and verify CRC.
+// Returns dewhitened payload bytes and CRC status.
+std::pair<std::vector<uint8_t>, bool> decode_payload_with_crc(
+    Workspace& ws,
+    std::span<const std::complex<float>> symbols,
+    uint32_t sf,
+    const LocalHeader& header);
+
 } // namespace lora::rx
