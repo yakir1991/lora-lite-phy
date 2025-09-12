@@ -125,6 +125,12 @@ Advanced options:
   python3 scripts/run_vector_compare.py
   # writes JSON summary to logs/run_vector_compare.out and artifacts to logs/
   ```
+- Convert LoRa Lite logs to header codewords and compare with GNU Radio:
+  ```bash
+  python3 scripts/lite_log_to_cw.py --log logs/lite_ld.json --gr-nibbles logs/gr_hdr_nibbles.bin
+  # or run both steps automatically
+  bash scripts/demo_lite_log_to_cw.sh
+  ```
 
 Note on GNU Radio Throttle:
 - For batch vector generation we strip/remove `blocks_throttle` from the flowgraphs to avoid blocking, see `scripts/export_vectors_grc.sh` and `scripts/strip_throttle_blocks.py`.
