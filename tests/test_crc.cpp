@@ -30,3 +30,16 @@ TEST(CRC16, KnownVector) {
     uint16_t calc = crc.compute(reinterpret_cast<const uint8_t*>(msg), 9);
     EXPECT_EQ(calc, 0x29B1);
 }
+
+TEST(CRC16, TrailerLE) {
+    Crc16Ccitt crc{};
+    const char* msg = "123456789";
+    auto trailer = crc.make_trailer_le(reinterpret_cast<const uint8_t*>(msg), 9);
+    EXPECT_EQ(trailer.first, 0xB1);
+    EXPECT_EQ(trailer.second, 0x29);
+    std::vector<uint8_t> payload(msg, msg + 9);
+    payload.push_back(trailer.first);
+    payload.push_back(trailer.second);
+    auto [ok, calc] = crc.verify_with_trailer_le(payload.data(), payload.size());
+    EXPECT_TRUE(ok) << std::hex << calc;
+}

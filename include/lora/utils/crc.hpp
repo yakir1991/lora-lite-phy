@@ -21,6 +21,12 @@ struct Crc16Ccitt {
 
 
     std::pair<uint8_t,uint8_t> make_trailer_be(const uint8_t* data, size_t len) const;
+
+
+    std::pair<bool, uint16_t> verify_with_trailer_le(const uint8_t* data, size_t len) const;
+
+
+    std::pair<uint8_t,uint8_t> make_trailer_le(const uint8_t* data, size_t len) const;
 };
 
 // Compute the 5-bit checksum used by the explicit LoRa header.
