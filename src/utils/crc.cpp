@@ -40,4 +40,16 @@ std::pair<uint8_t,uint8_t> Crc16Ccitt::make_trailer_be(const uint8_t* data, size
     return { uint8_t((c >> 8) & 0xFF), uint8_t(c & 0xFF) };
 }
 
+std::pair<bool, uint16_t> Crc16Ccitt::verify_with_trailer_le(const uint8_t* data, size_t len) const {
+    if (len < 2) return {false, 0};
+    uint16_t calc = compute(data, len - 2);
+    uint16_t got  = uint16_t(data[len-2]) | (uint16_t(data[len-1]) << 8);
+    return {calc == got, calc};
+}
+
+std::pair<uint8_t,uint8_t> Crc16Ccitt::make_trailer_le(const uint8_t* data, size_t len) const {
+    uint16_t c = compute(data, len);
+    return { uint8_t(c & 0xFF), uint8_t((c >> 8) & 0xFF) };
+}
+
 } // namespace lora::utils
