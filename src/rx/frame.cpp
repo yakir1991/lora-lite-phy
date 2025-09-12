@@ -74,310 +74,22 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
     if (__dbg) printf("DEBUG: Signal info - aligned.size()=%zu, sync_start=%zu, N=%u\n", aligned.size(), sync_start, N);
     if (__dbg) printf("DEBUG: Data span - offset=%zu, data.size()=%zu\n", sync_start + 3*N, data.size());
     
-    // Streamed decode across interleaver blocks to avoid per-part padding.
-    // LoRa standard: HEADER is always encoded at fixed CR=4/8 (cr_plus4=8)
     const uint32_t header_cr_plus4 = 8u;
-    const uint32_t block_bits = sf * header_cr_plus4;  // bits per interleaver block (header)
-    const uint32_t block_syms = header_cr_plus4;       // symbols per interleaver block (header)
     const size_t   total_syms = data.size() / ws.N;
-    
-    if (__dbg) printf("DEBUG: Block info - block_bits=%u, block_syms=%u, total_syms=%zu\n", block_bits, block_syms, total_syms);
-    const auto& M = ws.get_interleaver(sf, header_cr_plus4);
-    static lora::utils::HammingTables T = lora::utils::make_hamming_tables();
-
-    // Note: For header, GNU Radio uses an effective rate of sf_app = sf - 2 by
-    // dividing gray(symbol_corr) by 4 (after subtracting 1 modulo N). We implement
-    // the same mapping here instead of using the generic interleaver map directly.
-    const uint32_t sf_app = (sf >= 2) ? (sf - 2) : sf;
-    const uint32_t block_bits_app = sf_app * header_cr_plus4; //  (sf-2) * 8
-    std::vector<uint8_t> inter_bits(block_bits_app);
-    std::vector<uint8_t> deint_bits(block_bits_app);
-    std::vector<uint8_t> stream_bits; stream_bits.reserve(block_bits * 8);
-    size_t sym_consumed = 0;
-    auto demod_block_append = [&](void) -> bool {
-        if (sym_consumed + block_syms > total_syms) {
-            if (__dbg) printf("DEBUG: demod_block_append failed - sym_consumed=%zu, block_syms=%u, total_syms=%zu\n", sym_consumed, block_syms, total_syms);
-            return false;
-        }
-        if (__dbg) printf("DEBUG: demod_block_append processing block at sym_consumed=%zu, will add %u bits\n", sym_consumed, block_bits);
-        // Build inter_bin (cw_len x sf_app) with confirmed GR mapping per block:
-        // 1) gnu = ((raw - 1) mod N) >> 2
-        // 2) g = Gray(gnu)
-        // 3) Take sf_app bits MSB→LSB from g
-        const uint32_t cw_len = header_cr_plus4; // 8
-        std::vector<std::vector<uint8_t>> inter_bin(cw_len, std::vector<uint8_t>(sf_app));
-        for (uint32_t s = 0; s < block_syms; ++s) {
-            uint32_t raw_sym = demod_symbol(ws, &data[(sym_consumed + s) * ws.N]);
-            uint32_t gnu = ((raw_sym + ws.N - 1u) & (ws.N - 1u)) >> 2; // drop 2 LSB after −1
-            uint32_t g    = lora::utils::gray_encode(gnu);
-            uint32_t sub  = g & ((1u << sf_app) - 1u);
-            if (__dbg && sym_consumed + s < 10) printf("DEBUG: Symbol %zu: raw=%u gnu=%u gray(gnu)=%u sub=0x%x\n", sym_consumed + s, raw_sym, gnu, g, sub);
-            for (uint32_t j = 0; j < sf_app; ++j) {
-                // MSB-first over the sf_app bits of Gray(gnu)
-                uint32_t bit = (sub >> (sf_app - 1u - j)) & 1u;
-                inter_bin[s][j] = static_cast<uint8_t>(bit);
-            }
-        }
-        // Deinterleave per GR formula: deinter_bin[mod(i - j - 1, sf_app)][i] = inter_bin[i][j]
-        std::vector<std::vector<uint8_t>> deinter_bin(sf_app, std::vector<uint8_t>(cw_len));
-        for (uint32_t i = 0; i < cw_len; ++i) {
-            for (uint32_t j = 0; j < sf_app; ++j) {
-                int r = static_cast<int>(i) - static_cast<int>(j) - 1;
-                r %= static_cast<int>(sf_app);
-                if (r < 0) r += static_cast<int>(sf_app);
-                deinter_bin[static_cast<size_t>(r)][i] = inter_bin[i][j];
-            }
-        }
-        // Flatten rows into stream_bits (each row is one 8-bit codeword)
-        for (uint32_t r = 0; r < sf_app; ++r)
-            for (uint32_t c = 0; c < cw_len; ++c)
-                stream_bits.push_back(deinter_bin[r][c]);
-        sym_consumed += block_syms;
-        
-        if (__dbg) printf("DEBUG: After block append - added %u bits (sf_app*8), stream_bits.size()=%zu, sym_consumed=%zu\n", block_bits_app, stream_bits.size(), sym_consumed);
-        return true;
-    };
-
-    // Header (4 bytes)
-    const size_t hdr_bytes = 5;  // Standard LoRa header is 5 bytes
+    const size_t hdr_bytes = 5;
     const size_t hdr_bits_exact = hdr_bytes * 2 * header_cr_plus4;
-    while (stream_bits.size() < hdr_bits_exact) {
-        if (!demod_block_append()) { lora::debug::set_fail(108); return {std::span<uint8_t>{}, false}; }
-    }
-    std::vector<uint8_t> hdr(hdr_bytes);
-    auto& nibbles = ws.rx_nibbles; nibbles.clear(); nibbles.resize(hdr_bytes * 2);
-    size_t nib_idx = 0;
-    for (size_t i = 0; i < hdr_bits_exact; i += header_cr_plus4) {
-        uint16_t cw = 0; for (uint32_t b = 0; b < header_cr_plus4; ++b) cw = (cw << 1) | stream_bits[i + b];
-        auto dec = lora::utils::hamming_decode4(cw, header_cr_plus4, lora::utils::CodeRate::CR48, T);
-        if (!dec) { lora::debug::set_fail(111); return {std::span<uint8_t>{}, false}; }
-        nibbles[nib_idx++] = dec->first & 0x0F;
-    }
-    for (size_t i = 0; i < hdr_bytes; ++i) {
-        uint8_t high = nibbles[i*2];
-        uint8_t low  = nibbles[i*2+1];
-        hdr[i] = (high << 4) | low; // header transmits high nibble first
-    }
-    
-        // Debug print the header nibbles
+
+    auto header_res = decode_header_from_symbols(ws, data, sf);
+    auto hdr_opt = header_res.first;
+    auto hdr_nibbles = std::move(header_res.second);
+    if (__dbg) {
         printf("DEBUG: Decoded header nibbles: ");
-        for (size_t i = 0; i < nibbles.size(); ++i) {
-            printf("0x%x ", nibbles[i]);
-        }
+        for (auto n : hdr_nibbles) printf("0x%x ", n);
         printf("\n");
-
-        // Try to parse deterministic GR header immediately
-        std::optional<lora::rx::LocalHeader> hdr_opt = parse_standard_lora_header(hdr.data(), hdr.size());
-        if (hdr_opt) {
-            printf("DEBUG: Deterministic GR header OK: len=%u cr=%d has_crc=%s\n",
-                   (unsigned)hdr_opt->payload_len, (int)hdr_opt->cr, hdr_opt->has_crc?"true":"false");
-        }
-
-        // GNU Radio header_decoder expects nibbles directly!
-        // payload_len = (nibbles[0] << 4) + nibbles[1]
-        // has_crc = nibbles[2] & 1  
-        // cr = nibbles[2] >> 1
-        
-        if (nibbles.size() >= 3) {
-            uint8_t payload_len = (nibbles[0] << 4) + nibbles[1];
-            uint8_t has_crc = nibbles[2] & 1;
-            uint8_t cr = nibbles[2] >> 1;
-            
-            printf("DEBUG: GNU Radio style header: payload_len=%u, has_crc=%u, cr=%u\n", 
-                   payload_len, has_crc, cr);
-            
-            // Create GNU Radio style header
-            lora::rx::LocalHeader hdr_info;
-            hdr_info.payload_len = payload_len;
-            hdr_info.has_crc = has_crc;
-            hdr_info.cr = static_cast<lora::utils::CodeRate>(cr);
-            
-            // Check if values are reasonable
-            if (payload_len > 0 && payload_len <= 255 && cr <= 4) {
-                printf("DEBUG: GNU Radio header looks valid!\n");
-                // This is our valid header - continue to payload processing
-            } else {
-                printf("DEBUG: GNU Radio header values out of range\n");
-                hdr_info = {}; // Clear invalid header
-            }
-        }
-        
-        // Prepare hdr_opt for payload processing (use deterministic result if available)
-        // (hdr_opt may already be set above)
-        
-        // GNU Radio divides header symbols by 4! Let's try direct header symbol parsing
-        printf("DEBUG: Trying GNU Radio direct symbol parsing (divide by 4)\n");
-        
-        // Calculate number of header symbols
-        const size_t hdr_nsym = hdr_bits_exact / sf;  // Each symbol contains sf bits
-        
-        // Try different starting positions for header symbols
-        std::vector<uint8_t> direct_nibbles;
-        bool found_valid_header = false;
-        
-        // Try multiple starting offsets to find the correct header position
-        for (int offset = 0; offset < 5 && !found_valid_header; ++offset) {
-            printf("DEBUG: Trying header offset %d\n", offset);
-            direct_nibbles.clear();
-            
-            for (size_t s = 0; s < std::min(size_t(10), hdr_nsym); ++s) {
-                size_t symbol_idx = s + offset;
-                if (symbol_idx * N >= data.size()) break;
-                
-                uint32_t raw_symbol = demod_symbol(ws, &data[symbol_idx * N]);
-                uint32_t gray_symbol = lora::utils::gray_encode(raw_symbol);
-                
-                // GNU Radio formula: ((symbol - 1) % (1 << sf)) / 4
-                uint32_t gnu_symbol = ((gray_symbol - 1 + (1u << sf)) % (1u << sf)) / 4;
-                direct_nibbles.push_back(gnu_symbol & 0xF);
-                
-                if (s < 5) printf("DEBUG: Offset %d Symbol %zu: raw=%u, gray=%u, gnu=%u\n", 
-                                  offset, s, raw_symbol, gray_symbol, gnu_symbol);
-            }
-            
-            // Print all nibbles for this offset
-            printf("DEBUG: Offset %d nibbles: [", offset);
-            for (size_t i = 0; i < std::min(size_t(8), direct_nibbles.size()); ++i) {
-                printf("%u", direct_nibbles[i]);
-                if (i < std::min(size_t(8), direct_nibbles.size()) - 1) printf(",");
-            }
-            printf("]\n");
-            
-            // Check if this offset gives us the expected pattern [0, 11, 3]
-            // Also check for variations since payload_len=11 could be encoded differently
-            if (direct_nibbles.size() >= 3) {
-                for (size_t start = 0; start <= direct_nibbles.size() - 3; ++start) {
-                    uint8_t n0 = direct_nibbles[start];
-                    uint8_t n1 = direct_nibbles[start + 1];
-                    uint8_t n2 = direct_nibbles[start + 2];
-                    
-                    // Check exact pattern [0, 11, 3]
-                    if (n0 == 0 && n1 == 11 && n2 == 3) {
-                        printf("DEBUG: ✅ Found exact pattern [0,11,3] at offset %d, position %zu!\n", 
-                               offset, start);
-                        found_valid_header = true;
-                        
-                        std::vector<uint8_t> adjusted_nibbles(direct_nibbles.begin() + start, 
-                                                            direct_nibbles.end());
-                        direct_nibbles = adjusted_nibbles;
-                        break;
-                    }
-                    
-                    // Check if we have the second nibble (11) which is unique
-                    if (n1 == 11) {
-                        printf("DEBUG: 🔍 Found nibble 11 at offset %d, position %zu: [%u,%u,%u]\n", 
-                               offset, start, n0, n1, n2);
-                        
-                        // We consistently see [13,11,2] pattern - maybe this IS the correct pattern
-                        // but we need to interpret it differently
-                        if (n0 == 13 && n1 == 11 && n2 == 2) {
-                            printf("DEBUG: ✅ Found actual pattern [13,11,2] at offset %d, position %zu!\n", 
-                                   offset, start);
-                            printf("DEBUG: 💡 This might be our header! Let's try interpreting it as [0,11,3]\n");
-                            found_valid_header = true;
-                            
-                            // Force the pattern to be [0,11,3] since we know that's what GNU Radio expects
-                            std::vector<uint8_t> adjusted_nibbles = {0, 11, 3};
-                            
-                            // Add remaining nibbles if any
-                            for (size_t i = start + 3; i < direct_nibbles.size(); ++i) {
-                                adjusted_nibbles.push_back(direct_nibbles[i]);
-                            }
-                            
-                            direct_nibbles = adjusted_nibbles;
-                            break;
-                        }
-                        
-                        // Maybe payload_len is encoded as [11, 0] instead of [0, 11]?
-                        if (n0 == 11 && n1 == 0 && n2 == 3) {
-                            printf("DEBUG: ✅ Found reversed pattern [11,0,3] at offset %d, position %zu!\n", 
-                                   offset, start);
-                            found_valid_header = true;
-                            
-                            // Adjust direct_nibbles and swap first two nibbles
-                            std::vector<uint8_t> adjusted_nibbles(direct_nibbles.begin() + start, 
-                                                                direct_nibbles.end());
-                            if (adjusted_nibbles.size() >= 2) {
-                                std::swap(adjusted_nibbles[0], adjusted_nibbles[1]);
-                            }
-                            direct_nibbles = adjusted_nibbles;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Try parsing GNU Radio style from direct symbols
-        if (!hdr_opt && direct_nibbles.size() >= 3) {
-            uint8_t payload_len = (direct_nibbles[0] << 4) + direct_nibbles[1];
-            uint8_t has_crc = direct_nibbles[2] & 1;
-            uint8_t cr_parsed = direct_nibbles[2] >> 1;
-            
-            printf("DEBUG: Direct GNU Radio parsing: payload_len=%u, has_crc=%u, cr=%u\n", 
-                   payload_len, has_crc, cr_parsed);
-            
-            if (payload_len > 0 && payload_len <= 255 && cr_parsed <= 4) {
-                lora::rx::LocalHeader valid_hdr;
-                valid_hdr.payload_len = payload_len;
-                valid_hdr.has_crc = has_crc;
-                valid_hdr.cr = static_cast<lora::utils::CodeRate>(cr_parsed);
-                hdr_opt = valid_hdr;
-                printf("DEBUG: Using GNU Radio direct symbol header!\n");
-            }
-        }
-        
-        // Fallback: original nibbles approach
-        if (!hdr_opt && nibbles.size() >= 3) {
-            uint8_t payload_len = (nibbles[0] << 4) + nibbles[1];
-            uint8_t has_crc = nibbles[2] & 1;
-            uint8_t cr_parsed = nibbles[2] >> 1;
-            if (payload_len > 0 && payload_len <= 255 && cr_parsed <= 4) {
-                lora::rx::LocalHeader valid_hdr;
-                valid_hdr.payload_len = payload_len;
-                valid_hdr.has_crc = has_crc;
-                valid_hdr.cr = static_cast<lora::utils::CodeRate>(cr_parsed);
-                hdr_opt = valid_hdr;
-                printf("DEBUG: Using original nibbles approach\n");
-            }
-        }
-        
-        // Fallback: Convert nibbles to bytes and try old parsing
-        if (!hdr_opt) {
-            std::vector<uint8_t> hdr_fallback;
-            hdr_fallback.reserve((nibbles.size() + 1) / 2);
-            for (size_t i = 0; i + 1 < nibbles.size(); i += 2) {
-                uint8_t byte = (nibbles[i] << 4) | nibbles[i + 1];
-                hdr_fallback.push_back(byte);
-            }
-            
-            printf("DEBUG: Fallback header bytes: ");
-            for (size_t i = 0; i < hdr_fallback.size(); ++i) {
-                printf("0x%02x ", hdr_fallback[i]);
-            }
-            printf("\n");
-
-            // Try parsing as standard LoRa header (GNU Radio format) - try unwhitened first
-            hdr_opt = parse_standard_lora_header(hdr_fallback.data(), hdr_fallback.size());
-            if (!hdr_opt) {
-                // If that fails, try with whitening applied
-                auto lfsr = lora::utils::LfsrWhitening::pn9_default();
-                std::vector<uint8_t> hdr_w = hdr_fallback;
-                lfsr.apply(hdr_w.data(), hdr_w.size());
-                hdr_opt = parse_standard_lora_header(hdr_w.data(), hdr_w.size());
-                if (!hdr_opt) {
-                    // Fallback to local header format (if needed)
-                    hdr_opt = parse_local_header_with_crc(hdr_w.data(), hdr_w.size());
-                    if (!hdr_opt) {
-                        hdr_opt = parse_local_header_with_crc(hdr_fallback.data(), hdr_fallback.size());
-                    }
-                }
-            }
-        }
-    if (!hdr_opt) { 
-        printf("DEBUG: All header parsing attempts failed!\n");
-        lora::debug::set_fail(109); 
-        return {std::span<uint8_t>{}, false}; 
+    }
+    if (!hdr_opt) {
+        lora::debug::set_fail(109);
+        return {std::span<uint8_t>{}, false};
     }
 
     const size_t payload_len = hdr_opt->payload_len;
@@ -394,8 +106,7 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
            payload_len, pay_crc_bytes, pay_bits_exact);
     printf("DEBUG: Using header CR=%d (cr_plus4=%u) for payload instead of input CR=%d\n", 
            static_cast<int>(hdr_opt->cr), payload_cr_plus4, static_cast<int>(cr));
-    printf("DEBUG: Header bits used: %zu, stream_bits available: %zu\n", 
-           hdr_bits_exact, stream_bits.size());
+    printf("DEBUG: Header bits used: %zu\n", hdr_bits_exact);
 
     // Reconstruct payload bitstream using payload CR interleaver (do not reuse header-mapped stream_bits)
     // Compute header symbol count (padded to interleaver block)
@@ -433,6 +144,7 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
         for (uint32_t i = 0; i < Mp.n_out; ++i)
             deint_pay[off + Mp.map[i]] = bits_pay[off + i];
     // Hamming decode to nibbles
+    auto& nibbles = ws.rx_nibbles;
     nibbles.resize(pay_crc_bytes * 2); nib_idx = 0;
     bool fec_failed = false;
     for (size_t i = 0; i < pay_bits_exact; i += payload_cr_plus4) {
