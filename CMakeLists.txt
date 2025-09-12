@@ -36,6 +36,8 @@ add_library(lora_phy
     src/rx/preamble.cpp
     src/rx/header_decode.cpp
     src/rx/payload_decode.cpp
+    src/rx/frame_align.cpp
+    src/rx/frame_auto.cpp
     src/rx/frame.cpp
     src/rx/header.cpp
     src/rx/sync.cpp
