@@ -140,7 +140,9 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
             deint_pay[off + Mp.map[i]] = bits_pay[off + i];
     // Hamming decode to nibbles
     auto& nibbles = ws.rx_nibbles;
-    nibbles.resize(pay_crc_bytes * 2); nib_idx = 0;
+    nibbles.resize(pay_crc_bytes * 2);
+    size_t nib_idx = 0;
+    static lora::utils::HammingTables T = lora::utils::make_hamming_tables();
     bool fec_failed = false;
     for (size_t i = 0; i < pay_bits_exact; i += payload_cr_plus4) {
         uint16_t cw = 0; for (uint32_t b = 0; b < payload_cr_plus4; ++b) cw = (cw << 1) | deint_pay[i + b];
@@ -819,7 +821,6 @@ AFTER_FINE_SEARCH:
                     }
                 }
             }
-AFTER_FINE_SEARCH:
         }
     }
 
