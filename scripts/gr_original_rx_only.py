@@ -61,24 +61,33 @@ def run_rx_only(in_iq: str, sf: int, cr_lora: int, bw_hz: int, samp_rate_hz: int
         except Exception:
             pass
 
-    # If requested, convert captured nibbles to bytes for pre-dewhitening reference
+    # If requested, derive pre-dewhitening from post-dewhitening by re-applying PN9 on first pay_len bytes
     if out_predew:
         try:
-            with open(nib_path, 'rb') as f:
-                nib = f.read()
-        except FileNotFoundError:
-            nib = b''
-        # Group into pairs: [low, high] -> byte
-        outb = bytearray()
-        for i in range(0, len(nib) - 1, 2):
-            low = nib[i] & 0x0F
-            high = nib[i+1] & 0x0F
-            outb.append((high << 4) | low)
-        try:
-            with open(out_predew, 'wb') as f:
-                f.write(outb)
+            with open(out_postdew, 'rb') as f:
+                post = bytearray(f.read())
         except Exception:
-            pass
+            post = bytearray()
+        if post:
+            # Apply LoRa PN9 whitening (x^9 + x^5 + 1), seed 0x1FF, MSB-first mask, payload only
+            pay = post[:]  # copy
+            # Generate 8-bit mask per payload byte
+            state = 0x1FF
+            def step_bit(s):
+                fb = ((s >> 0) ^ (s >> 4)) & 1
+                s = ((s >> 1) | (fb << 8)) & 0x1FF
+                return s, fb
+            for i in range(min(pay_len, len(pay))):
+                m = 0
+                for k in range(8):
+                    state, b = step_bit(state)
+                    m = (m << 1) | b
+                pay[i] ^= m
+            try:
+                with open(out_predew, 'wb') as f:
+                    f.write(pay)
+            except Exception:
+                pass
 
     # No explicit CRC boolean; just report payload length
     return {'ok': None, 'reason': 'n/a',

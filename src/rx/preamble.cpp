@@ -32,6 +32,7 @@ std::optional<size_t> detect_preamble(Workspace& ws,
     if (min_syms == 0) return std::nullopt;
     ws.init(sf);
     uint32_t N = ws.N;
+    bool dbg = (std::getenv("LORA_DEBUG") != nullptr);
     // Try small sample-level offsets to tolerate integer STO
     int search = std::min<size_t>(32, N/4);
     for (int off = 0; off <= search; ++off) {
@@ -40,12 +41,12 @@ std::optional<size_t> detect_preamble(Workspace& ws,
         size_t start_samp = off;
         for (size_t s = 0; off + (s + 1) * N <= samples.size(); ++s) {
             auto sym = demod_symbol(ws, &samples[off + s * N]);
-            if (s < 10) printf("DEBUG: Preamble symbol %zu: %u\n", s, sym);
+            if (dbg && s < 10) printf("DEBUG: Preamble symbol %zu: %u\n", s, sym);
             if (sym == 0 || sym == 5 || sym == 87 || sym == 88 || sym == 89 || sym == 90) {  // Try multiple expected preamble values
                 if (run == 0) start_samp = off + s * N;
                 ++run;
                 if (run >= min_syms) {
-                    printf("DEBUG: Preamble found! run=%zu, min_syms=%zu\n", run, min_syms);
+                    if (dbg) printf("DEBUG: Preamble found! run=%zu, min_syms=%zu\n", run, min_syms);
                     return start_samp;
                 }
             } else {

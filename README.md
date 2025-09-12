@@ -30,6 +30,23 @@ cmake --build build -j"$(nproc)"
 Optional (to generate GNU Radio reference vectors):
 - `conda` or `mamba` with `gnuradio` 3.10 and `gnuradio-lora_sdr` available
 
+## Environment Setup (conda)
+If you use conda for the GNU Radio tooling, activate the dedicated environment before running any of the helper scripts:
+```bash
+# One-time creation (recommended)
+conda create -n gnuradio-lora -c conda-forge gnuradio=3.10 cmake ninja -y
+
+# Activate for current shell/session
+# (ensure conda is initialized: source ~/miniconda3/etc/profile.d/conda.sh)
+conda activate gnuradio-lora
+
+# Optional: if you have multiple Pythons, guide scripts to use this env
+export GR_PYTHON="$(conda run -n gnuradio-lora which python)"
+```
+Notes:
+- Ensure the GNU Radio LoRa SDR module is available in the environment (e.g., `python -c "import gnuradio.lora_sdr"`).
+- Scripts like `scripts/gr_run_vector.sh` will automatically activate `gnuradio-lora` if `~/miniconda3` exists.
+
 On Ubuntu/Debian:
 ```bash
 sudo apt-get update
@@ -96,6 +113,18 @@ Advanced options:
     `./build/gen_frame_vectors --sf 7 --cr 45 --payload vectors/sf7_cr45_payload.bin --out /tmp/f_os4_poly.bin --os 4 --preamble 8 --interp poly`
   - Repeat (zero-order hold, synthetic):
     `./build/gen_frame_vectors --sf 7 --cr 45 --payload vectors/sf7_cr45_payload.bin --out /tmp/f_os4_rep.bin --os 4 --preamble 8 --interp repeat`
+
+### Quick GR Taps & Comparison
+- Generate GNU Radio taps for the canonical reference vector:
+  ```bash
+  bash scripts/gr_run_vector.sh
+  # outputs under logs/: gr_hdr_gray.bin, gr_hdr_nibbles.bin, gr_predew.bin, gr_postdew.bin, gr_rx_payload.bin
+  ```
+- Compare LoRa Lite vs GNU Radio on the same vector:
+  ```bash
+  python3 scripts/run_vector_compare.py
+  # writes JSON summary to logs/run_vector_compare.out and artifacts to logs/
+  ```
 
 Note on GNU Radio Throttle:
 - For batch vector generation we strip/remove `blocks_throttle` from the flowgraphs to avoid blocking, see `scripts/export_vectors_grc.sh` and `scripts/strip_throttle_blocks.py`.

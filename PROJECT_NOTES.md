@@ -102,6 +102,67 @@ Sync word: Encoded as 84 (not 52 as expected)
 
 ## Running Log (Issues & Fixes) – Reference Vector Decoding
 
+### Latest Update (2025-09-11) — Offline Header Timing Scan + Mapping (no C++ destabilization)
+
+Added end-to-end tooling to lock header timing and mapping offline, without destabilizing C++.
+
+- New capability `--hdr-scan` (tools/lora_decode.cpp):
+  - Scans a small, deterministic window around the header start and writes 600 candidate windows to `logs/lite_hdr_scan.json`.
+  - Pipeline mirrors GR’s alignment: OS detect → decimate to OS=1 → preamble detect → CFO compensate → (optional) STO align → anchor at `sync + 2.25` symbols.
+- Scanned parameters:
+    - block0: `off0 ∈ {0,1,2}`, `samp0 ∈ {0, ±N/128, ±N/64, ±N/32, ±N/8}`
+    - block1: `off1 ∈ {−1..8}`, `samp1 ∈ {0, ±N/128, ±N/64, ±N/32, ±N/8}`
+  - Narrow mode: `--hdr-scan-narrow --hdr-off0 <c0> --hdr-off1 <c1>` to focus near a center (defaults `c0=2, c1=0`).
+- Updated analyzer (scripts/from_lite_dbg_hdr_to_cw.py):
+  - Reconstructs the 10 header CW bytes using GR’s exact header reduction: `val = ((raw − 1) mod 2^SF)/4`, Gray-encode `val`, feed LSB `sf_app` bits into GR’s diagonal deinterleaver.
+  - If `logs/lite_hdr_scan.json` exists, evaluates all candidate windows, prints the best timing-only match (full diff), then tries block1 mapping variants on top‑K timing candidates and prints the global best.
+  - Fallback: if `logs/gr_deint_bits.bin` is missing, uses the known SF7 target CWs for this vector.
+
+Current measurements
+
+```
+hdr-scan (expanded) best timing-only CW diff:
+  best full diff: 5
+  best params: {"off0": 2, "samp0": 0, "off1": −1, "samp1": 0}
+  lite cw: 00 74 c5 00 c5 03 92 a5 1d b2
+  gr   cw: 00 74 c5 00 c5 1d 12 1b 12 00
+
+Top‑K variant sweep (over timing candidates) improved to 4/10:
+  timing {off0=2, samp0=0, off1=−1, samp1=0}, block1 {diagshift=0, rot1=3, rowrev=0, colrev=0, colshift=0}
+  cwbytes: 00 74 c5 00 c5 1d b2 03 92 a5
+```
+
+How to use
+
+```bash
+# Generate scan
+./build/lora_decode \
+  --in vectors/bw_125k_sf_7_cr_1_ldro_false_crc_true_implheader_false.unknown \
+  --sf 7 --cr 45 --sync 0x12 --min-preamble 8 --hdr-scan
+# Output: logs/lite_hdr_scan.json
+
+# Evaluate best and mapping
+python3 scripts/from_lite_dbg_hdr_to_cw.py
+# Output prints best timing window and best mapping variant on that window
+```
+
+Next steps (offline → baked)
+
+- Tighten the scan around the best:
+  - Keep fine shifts at `±N/128` and consider adding `±N/16` around block1; continue exploring `off1 ∈ {−1..8}`.
+- Once a 10/10 CW match is found:
+  - Bake a deterministic header offset in C++ (keep `2.25` anchor + CFO) with the exact minimal nudge for block0/block1.
+  - Use the exact GR mapping/deinterleaver per 8‑symbol block (reset state per block).
+  - Validate `parse_standard_lora_header` and full payload+CRC end-to-end.
+
+Notes and ideas reinforced from README_LoRa_Lite_GR_Compatibility.md
+
+- Treat block1 as an independent block: reset the diagonal deinterleaver origin; do not carry phase from block0.
+- Keep a tiny, bounded retry in C++ if checksum fails (e.g., sample `±1/64, ±1/32, ±1/16` and symbol `±1..±2`) and stop at first valid checksum — keeps runtime stable without brute force.
+- Log and assert the 10 CW bytes for the canonical vector match GR exactly: `00 74 C5 00 C5 1D 12 1B 12 00`.
+- Payload path already aligns (PN9, FEC, CRC); once header passes, CRC should be OK. Add a regression that compares header CW bytes byte-for-byte.
+
+
 Context: We're aligning the local decoder to decode GNU Radio-generated vectors (OS=4, public sync 0x34), end-to-end: preamble → sync → header (5 nibbles) → payload (+CRC).
 
 Current problem (as of today)

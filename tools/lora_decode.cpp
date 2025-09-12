@@ -73,6 +73,18 @@ int main(int argc, char** argv) {
     bool print_header = false; bool allow_partial = false; bool json = false;
     int force_hdr_len = -1; int force_hdr_cr = 0; int force_hdr_crc = -1;
     bool hdr_scan = false;
+    bool hdr_scan_narrow = false; // limit search around a center
+    int hdr_center_off0 = 2;      // default center (block0)
+    int hdr_center_off1 = 0;      // default center (block1)
+    bool hdr_scan_fine = false;   // dense sample shifts: every sample in ±R
+    int hdr_off0_span = 1;        // neighborhood radius for off0 when narrow (±span)
+    int hdr_off1_span = 1;        // neighborhood radius for off1 when narrow (±span)
+    int hdr_fine_radius = -1;     // fine radius in samples (defaults to N/4)
+    bool hdr_single = false;      // run a single two-block header attempt
+    int hdr_single_off0 = 2;      // params for single attempt
+    int hdr_single_off1 = 0;
+    int hdr_single_samp0 = 0;
+    int hdr_single_samp1 = 0;
 
     for (int i = 1; i < argc; ++i) {
         std::string a = argv[i];
@@ -94,6 +106,18 @@ int main(int argc, char** argv) {
         else if (a == "--allow-partial") allow_partial = true;
         else if (a == "--json") json = true;
         else if (a == "--hdr-scan") hdr_scan = true;
+        else if (a == "--hdr-scan-narrow") hdr_scan_narrow = true;
+        else if (a == "--hdr-scan-fine") hdr_scan_fine = true;
+        else if (a == "--hdr-off0-span" && i+1 < argc) hdr_off0_span = std::stoi(argv[++i]);
+        else if (a == "--hdr-off1-span" && i+1 < argc) hdr_off1_span = std::stoi(argv[++i]);
+        else if (a == "--hdr-fine-radius" && i+1 < argc) hdr_fine_radius = std::stoi(argv[++i]);
+        else if (a == "--hdr-off0" && i+1 < argc) hdr_center_off0 = std::stoi(argv[++i]);
+        else if (a == "--hdr-off1" && i+1 < argc) hdr_center_off1 = std::stoi(argv[++i]);
+        else if (a == "--hdr-single") hdr_single = true;
+        else if (a == "--hdr-samp0" && i+1 < argc) hdr_single_samp0 = std::stoi(argv[++i]);
+        else if (a == "--hdr-samp1" && i+1 < argc) hdr_single_samp1 = std::stoi(argv[++i]);
+        else if (a == "--hdr-off0-single" && i+1 < argc) hdr_single_off0 = std::stoi(argv[++i]);
+        else if (a == "--hdr-off1-single" && i+1 < argc) hdr_single_off1 = std::stoi(argv[++i]);
         else if (a == "--force-hdr-len" && i+1 < argc) force_hdr_len = std::stoi(argv[++i]);
         else if (a == "--force-hdr-cr" && i+1 < argc) force_hdr_cr = std::stoi(argv[++i]);
         else if (a == "--force-hdr-crc" && i+1 < argc) force_hdr_crc = std::stoi(argv[++i]);
@@ -122,7 +146,7 @@ int main(int argc, char** argv) {
     bool ok = (fmt == Format::F32) ? read_f32_iq(in_path, iq) : read_cs16_iq(in_path, iq);
     if (!ok) { std::fprintf(stderr, "Failed to read IQ from %s\n", in_path.c_str()); return 3; }
 
-    if (hdr_scan) {
+    if (hdr_scan || hdr_single) {
         // Perform a small header window scan and dump multiple syms_raw snapshots for offline analysis
         lora::Workspace ws;
         ws.init((uint32_t)sf);
@@ -158,10 +182,102 @@ int main(int argc, char** argv) {
         uint32_t N = ws.N;
         size_t hdr_start_base = (size_t)min_pre * N + (2u * N + N/4u);
         if (hdr_start_base + N > aligned.size()) { std::fprintf(stderr, "[hdr-scan] not enough samples for header base\n"); return 4; }
-        // Scan small sets
-        std::vector<int> samp_shifts = {0, (int)N/64, -(int)N/64, (int)N/32, -(int)N/32};
-        std::vector<int> off0_list = {0,1,2};
-        std::vector<int> off1_list = {0,1,2,3,4,5,6,7};
+
+        if (hdr_single) {
+            // Run a single two-block attempt at provided offsets/samples, print CW bytes and parse header
+            auto demod_block = [&](size_t idx, uint32_t out[8]){
+                for (size_t s = 0; s < 8; ++s) out[s] = demod_symbol_local(ws, &aligned[idx + s * N]);
+            };
+            // Compute index for block0
+            size_t idx0;
+            if (hdr_single_samp0 >= 0) { idx0 = hdr_start_base + (size_t)hdr_single_off0 * N + (size_t)hdr_single_samp0; }
+            else { size_t o=(size_t)(-hdr_single_samp0); size_t base=hdr_start_base + (size_t)hdr_single_off0 * N; if (base < o){ std::fprintf(stderr, "[hdr-single] idx0 OOB\n"); return 4; } idx0 = base - o; }
+            if (idx0 + 8u*N > aligned.size()) { std::fprintf(stderr, "[hdr-single] idx0 out of range\n"); return 4; }
+            // Compute index for block1
+            size_t base1 = hdr_start_base + 8u*N + (size_t)hdr_single_off1 * N;
+            size_t idx1;
+            if (hdr_single_samp1 >= 0) { idx1 = base1 + (size_t)hdr_single_samp1; }
+            else { size_t o=(size_t)(-hdr_single_samp1); if (base1 < o){ std::fprintf(stderr, "[hdr-single] idx1 OOB\n"); return 4; } idx1 = base1 - o; }
+            if (idx1 + 8u*N > aligned.size()) { std::fprintf(stderr, "[hdr-single] idx1 out of range\n"); return 4; }
+
+            uint32_t raw0[8]{}, raw1[8]{};
+            demod_block(idx0, raw0); demod_block(idx1, raw1);
+            // Reduce to gnu per GR header: ((raw-1) mod N) >> 2
+            const uint32_t SF_APP = (uint32_t)sf - 2u;
+            auto build_block_rows = [&](const uint32_t* gnu, size_t blk_idx, uint8_t (&rows)[5][8]){
+                // inter_bin
+                for (uint32_t i = 0; i < 8u; ++i) {
+                    uint32_t full = gnu[blk_idx*8u + i] & (N-1u);
+                    uint32_t g = lora::utils::gray_encode(full);
+                    uint32_t sub = g & ((1u << SF_APP) - 1u);
+                    for (uint32_t j = 0; j < SF_APP; ++j) rows[0][0] = rows[0][0]; // no-op to keep struct; fill after
+                }
+            };
+            // Build inter/deinter directly like scripts do
+            auto make_cw = [&](const uint32_t gnu[16], uint8_t cw_out[10]){
+                // Block0
+                std::vector<std::vector<uint8_t>> inter0(8u, std::vector<uint8_t>(SF_APP));
+                for (uint32_t i=0;i<8;i++){ uint32_t sub=(lora::utils::gray_encode(gnu[i]) & ((1u<<SF_APP)-1u)); for(uint32_t j=0;j<SF_APP;j++) inter0[i][j] = (sub >> (SF_APP-1u-j)) & 1u; }
+                std::vector<std::vector<uint8_t>> de0(SF_APP, std::vector<uint8_t>(8u));
+                for (uint32_t i=0;i<8;i++) for (uint32_t j=0;j<SF_APP;j++){ int r=(int)i-(int)j-1; r%= (int)SF_APP; if(r<0) r+=(int)SF_APP; de0[(size_t)r][i]=inter0[i][j]; }
+                for (uint32_t r=0;r<SF_APP;r++){ uint16_t c=0; for(uint32_t i=0;i<8;i++) c=(c<<1)|(de0[r][i]&1u); cw_out[r]=(uint8_t)(c&0xFF);} 
+                // Block1
+                std::vector<std::vector<uint8_t>> inter1(8u, std::vector<uint8_t>(SF_APP));
+                for (uint32_t i=0;i<8;i++){ uint32_t sub=(lora::utils::gray_encode(gnu[8+i]) & ((1u<<SF_APP)-1u)); for(uint32_t j=0;j<SF_APP;j++) inter1[i][j] = (sub >> (SF_APP-1u-j)) & 1u; }
+                std::vector<std::vector<uint8_t>> de1(SF_APP, std::vector<uint8_t>(8u));
+                for (uint32_t i=0;i<8;i++) for (uint32_t j=0;j<SF_APP;j++){ int r=(int)i-(int)j-1; r%= (int)SF_APP; if(r<0) r+=(int)SF_APP; de1[(size_t)r][i]=inter1[i][j]; }
+                for (uint32_t r=0;r<SF_APP;r++){ uint16_t c=0; for(uint32_t i=0;i<8;i++) c=(c<<1)|(de1[r][i]&1u); cw_out[SF_APP+r]=(uint8_t)(c&0xFF);} 
+            };
+            auto try_cw = [&](const char* tag, const uint32_t gnu_in[16]){
+                uint8_t cw_local[10]{}; make_cw(gnu_in, cw_local);
+                std::fprintf(stderr, "hdr_gr cwbytes (2blk samp0=%d off0=%d samp1=%d off1=%d mode=%s): ", hdr_single_samp0, hdr_single_off0, hdr_single_samp1, hdr_single_off1, tag);
+                for (int k=0;k<10;k++) std::fprintf(stderr, "%02x ", cw_local[k]); std::fprintf(stderr, "\n");
+                static lora::utils::HammingTables Th = lora::utils::make_hamming_tables();
+                std::vector<uint8_t> nibb; nibb.reserve(10);
+                for (int k=0;k<10;k++){ auto dec = lora::utils::hamming_decode4(cw_local[k], 8u, lora::utils::CodeRate::CR48, Th); if(!dec){ std::fprintf(stderr, "[hdr-single] hamming decode failed at %d (%s)\n", k, tag); return false;} nibb.push_back(dec->first & 0x0F);} 
+                for (int order=0; order<2; ++order){ std::vector<uint8_t> hdr_try(5); for(int i=0;i<5;i++){ uint8_t n0=nibb[i*2], n1=nibb[i*2+1]; uint8_t low=(order==0)?n0:n1; uint8_t high=(order==0)?n1:n0; hdr_try[i]=(uint8_t)((high<<4)|low);} if(auto ok=lora::rx::parse_standard_lora_header(hdr_try.data(), hdr_try.size())){ std::fprintf(stderr, "[hdr-single] header OK: len=%u cr=%d has_crc=%d (mode=%s)\n", (unsigned)ok->payload_len, (int)ok->cr, ok->has_crc?1:0, tag); return true; } }
+                std::fprintf(stderr, "[hdr-single] header not valid (%s)\n", tag);
+                return false;
+            };
+            uint32_t gnu_raw[16]{}; for (int i=0;i<8;i++) gnu_raw[i]   = ((raw0[i] + N - 1u) & (N - 1u)) >> 2; for (int i=0;i<8;i++) gnu_raw[8+i] = ((raw1[i] + N - 1u) & (N - 1u)) >> 2;
+            bool ok_any = try_cw("raw", gnu_raw);
+            uint32_t gnu_corr[16]{}; for (int i=0;i<8;i++){ uint32_t c=(raw0[i] + N - 44u) & (N - 1u); uint32_t g=lora::utils::gray_encode(c); gnu_corr[i]   = ((g + N - 1u) & (N - 1u)) >> 2; } for (int i=0;i<8;i++){ uint32_t c=(raw1[i] + N - 44u) & (N - 1u); uint32_t g=lora::utils::gray_encode(c); gnu_corr[8+i] = ((g + N - 1u) & (N - 1u)) >> 2; }
+            ok_any = try_cw("corr", gnu_corr) || ok_any;
+            return ok_any ? 0 : 6;
+        }
+        // Scan sets
+        std::vector<int> samp_shifts;
+        if (hdr_scan_fine) {
+            int R = (hdr_fine_radius > 0) ? hdr_fine_radius : (int)N/4;
+            for (int k = -R; k <= R; ++k) samp_shifts.push_back(k);
+        } else {
+            samp_shifts = {
+                0,
+                (int)N/128, -(int)N/128,
+                (int)N/64,  -(int)N/64,
+                (int)N/16,  -(int)N/16,
+                (int)N/32,  -(int)N/32,
+                (int)N/8,   -(int)N/8
+            };
+        }
+        std::vector<int> off0_list;
+        std::vector<int> off1_list;
+        if (hdr_scan_narrow) {
+            // Centered small neighborhoods
+            for (int d = -hdr_off0_span; d <= hdr_off0_span; ++d) {
+                int v0 = hdr_center_off0 + d;
+                if (v0 >= 0) off0_list.push_back(v0);
+            }
+            for (int d = -hdr_off1_span; d <= hdr_off1_span; ++d) {
+                int v1 = hdr_center_off1 + d;
+                if (v1 >= -1 && v1 <= 8) off1_list.push_back(v1);
+            }
+            if (off0_list.empty()) off0_list.push_back(0);
+            if (off1_list.empty()) off1_list.push_back(0);
+        } else {
+            off0_list = {0,1,2};
+            off1_list = {-1,0,1,2,3,4,5,6,7,8};
+        }
         // Open output JSON
         FILE* f = std::fopen("logs/lite_hdr_scan.json", "w");
         if (!f) { std::fprintf(stderr, "[hdr-scan] failed to open logs/lite_hdr_scan.json\n"); return 5; }
@@ -199,8 +315,9 @@ int main(int argc, char** argv) {
         }
         std::fprintf(f, "\n]\n");
         std::fclose(f);
-        std::fprintf(stderr, "[hdr-scan] wrote logs/lite_hdr_scan.json (%d off0 * %zu samp0 * %zu off1 * %zu samp1 combinations)\n",
-                      (int)off0_list.size(), samp_shifts.size(), off1_list.size(), samp_shifts.size());
+        std::fprintf(stderr, "[hdr-scan] wrote logs/lite_hdr_scan.json (%d off0 * %zu samp0 * %zu off1 * %zu samp1 combinations)%s\n",
+                      (int)off0_list.size(), samp_shifts.size(), off1_list.size(), samp_shifts.size(),
+                      hdr_scan_narrow ? " [narrow]" : "");
         return 0;
     }
 
@@ -350,7 +467,7 @@ int main(int argc, char** argv) {
                     }
                     auto& bits_pay = ws.rx_bits; bits_pay.resize(pay_nsym * (size_t)sf);
                     size_t bix = 0;
-                    for (size_t s = 0; s < pay_nsym; ++s) { uint32_t sym = symbols_pay[s]; for (int b = sf - 1; b >= 0; --b) bits_pay[bix++] = (sym >> b) & 1u; }
+                    for (size_t s = 0; s < pay_nsym; ++s) { uint32_t sym = symbols_pay[s]; for (uint32_t b = 0; b < (uint32_t)sf; ++b) bits_pay[bix++] = (sym >> b) & 1u; }
                     const auto& Mp = ws.get_interleaver((uint32_t)sf, payload_cr_plus4);
                     auto& deint_pay = ws.rx_deint; deint_pay.resize(bix);
                     for (size_t off = 0; off + Mp.n_in <= bix; off += Mp.n_in)
