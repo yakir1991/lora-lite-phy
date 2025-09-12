@@ -1,8 +1,10 @@
 #include "lora/rx/frame.hpp"
 #include "lora/rx/preamble.hpp"
+#include "lora/rx/decimate.hpp"
 #include "lora/utils/gray.hpp"
 #include "lora/utils/crc.hpp"
 #include "lora/utils/whitening.hpp"
+#include "lora/debug.hpp"
 #include <vector>
 
 namespace lora::rx {
