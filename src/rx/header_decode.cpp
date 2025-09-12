@@ -10,6 +10,7 @@
 #include <vector>
 #include <complex>
 #include <cstdio>
+#include <algorithm>
 
 namespace lora::rx {
 
@@ -436,6 +437,82 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os_impl(
     }
 
     return std::nullopt;
+}
+
+std::pair<std::optional<LocalHeader>, std::vector<uint8_t>> decode_header_from_symbols(
+    Workspace& ws,
+    std::span<const std::complex<float>> data,
+    uint32_t sf) {
+    ws.init(sf);
+    const uint32_t N = ws.N;
+
+    const uint32_t header_cr_plus4 = 8u;
+    const size_t hdr_bytes = 5;
+    const size_t hdr_bits_exact = hdr_bytes * 2 * header_cr_plus4;
+
+    const uint32_t sf_app = (sf >= 2) ? (sf - 2) : sf;
+    const uint32_t block_syms = header_cr_plus4; // 8
+    const uint32_t cw_len = header_cr_plus4;
+    const size_t total_syms = data.size() / N;
+
+    std::vector<uint8_t> stream_bits;
+    stream_bits.reserve(hdr_bits_exact);
+    size_t sym_consumed = 0;
+
+    auto demod_block_append = [&]() -> bool {
+        if (sym_consumed + block_syms > total_syms) return false;
+        std::vector<std::vector<uint8_t>> inter_bin(cw_len, std::vector<uint8_t>(sf_app));
+        for (uint32_t s = 0; s < block_syms; ++s) {
+            uint32_t raw_sym = demod_symbol_peak(ws, &data[(sym_consumed + s) * N]);
+            uint32_t gnu = ((raw_sym + N - 1u) & (N - 1u)) >> 2;
+            uint32_t g    = lora::utils::gray_encode(gnu);
+            uint32_t sub  = g & ((1u << sf_app) - 1u);
+            for (uint32_t j = 0; j < sf_app; ++j) {
+                uint32_t bit = (sub >> (sf_app - 1u - j)) & 1u;
+                inter_bin[s][j] = static_cast<uint8_t>(bit);
+            }
+        }
+        std::vector<std::vector<uint8_t>> deinter_bin(sf_app, std::vector<uint8_t>(cw_len));
+        for (uint32_t i = 0; i < cw_len; ++i) {
+            for (uint32_t j = 0; j < sf_app; ++j) {
+                int r = static_cast<int>(i) - static_cast<int>(j) - 1;
+                r %= static_cast<int>(sf_app);
+                if (r < 0) r += static_cast<int>(sf_app);
+                deinter_bin[static_cast<size_t>(r)][i] = inter_bin[i][j];
+            }
+        }
+        for (uint32_t r = 0; r < sf_app; ++r)
+            for (uint32_t c = 0; c < cw_len; ++c)
+                stream_bits.push_back(deinter_bin[r][c]);
+        sym_consumed += block_syms;
+        return true;
+    };
+
+    while (stream_bits.size() < hdr_bits_exact) {
+        if (!demod_block_append()) return {std::nullopt, {}};
+    }
+
+    std::vector<uint8_t> nibbles(hdr_bytes * 2);
+    static lora::utils::HammingTables T = lora::utils::make_hamming_tables();
+    size_t nib_idx = 0;
+    for (size_t i = 0; i < hdr_bits_exact; i += header_cr_plus4) {
+        uint16_t cw = 0;
+        for (uint32_t b = 0; b < header_cr_plus4; ++b)
+            cw = (cw << 1) | stream_bits[i + b];
+        auto dec = lora::utils::hamming_decode4(cw, header_cr_plus4, lora::utils::CodeRate::CR48, T);
+        if (!dec) return {std::nullopt, {}};
+        nibbles[nib_idx++] = dec->first & 0x0F;
+    }
+
+    std::vector<uint8_t> hdr(hdr_bytes);
+    for (size_t i = 0; i < hdr_bytes; ++i) {
+        uint8_t high = nibbles[i * 2];
+        uint8_t low  = nibbles[i * 2 + 1];
+        hdr[i] = static_cast<uint8_t>((high << 4) | low);
+    }
+
+    auto hdr_opt = parse_standard_lora_header(hdr.data(), hdr.size());
+    return {hdr_opt, nibbles};
 }
 
 } // namespace lora::rx

@@ -1,6 +1,7 @@
 #include "lora/rx/loopback_rx.hpp"
 #include "lora/utils/whitening.hpp"
 #include "lora/rx/frame.hpp"
+#include "lora/rx/header.hpp"
 #include "lora/utils/gray.hpp"
 #include "lora/utils/crc.hpp"
 #include <cmath>
@@ -128,18 +129,17 @@ std::pair<std::span<uint8_t>, bool> loopback_rx(Workspace& ws,
         return {std::span<uint8_t>{}, false};
     }
 
-    // Dewhiten payload ONLY (CRC trailer must remain unmodified)
+    // Dewhiten payload and CRC trailer before verification
     auto lfsr = lora::utils::LfsrWhitening::pn9_default();
-    if (payload_len > 0) lfsr.apply(data.data(), payload_len);
+    lfsr.apply(data.data(), payload_len + 2);
 
-    // CRC verify (CRC-CCITT-FALSE over dewhitened payload; accept LE on the wire, log/accept BE as fallback)
+    // CRC verify (CRC-CCITT-FALSE over dewhitened payload; compare with
+    // dewhitened trailer in little-endian order)
     lora::utils::Crc16Ccitt crc16;
     uint16_t crc_calc = crc16.compute(data.data(), payload_len);
-    uint8_t crc_lo = data[payload_len];
-    uint8_t crc_hi = data[payload_len + 1];
-    uint16_t crc_rx_le = static_cast<uint16_t>(crc_lo) | (static_cast<uint16_t>(crc_hi) << 8);
-    uint16_t crc_rx_be = (static_cast<uint16_t>(crc_hi) << 8) | static_cast<uint16_t>(crc_lo);
-    if (!(crc_calc == crc_rx_le || crc_calc == crc_rx_be)) {
+    uint16_t crc_rx = static_cast<uint16_t>(data[payload_len]) |
+                      (static_cast<uint16_t>(data[payload_len + 1]) << 8);
+    if (crc_calc != crc_rx) {
         log_time();
         return {std::span<uint8_t>{}, false};
     }
@@ -159,11 +159,14 @@ std::pair<std::span<uint8_t>, bool> loopback_rx_header(
     size_t payload_len,
     size_t min_preamble_syms,
     bool os_aware) {
-    if (os_aware) {
-        return decode_frame_with_preamble_cfo_sto_os(ws, samples, sf, cr, payload_len, min_preamble_syms);
-    } else {
-        return decode_frame_with_preamble_cfo_sto(ws, samples, sf, cr, payload_len, min_preamble_syms);
-    }
+    (void)payload_len;
+    (void)os_aware;
+    auto hdr_opt = decode_header_with_preamble_cfo_sto_os(ws, samples, sf, cr, min_preamble_syms);
+    if (!hdr_opt) return {std::span<uint8_t>{}, false};
+    auto bytes = make_local_header_with_crc(*hdr_opt);
+    auto& out = ws.rx_data;
+    out = std::move(bytes);
+    return {std::span<uint8_t>(out.data(), out.size()), true};
 }
 
 } // namespace lora::rx
@@ -177,15 +180,8 @@ std::pair<std::span<uint8_t>, bool> loopback_rx_header_auto(
     lora::utils::CodeRate cr,
     size_t min_preamble_syms,
     bool os_aware) {
-    if (os_aware) {
-        return decode_frame_with_preamble_cfo_sto_os_auto(ws, samples, sf, cr, min_preamble_syms);
-    } else {
-        // Fallback: run OS=1 CFO/STO then decode header + payload
-        auto det = detect_preamble(ws, samples, sf, min_preamble_syms);
-        if (!det) return {std::span<uint8_t>{}, false};
-        // Use the OS=1 CFO/STO path, then decode header/payload via auto function on the aligned span
-        return decode_frame_with_preamble_cfo_sto_os_auto(ws, samples, sf, cr, min_preamble_syms);
-    }
+    (void)os_aware;
+    return decode_frame_with_preamble_cfo_sto_os_auto(ws, samples, sf, cr, min_preamble_syms);
 }
 
 std::pair<std::span<uint8_t>, bool> loopback_rx_header_auto_sync(
@@ -196,12 +192,8 @@ std::pair<std::span<uint8_t>, bool> loopback_rx_header_auto_sync(
     size_t min_preamble_syms,
     bool os_aware,
     uint8_t expected_sync) {
-    if (os_aware) {
-        return decode_frame_with_preamble_cfo_sto_os_auto(ws, samples, sf, cr, min_preamble_syms, expected_sync);
-    } else {
-        // OS=1 path with explicit sync
-        return decode_frame_with_preamble_cfo_sto(ws, samples, sf, cr, /*payload_len*/0, min_preamble_syms, expected_sync);
-    }
+    (void)os_aware;
+    return decode_frame_with_preamble_cfo_sto_os_auto(ws, samples, sf, cr, min_preamble_syms, expected_sync);
 }
 
 } // namespace lora::rx
