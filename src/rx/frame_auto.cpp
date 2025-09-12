@@ -25,15 +25,15 @@ std::pair<std::span<uint8_t>, bool> decode_frame_with_preamble_cfo_sto_os_auto(
     auto align_res = align_and_extract_data(ws, samples, sf, min_preamble_syms, expected_sync);
     if (!align_res) return {std::span<uint8_t>{}, false};
     auto aligned_vec = std::move(align_res->first);
-    size_t data_start = align_res->second;
+    size_t hdr_start_base = align_res->second;
     auto aligned = std::span<const std::complex<float>>(aligned_vec);
-    auto data = aligned.subspan(data_start);
+    auto data = aligned.subspan(hdr_start_base);
 
     uint32_t N = ws.N;
 
     if (__dbg) {
-        printf("DEBUG: Signal info - aligned.size()=%zu, sync_start=%zu, N=%u\n", aligned.size(), data_start, N);
-        printf("DEBUG: Data span - offset=%zu, data.size()=%zu\n", data_start + 3*N, data.size());
+        printf("DEBUG: Signal info - aligned.size()=%zu, hdr_start_base=%zu, N=%u\n", aligned.size(), hdr_start_base, N);
+        printf("DEBUG: Data span - offset=%zu, data.size()=%zu\n", hdr_start_base + 3*N, data.size());
     }
 
     const uint32_t header_cr_plus4 = 8u;

@@ -8,8 +8,11 @@
 
 namespace lora::rx {
 
-// Detects preamble, corrects CFO/STO, aligns to sync, and returns samples
-// starting at the header.
+// Detects the preamble (using `detect_preamble_os`), estimates and
+// compensates CFO/STO (via `estimate_cfo_from_preamble`), aligns to the
+// sync word, and returns the corrected samples along with the index of
+// the header start. The returned `size_t` is `hdr_start_base`, defined as
+// `sync_start + 2*N + N/4` where `N` is the symbol length.
 std::optional<std::pair<std::vector<std::complex<float>>, size_t>>
 align_and_extract_data(
     Workspace& ws,
