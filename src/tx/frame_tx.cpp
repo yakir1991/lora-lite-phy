@@ -54,9 +54,9 @@ std::span<const std::complex<float>> frame_tx(Workspace& ws,
     frame.push_back(crc_lo);
     frame.push_back(crc_hi);
 
-    // Whitening: apply PN9 to payload and CRC (header remains unwhitened)
+    // Whitening: apply PN9 to payload only (header and CRC remain unwhitened)
     auto lfsr = lora::utils::LfsrWhitening::pn9_default();
-    lfsr.apply(frame.data() + hdr_bytes.size(), payload.size() + 2);
+    lfsr.apply(frame.data() + hdr_bytes.size(), payload.size());
 
     // Prepare header and payload segments separately (header uses CR=4/8 per LoRa spec)
     static lora::utils::HammingTables T = lora::utils::make_hamming_tables();

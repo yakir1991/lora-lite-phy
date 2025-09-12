@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "lora/utils/whitening.hpp"
+#include "lora/utils/crc.hpp"
 #include <vector>
 #include <cstdint>
 using namespace lora::utils;
@@ -43,4 +44,26 @@ TEST(Whitening, UniformPatternsRegression) {
     roundtrip_pattern(1, 0xFF);
     roundtrip_pattern(20, 0xFF);
     roundtrip_pattern(255, 0xFF);
+}
+
+TEST(Whitening, PayloadOnlyExcludesCRC) {
+    std::vector<uint8_t> payload{0x01, 0x02, 0x03};
+    lora::utils::Crc16Ccitt crc;
+    uint16_t c = crc.compute(payload.data(), payload.size());
+    payload.push_back(static_cast<uint8_t>(c & 0xFF));
+    payload.push_back(static_cast<uint8_t>((c >> 8) & 0xFF));
+    auto crc0 = payload[payload.size()-2];
+    auto crc1 = payload[payload.size()-1];
+    auto w = LfsrWhitening::pn9_default();
+    w.apply(payload.data(), payload.size()-2);
+    EXPECT_EQ(payload[payload.size()-2], crc0);
+    EXPECT_EQ(payload[payload.size()-1], crc1);
+}
+
+TEST(Whitening, MSBFirstMask) {
+    uint8_t buf[2] = {0x00, 0x00};
+    auto w = LfsrWhitening::pn9_default();
+    w.apply(buf, 2);
+    EXPECT_EQ(buf[0], 0xFF);
+    EXPECT_EQ(buf[1], 0x83);
 }
