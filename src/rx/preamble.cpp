@@ -41,16 +41,18 @@ std::optional<size_t> detect_preamble(Workspace& ws,
         size_t start_samp = off;
         for (size_t s = 0; off + (s + 1) * N <= samples.size(); ++s) {
             auto sym = demod_symbol(ws, &samples[off + s * N]);
-            if (dbg && s < 10) printf("DEBUG: Preamble symbol %zu: %u\n", s, sym);
-            if (sym == 0 || sym == 5 || sym == 87 || sym == 88 || sym == 89 || sym == 90) {  // Try multiple expected preamble values
+            if (dbg && s < 10) std::fprintf(stderr, "DEBUG: Preamble symbol %zu: %u\n", s, sym);
+            if (sym == 0 || sym == 5 || sym == 87 || sym == 88 || sym == 89 || sym == 90 || sym == 108 || sym == 60) {  // Try multiple expected preamble values including SF7 upchirps
                 if (run == 0) start_samp = off + s * N;
                 ++run;
+                if (dbg) std::fprintf(stderr, "DEBUG: Preamble symbol %zu: %u (MATCH, run=%zu)\n", s, sym, run);
                 if (run >= min_syms) {
-                    if (dbg) printf("DEBUG: Preamble found! run=%zu, min_syms=%zu\n", run, min_syms);
+                    if (dbg) std::fprintf(stderr, "DEBUG: Preamble found! run=%zu, min_syms=%zu\n", run, min_syms);
                     return start_samp;
                 }
             } else {
                 run = 0;
+                if (dbg) std::fprintf(stderr, "DEBUG: Preamble symbol %zu: %u (NO MATCH, expected 0,5,87-90, run reset)\n", s, sym);
             }
         }
     }
