@@ -90,6 +90,38 @@ Notes:
 - Set `LORA_DEBUG=1` to print pre‑detected OS/phase/start on stderr.
 ```
 
+## GNU Radio-like receive pipeline
+For block-level experiments similar to the GNU Radio `lora_sdr` flowgraph, use
+`lora::rx::pipeline::GnuRadioLikePipeline`. The pipeline mirrors the classic
+chain (Frame Sync → FFT Demod → Gray Mapping → Deinterleaver → Hamming
+Decoder → Dewhitening → Header/CRC) while relying on the Liquid-DSP FFT backend
+shared by the rest of the project.
+
+```cpp
+#include <vector>
+#include "lora/rx/gr_pipeline.hpp"
+
+std::vector<std::complex<float>> iq = /* load or synthesize samples */;
+
+lora::rx::pipeline::Config cfg;
+cfg.sf = 7;
+cfg.min_preamble_syms = 8;
+
+lora::rx::pipeline::GnuRadioLikePipeline pipeline(cfg);
+auto report = pipeline.run(iq);
+if (!report.success) {
+    std::fprintf(stderr, "RX failed: %s\n", report.failure_reason.c_str());
+}
+
+// Inspect intermediate stages (FFT bins, header CWs, payload bytes, etc.).
+const auto& header_stage = report.header;
+const auto& payload_stage = report.payload;
+```
+
+The `PipelineResult` contains per-stage buffers that mirror the GNU Radio block
+boundaries, making it straightforward to compare against reference dumps or to
+inject custom processing between stages.
+
 ## Reference vectors (optional)
 Reference vectors are generated from the GNU Radio LoRa SDR blocks when available.
 Recommended, isolated setup using conda:
