@@ -7,9 +7,9 @@
 #include <string>
 #include <vector>
 
-#include "lora/rx/header.hpp"
 #include "lora/workspace.hpp"
-#include "lora/utils/hamming.hpp"
+#include "lora/rx/gr/header_decode.hpp"
+#include "lora/rx/gr/utils.hpp"
 
 namespace lora::rx::pipeline {
 
@@ -20,8 +20,11 @@ struct Config {
     size_t header_symbol_count{16};
     std::vector<int> os_candidates{1, 2, 4, 8};
     int sto_search{0};
+    uint8_t expected_sync_word{0x34};
     bool decode_payload{true};
     bool expect_payload_crc{true};
+    float bandwidth_hz{125000.0f};
+    std::optional<bool> ldro_override{};
 };
 
 struct FrameSyncOutput {
@@ -31,6 +34,9 @@ struct FrameSyncOutput {
     int phase{0};
     float cfo{0.0f};
     int sto{0};
+    bool sync_detected{false};
+    size_t sync_start_sample{0};
+    size_t aligned_start_sample{0};
     size_t header_start_sample{0};
     std::vector<std::complex<float>> decimated;
     std::vector<std::complex<float>> compensated;
@@ -42,7 +48,8 @@ struct FftDemodOutput {
 };
 
 struct GrayMappingOutput {
-    std::vector<uint32_t> payload_symbols;
+    std::vector<uint32_t> reduced_symbols;
+    std::vector<uint32_t> gray_symbols;
 };
 
 struct PayloadBitstream {
@@ -59,7 +66,7 @@ struct HeaderStageOutput {
     std::vector<uint8_t> cw_bytes;
     std::vector<uint8_t> decoded_nibbles;
     std::vector<uint8_t> header_bytes;
-    std::optional<lora::rx::LocalHeader> header;
+    std::optional<lora::rx::gr::LocalHeader> header;
 };
 
 struct PayloadStageOutput {
@@ -87,8 +94,7 @@ public:
 private:
     Config cfg_;
     Workspace ws_;
-    lora::utils::HammingTables hamming_tables_;
+    lora::rx::gr::Crc16Ccitt crc16_;
 };
 
 } // namespace lora::rx::pipeline
-
