@@ -84,3 +84,7 @@ With the helper scripts above you can generate a canonical vector, inspect GNU R
 - Re-enable automated parity checks against GNU Radio reference logs.
 - Add regression tests that exercise multiple spreading factors and coding rates.
 - Provide simple Python bindings around `liblora_gr.a` for quick scripting.
+
+conda activate gnuradio-lora
+export PYTHONPATH=$PWD/external/gr_lora_sdr/install/lib/python3.10/site-packages:$PYTHONPATH
+export LD_LIBRARY_PATH=$PWD/external/gr_lora_sdr/install/lib:$LD_LIBRARY_PATH
