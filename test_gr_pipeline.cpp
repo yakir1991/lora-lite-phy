@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
     cfg.min_preamble_syms = 8;
     cfg.symbols_after_preamble = 2.25f;
     cfg.header_symbol_count = 16;
-    cfg.os_candidates = {2, 1, 4, 8}; // Try OS=2 first
+    cfg.os_candidates = {4, 2, 1, 8};
     cfg.expected_sync_word = 0x34;
     cfg.decode_payload = true;
     cfg.expect_payload_crc = true;
@@ -210,4 +210,3 @@ int main(int argc, char** argv) {
 
     return 0;
 }
-

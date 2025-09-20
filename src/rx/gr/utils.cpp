@@ -170,15 +170,16 @@ Crc16Ccitt::Crc16Ccitt(uint16_t poly, uint16_t init, uint16_t xorout, bool refle
 uint16_t Crc16Ccitt::compute(const uint8_t* data, size_t len) const {
     uint16_t crc = init_;
     for (size_t i = 0; i < len; ++i) {
-        uint8_t byte = data[i];
-        if (reflect_in_) byte = reflect_bits8(byte);
-        crc ^= static_cast<uint16_t>(byte) << 8;
-        for (int b = 0; b < 8; ++b) {
-            if (crc & 0x8000) crc = static_cast<uint16_t>((crc << 1) ^ poly_);
-            else crc <<= 1;
+        uint8_t newByte = data[i];
+        for (unsigned char b = 0; b < 8; ++b) {
+            if (((crc & 0x8000) >> 8) ^ (newByte & 0x80)) {
+                crc = static_cast<uint16_t>((crc << 1) ^ poly_);
+            } else {
+                crc = static_cast<uint16_t>(crc << 1);
+            }
+            newByte <<= 1;
         }
     }
-    if (reflect_out_) crc = reflect_bits(crc, 16);
     return crc ^ xorout_;
 }
 

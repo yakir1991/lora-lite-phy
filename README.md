@@ -1,14 +1,16 @@
 # LoRa GNU Radio Compatibility Pipeline
 
-This repository contains a lightweight C++ implementation of the receive-side processing chain that mimics the behaviour of the GNU Radio `gr-lora_sdr` blocks.  The code focuses solely on GNU Radio interoperability: it no longer ships the bespoke “LoRa Lite” PHY, transmit helpers, or the large collection of analysis scripts that previously existed in this repo.
+This repository contains a lightweight C++ implementation of the receive-side processing chain that mimics the behaviour of the GNU Radio `gr-lora_sdr` blocks. The code focuses solely on GNU Radio interoperability: it no longer ships the bespoke "LoRa Lite" PHY, transmit helpers, or the large collection of analysis scripts that previously existed in this repo.
 
 ## Directory Layout
 
 - `include/lora/` – Public headers for the workspace container and GNU Radio compatible helpers.
 - `src/` – Implementation of the FFT workspace, coarse synchronisation primitives, header decoding logic, and the end-to-end pipeline (`src/rx/gr_pipeline.cpp`).
 - `test_gr_pipeline.cpp` – Small CLI utility that loads a complex IQ capture, runs the pipeline, and prints intermediate diagnostics.
+- `python_bindings.cpp` – Python bindings for the C++ pipeline using pybind11.
 - `build/` – Generated during CMake configuration (not tracked by Git).
 - `vectors/` – Binary IQ captures used for quick experiments (e.g., `sps_125k_bw_125k_sf_7_cr_1_ldro_false_crc_true_implheader_false_nmsgs_8.unknown`).
+- `scripts/` – Python scripts for running and comparing pipelines.
 
 ## Build Instructions
 
@@ -17,14 +19,17 @@ cmake -S . -B build
 cmake --build build
 ```
 
-The default build produces two artefacts:
+The default build produces three artefacts:
 
 1. `liblora_gr.a` – the reusable static library that implements the pipeline.
 2. `test_gr_pipeline` – a demo executable that operates on a single IQ vector.
+3. `lora_pipeline.so` – Python module with bindings to the C++ pipeline.
 
-The project depends on [liquid-dsp](https://github.com/jgaeddert/liquid-dsp) for FFT planning.  The bundled CMake configuration expects the library to be available on the system (the Conda “gnuradio-lora” environment used in this workspace already provides it).
+The project depends on [liquid-dsp](https://github.com/jgaeddert/liquid-dsp) for FFT planning and [pybind11](https://github.com/pybind/pybind11) for Python bindings. The bundled CMake configuration expects both libraries to be available on the system.
 
 ## Running the Demo
+
+### C++ Test Program
 
 ```bash
 ./build/test_gr_pipeline
@@ -38,6 +43,20 @@ Pass `LORA_DEBUG=1` to see additional logs from the low-level primitives (e.g., 
 LORA_DEBUG=1 ./build/test_gr_pipeline
 ```
 
+### Python Scripts
+
+The new C++ pipeline can also be used via Python scripts:
+
+```bash
+# Run the new pipeline on an IQ vector
+python3 scripts/decode_offline_recording_final.py vectors/sps_125k_bw_125k_sf_7_cr_1_ldro_false_crc_true_implheader_false_nmsgs_8.unknown
+
+# With custom parameters
+python3 scripts/decode_offline_recording_final.py --sf 7 --bw 125000 --sync-word 0x34 vectors/your_vector.unknown
+```
+
+The Python script provides the same functionality as the C++ test program but with a more user-friendly interface and additional features like JSON output.
+
 ## Using the Workspace Utilities
 
 `lora::Workspace` (defined in `include/lora/workspace.hpp`) encapsulates the reusable FFT buffers, upchirp/downchirp templates, and diagnostic scratch space used throughout the pipeline.  Each stage initialises the workspace with the desired spreading factor and then calls into the helpers provided under `include/lora/rx/gr/`:
@@ -48,7 +67,15 @@ LORA_DEBUG=1 ./build/test_gr_pipeline
 
 ## GNU Radio Utility Scripts
 
-The `scripts/` directory now contains lightweight helpers that wrap the canonical `gr-lora_sdr` blocks.  They are meant for quick spot checks against the C++ pipeline—no custom flowgraph editing required.  Activate the `gnuradio-lora` Conda environment before invoking them:
+The `scripts/` directory contains both GNU Radio and new pipeline scripts:
+
+### New Pipeline Scripts
+
+- `decode_offline_recording_final.py` – Main script for running the new C++ pipeline on IQ vectors. Provides user-friendly output and supports various command-line options.
+
+### GNU Radio Scripts
+
+The following scripts wrap the canonical `gr-lora_sdr` blocks for comparison with the new pipeline. Activate the `gnuradio-lora` Conda environment before invoking them:
 
 ```bash
 conda run -n gnuradio-lora <command>
@@ -76,15 +103,42 @@ conda run -n gnuradio-lora <command>
 
 ## Comparing with GNU Radio
 
-With the helper scripts above you can generate a canonical vector, inspect GNU Radio’s intermediate buffers, and then run `./build/test_gr_pipeline` on the same file.  The expectation is that the decoded payload bytes and CRC outcomes will match between the two implementations.
+With the helper scripts above you can generate a canonical vector, inspect GNU Radio's intermediate buffers, and then run either `./build/test_gr_pipeline` or `python3 scripts/decode_offline_recording_final.py` on the same file. The expectation is that the decoded payload bytes and CRC outcomes will match between the two implementations.
 
+
+## New Pipeline Features
+
+The new C++ pipeline (`src/rx/gr_pipeline.cpp`) includes several improvements over the original implementation:
+
+- **Multi-frame decoding**: Automatically detects and decodes multiple LoRa frames in a single IQ stream
+- **Improved CRC handling**: Correct endianness and algorithm matching GNU Radio's implementation
+- **Better dewhitening**: Proper offset handling for each frame
+- **Python bindings**: Direct integration with Python via pybind11
+- **Enhanced diagnostics**: Detailed frame information and debug output
 
 ## Roadmap
 
-- Re-enable automated parity checks against GNU Radio reference logs.
-- Add regression tests that exercise multiple spreading factors and coding rates.
-- Provide simple Python bindings around `liblora_gr.a` for quick scripting.
+- ✅ Re-enable automated parity checks against GNU Radio reference logs.
+- ✅ Add regression tests that exercise multiple spreading factors and coding rates.
+- ✅ Provide simple Python bindings around `liblora_gr.a` for quick scripting.
+- Add support for additional LoRa parameters and configurations.
+- Implement performance optimizations for real-time processing.
 
+## Environment Setup
+
+For GNU Radio scripts:
+```bash
 conda activate gnuradio-lora
 export PYTHONPATH=$PWD/external/gr_lora_sdr/install/lib/python3.10/site-packages:$PYTHONPATH
 export LD_LIBRARY_PATH=$PWD/external/gr_lora_sdr/install/lib:$LD_LIBRARY_PATH
+```
+
+For new pipeline scripts:
+```bash
+# Ensure pybind11 is installed
+pip install pybind11
+
+# Build the project
+cmake -S . -B build
+cmake --build build
+```
