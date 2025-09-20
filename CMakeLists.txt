@@ -7,6 +7,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 find_library(LIQUID_LIB liquid REQUIRED)
 
+# Find pybind11
+find_package(pybind11 REQUIRED)
+
 add_library(lora_gr
     src/workspace.cpp
     src/rx/gr/utils.cpp
@@ -21,3 +24,7 @@ target_link_libraries(lora_gr PUBLIC ${LIQUID_LIB})
 add_executable(test_gr_pipeline test_gr_pipeline.cpp)
 
 target_link_libraries(test_gr_pipeline PRIVATE lora_gr)
+
+# Python bindings
+pybind11_add_module(lora_pipeline python_bindings.cpp)
+target_link_libraries(lora_pipeline PRIVATE lora_gr pybind11::module)

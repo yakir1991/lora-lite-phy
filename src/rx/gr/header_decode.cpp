@@ -6,6 +6,7 @@
 #include <cmath>
 #include <complex>
 #include <cstdlib>
+#include <iostream>
 #include <vector>
 
 #include "lora/rx/gr/primitives.hpp"
@@ -36,9 +37,11 @@ std::optional<LocalHeader> parse_standard_lora_header(const uint8_t* hdr, size_t
     uint8_t n0 = hdr[0] & 0x0F;
     uint8_t n1 = hdr[1] & 0x0F;
     uint8_t n2 = hdr[2] & 0x0F;
+    uint8_t n3 = hdr[3] & 0x0F;
     uint8_t chk_rx = static_cast<uint8_t>(((hdr[3] & 0x01) << 4) | (hdr[4] & 0x0F));
 
-    uint8_t payload_len = static_cast<uint8_t>((n0 << 4) | n1);
+    // Fixed: GNU Radio uses (n3 << 4) | n0 for payload length
+    uint8_t payload_len = static_cast<uint8_t>((n3 << 4) | n0);
     bool has_crc = (n2 & 0x1) != 0;
     uint8_t cr_idx = static_cast<uint8_t>((n2 >> 1) & 0x7);
 
@@ -148,7 +151,9 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
             size_t idx = static_cast<size_t>(idx_l);
             if (idx + N > aligned.size()) continue;
             uint32_t sym = demod_symbol_peak(ws, &aligned[idx]);
+            std::cout << "DEBUG: Sync search at idx=" << idx << " sym=" << sym << " net1=" << net1 << " net2=" << net2 << std::endl;
             if (std::abs(int(sym) - int(net1)) <= 2 || std::abs(int(sym) - int(net2)) <= 2) {
+                std::cout << "DEBUG: Found sync at idx=" << idx << " sym=" << sym << std::endl;
                 sync_start = idx;
                 found_sync = true;
                 break;
@@ -161,7 +166,11 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
     ws.dbg_hdr_sync_start = start_decim + aligned_start + sync_start;
 
     size_t header_start = sync_start + (2u * N + N / 4u);
+    std::cout << "DEBUG: sync_start=" << sync_start << ", header_start=" << header_start << ", N=" << N << std::endl;
 
+    // Let's understand the frame structure better
+    std::cout << "DEBUG: Original header_start=" << header_start << std::endl;
+    
     if (const char* sym_off = std::getenv("LORA_HDR_BASE_SYM_OFF")) {
         long v = std::strtol(sym_off, nullptr, 10);
         long delta = v * static_cast<long>(N);

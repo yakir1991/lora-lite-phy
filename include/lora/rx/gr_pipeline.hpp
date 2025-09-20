@@ -17,8 +17,8 @@ struct Config {
     uint32_t sf{7};
     size_t min_preamble_syms{8};
     float symbols_after_preamble{2.25f};
-    size_t header_symbol_count{16};
-    std::vector<int> os_candidates{1, 2, 4, 8};
+    size_t header_symbol_count{0};
+    std::vector<int> os_candidates{4, 2, 1, 8};
     int sto_search{0};
     uint8_t expected_sync_word{0x34};
     bool decode_payload{true};
@@ -84,6 +84,11 @@ struct PipelineResult {
     PayloadBitstream bits;
     PayloadFecOutput fec;
     PayloadStageOutput payload;
+    
+    // Multi-frame support
+    size_t frame_count{0};
+    std::vector<std::vector<uint8_t>> individual_frame_payloads;
+    std::vector<bool> individual_frame_crc_ok;
 };
 
 class GnuRadioLikePipeline {
