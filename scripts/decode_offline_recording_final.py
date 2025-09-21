@@ -17,6 +17,21 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
+HEX_VALUE_RE = re.compile(r"^[0-9a-fA-F]+$")
+
+
+def parse_int_field(text: str) -> int:
+    """Parse an integer field that may be rendered in decimal or hexadecimal."""
+
+    token = text.strip().split()[0]
+
+    try:
+        return int(token, 0)
+    except ValueError:
+        if HEX_VALUE_RE.fullmatch(token):
+            return int(token, 16)
+        raise
+
 
 @dataclass
 class FrameResult:
@@ -133,7 +148,11 @@ def run_cpp_pipeline(input_file: Path, sf: int, sync_word: int = 0x34) -> Dict[s
             elif line.startswith("Header start sample:"):
                 parsed_output["frame_sync"]["header_start_sample"] = int(line.split(":", 1)[1].strip())
             elif line.startswith("Payload length:"):
-                parsed_output["header"]["payload_len"] = int(line.split(":", 1)[1].strip())
+                field = line.split(":", 1)[1]
+                try:
+                    parsed_output["header"]["payload_len"] = parse_int_field(field)
+                except ValueError:
+                    parsed_output["header"]["payload_len_raw"] = field.strip()
             elif line.startswith("CR:"):
                 parsed_output["header"]["cr"] = int(line.split(":", 1)[1].strip())
             elif line.startswith("Has CRC:"):
@@ -141,7 +160,11 @@ def run_cpp_pipeline(input_file: Path, sf: int, sync_word: int = 0x34) -> Dict[s
             elif line.startswith("CRC OK:"):
                 parsed_output["payload"]["crc_ok"] = "true" in line
             elif line.startswith("Length:"):
-                parsed_output["payload"]["length"] = int(line.split(":", 1)[1].strip().split()[0])
+                field = line.split(":", 1)[1]
+                try:
+                    parsed_output["payload"]["length"] = parse_int_field(field)
+                except ValueError:
+                    parsed_output["payload"]["length_raw"] = field.strip()
             elif line.startswith("Data:"):
                 # Parse hex bytes
                 hex_part = line.split(":", 1)[1].strip()
