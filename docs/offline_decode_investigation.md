@@ -25,6 +25,9 @@
 - Reworked the whitening stage to operate on assembled bytes rather than individual nibbles; the pipeline now logs both the raw
   (still whitened) byte stream (`39 22 55 a2 …`) and the dewhitened payload (`c6 dc a9 5a …`), confirming that the corruption
   happens before whitening and persists regardless of nibble ordering.【F:src/rx/gr_pipeline.cpp†L644-L706】【d573ce†L44-L61】
+- Instrumented the payload path to print the fractional CFO/STO estimates and derive an integer-CFO rotation from the downchirp
+  preceding the header; the 500 ksps capture now reports a negligible fractional offset, applies `cfo_int=-20`, and still emits
+  94-byte gibberish payloads with failing CRCs, so the remaining corruption predates whitening and CRC handling.【F:src/rx/gr_pipeline.cpp†L308-L410】【db4446†L1-L64】【63d665†L1-L5】
 
 
 ## Root cause analysis
@@ -50,6 +53,8 @@ condition even though the samples contained a valid LoRa frame.
 - Running the same helper against `sps_500k_bw_125k_sf_7_cr_2_ldro_false_crc_true_implheader_false_hello_stupid_world.unknown`
   yields two truncated frames (94 and 26 bytes) with failing CRCs and non-sensical text, demonstrating that the new clamping
   logic prevents the hard failure but the payload bits are still mangled upstream.【83e45b†L1-L52】【00689f†L1-L5】
+- Re-running the helper after adding the integer-CFO correction continues to print the same 94-byte non-ASCII payload with an
+  invalid CRC, confirming that the new rotation has not resolved the demapper mismatch yet.【63d665†L1-L5】
 - Invoking `./build/test_gr_pipeline` against the same capture prints the Hamming-decoded nibbles, dewhitened payload bytes, and the mismatched CRC pair (`calc=699c`, `rx=5e6d`), giving concrete data for the next debugging step.【7adb98†L1-L18】【3a6e3f†L1-L36】【3cf043†L1-L19】
 - Verified with a standalone Python script that the pipeline’s CRC calculator still yields `0x699c` when run over the dewhitened payload bytes and that appending the captured CRC (`0x5e6d`) does not zero the remainder; rotating the whitening sequence at the nibble level across eight offsets also leaves both values unchanged, eliminating simple CRC or whitening misconfiguration as causes.【bfd100†L1-L2】【675f51†L1-L1】【7843c7†L1-L8】
 
@@ -60,6 +65,11 @@ condition even though the samples contained a valid LoRa frame.
   demapper reports payload symbols such as `natural=124,1,110,109,22` for the first block instead of the sequence produced by
   encoding `hello_stupid_world`, indicating the corruption occurs before FEC decode—likely in the FFT/Gray demap or CFO/STO
   compensation stages.【F:src/rx/gr_pipeline.cpp†L519-L575】【acff51†L16-L58】
+- Use the new CFO instrumentation to align the pipeline’s integer rotation with GNU Radio’s reference (e.g., verify the `cfo_int`
+  estimate against `frame_sync_impl.cc` and confirm whether the downchirp FFT should rotate `ws.downchirp` or advance the sample
+  index) so the demapper sees correctly wrapped bins on the oversampled capture.【F:src/rx/gr_pipeline.cpp†L308-L391】【db4446†L1-L64】
+- Bring up the upstream `gnuradio.lora_sdr` offline decoder once `gnuradio` Python bindings are available—the current container
+  lacks them—and compare its symbol stream against the in-tree pipeline for the same capture.【ec8044†L1-L3】
 - Compare the byte-level `39 22 55 …` stream recovered before dewhitening with a reference encoder for the string
   `hello_stupid_world` to pin down whether the error stems from the Hamming decoder or the symbol-to-bit assignment prior to
   interleaving.【d573ce†L44-L57】
