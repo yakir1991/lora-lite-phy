@@ -32,6 +32,11 @@
   converted straight into nibbles/bytes without the old bit-matrix helpers. Keeping `cw_len` and `blocks` in scope restored the
   build, but the 500 ksps capture still yields `natural=108,24,74,75,34,52` for the first block and dewhitened bytes such as
   `bf 17 f2 78 30 6c …` with a failing CRC, so the demapper/Gray normalisation remains suspect.【F:src/rx/gr_pipeline.cpp†L498-L704】【76a685†L1-L33】
+- Iterated on that demapper: the Gray decoder now skips the old `-1` adjustment, the diagonal interleaver operates on explicit bit
+  matrices, Hamming decoding funnels through `decode_hamming_codeword`, and dewhitening happens after nibble assembly. Even with
+  those changes and an attempt to feed the integer-CFO estimate back into the Gray index, the 500 ksps capture still reports
+  `natural=90,6,76,55,20,34` for the first payload block and diverging byte streams (`whitened=46 c2 9d…`, `dewhitened=b9 3c 61…`)
+  alongside an invalid CRC, so the corruption must originate upstream of interleaving/FEC.【F:src/rx/gr_pipeline.cpp†L521-L719】【0fc94f†L1-L20】
 
 
 ## Root cause analysis
@@ -65,9 +70,12 @@ condition even though the samples contained a valid LoRa frame.
 ## Next steps
 
 - Investigate why the pipeline reports mismatched CRC values (`CRC calc=699c`, `CRC rx=5e6d`) on the sample capture by tracing back through the payload demodulation stack—deinterleaving, Hamming decode, and nibble assembly—to spot the corruption that survives CRC recomputation despite matching whitening and polynomial settings.【3a6e3f†L23-L36】【7843c7†L1-L8】
-- Extend that investigation to the 500 ksps capture: even with the GNU Radio-style deinterleaver/whitener in place, the
-  demapper now reports `natural=108,24,74,75,34,52` for the first block and assembles bytes `bf 17 f2 78 30 6c …` instead of the
-  encoded `hello_stupid_world`, keeping the focus on the FFT/Gray demap or CFO/STO compensation stages.【F:src/rx/gr_pipeline.cpp†L498-L704】【76a685†L1-L33】
+- Extend that investigation to the 500 ksps capture: even with the GNU Radio-style interleaver and late dewhitening, the
+  demapper now reports `natural=90,6,76,55,20,34` for the first block and assembles bytes `b9 3c 61 c6 …` instead of the encoded
+  `hello_stupid_world`, keeping the focus on the FFT/Gray demap or CFO/STO compensation stages.【F:src/rx/gr_pipeline.cpp†L521-L719】【0fc94f†L1-L20】
+- Capture a GNU Radio reference dump of the same `hello_stupid_world` frame (or build an encoder) to compare FFT bins, Gray
+  symbols, and Hamming outputs against the pipeline’s `natural=90,6,76,55…` stream and confirm whether the integer-CFO adjustment
+  should subtract rather than add the measured offset.【F:src/rx/gr_pipeline.cpp†L580-L599】【0fc94f†L1-L20】
 - Use the new CFO instrumentation to align the pipeline’s integer rotation with GNU Radio’s reference (e.g., verify the `cfo_int`
   estimate against `frame_sync_impl.cc` and confirm whether the downchirp FFT should rotate `ws.downchirp` or advance the sample
   index) so the demapper sees correctly wrapped bins on the oversampled capture.【F:src/rx/gr_pipeline.cpp†L308-L391】【db4446†L1-L64】
