@@ -27,10 +27,14 @@ InterleaverMap make_diagonal_interleaver(uint32_t sf, uint32_t cr_plus4) {
     for (uint32_t col = 0; col < cols; ++col) {
         for (uint32_t row = 0; row < rows; ++row) {
             uint32_t dst = col * rows + row;
-            int rotated = static_cast<int>(row) - static_cast<int>(col);
+
+            // GNU Radio diagonal interleaver uses mod((i - j - 1), sf) to select
+            // the destination row for a given input column i and row j.
+            int rotated = static_cast<int>(col) - static_cast<int>(row) - 1;
             rotated %= static_cast<int>(rows);
-            if (rotated < 0) rotated += rows;
-            uint32_t src = rotated * cols + col;
+            if (rotated < 0) rotated += static_cast<int>(rows);
+
+            uint32_t src = static_cast<uint32_t>(rotated) * cols + col;
             map.map[dst] = src;
         }
     }
