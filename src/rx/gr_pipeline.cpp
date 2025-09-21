@@ -5,7 +5,10 @@
 #include <cmath>
 #include <complex>
 #include <iostream>
+#include <optional>
 #include <utility>
+
+#define LORA_PIPELINE_DEBUG 1
 
 #include "lora/rx/gr/primitives.hpp"
 #include "lora/rx/gr/header_decode.hpp"
@@ -128,58 +131,66 @@ std::optional<PreambleDetectResult> detect_preamble_dynamic(
     return best_result;
 }
 
-constexpr std::array<uint8_t, 16> kCwLut = {
-    0x00, 0x17, 0x2D, 0x3A, 0x4E, 0x59, 0x63, 0x74,
-    0x8B, 0x98, 0xA2, 0xB1, 0xC5, 0xD2, 0xEC, 0xFB
-};
-
 uint8_t decode_hamming_codeword(uint16_t cw, uint32_t cw_len, uint32_t cr_app) {
-    std::vector<bool> codeword(cw_len);
-    for (uint32_t j = 0; j < cw_len; ++j)
-        codeword[j] = ((cw >> (cw_len - 1 - j)) & 0x1u) != 0;
+    static const auto tables = lora::rx::gr::make_hamming_tables();
 
-    std::vector<bool> data_nibble(4);
-    data_nibble[0] = codeword[3];
-    data_nibble[1] = codeword[2];
-    data_nibble[2] = codeword[1];
-    data_nibble[3] = codeword[0];
+    auto to_code_rate = [](uint32_t cr) -> std::optional<lora::rx::gr::CodeRate> {
+        switch (cr) {
+            case 1: return lora::rx::gr::CodeRate::CR45;
+            case 2: return lora::rx::gr::CodeRate::CR46;
+            case 3: return lora::rx::gr::CodeRate::CR47;
+            case 4: return lora::rx::gr::CodeRate::CR48;
+            default: return std::nullopt;
+        }
+    };
 
-    switch (cr_app) {
-        case 4: {
-            if ((std::count(codeword.begin(), codeword.end(), true) % 2) == 0)
-                break;
-            [[fallthrough]];
-        }
-        case 3: {
-            bool s0 = codeword[0] ^ codeword[1] ^ codeword[2] ^ codeword[4];
-            bool s1 = codeword[1] ^ codeword[2] ^ codeword[3] ^ codeword[5];
-            bool s2 = codeword[0] ^ codeword[1] ^ codeword[3] ^ codeword[6];
-            int synd = static_cast<int>(s0) + (static_cast<int>(s1) << 1) + (static_cast<int>(s2) << 2);
-            switch (synd) {
-                case 5: data_nibble[3] = !data_nibble[3]; break;
-                case 7: data_nibble[2] = !data_nibble[2]; break;
-                case 3: data_nibble[1] = !data_nibble[1]; break;
-                case 6: data_nibble[0] = !data_nibble[0]; break;
-                default: break;
-            }
-            break;
-        }
-        case 2: {
-            (void)(codeword[0] ^ codeword[1] ^ codeword[2] ^ codeword[4]);
-            (void)(codeword[1] ^ codeword[2] ^ codeword[3] ^ codeword[5]);
-            break;
-        }
-        case 1: {
-            (void)(std::count(codeword.begin(), codeword.end(), true) % 2);
-            break;
-        }
-        default: break;
+    auto code_rate = to_code_rate(cr_app);
+    if (!code_rate)
+        return 0u;
+
+    uint16_t cw_masked = static_cast<uint16_t>(cw & ((cw_len >= 16u) ? 0xFFFFu : ((1u << cw_len) - 1u)));
+
+    auto decoded = lora::rx::gr::hamming_decode4(
+        cw_masked,
+        static_cast<uint8_t>(cw_len),
+        *code_rate,
+        tables);
+
+#ifdef LORA_PIPELINE_DEBUG
+    if (cw_len == 6 && cr_app == 2 && (cw_masked == 0x28u || cw_masked == 0x2Eu || cw_masked == 0x0Du || cw_masked == 0x20u)) {
+        std::cout << "[decode_hamming_codeword] cw=0x" << std::hex << cw_masked
+                  << " decoded=" << (decoded ? static_cast<int>(decoded->first & 0x0Fu) : -1)
+                  << std::dec << std::endl;
+    }
+#endif
+
+    auto reverse_nibble = [](uint8_t v) {
+        v &= 0x0Fu;
+        uint8_t r = static_cast<uint8_t>(((v & 0x1u) << 3) |
+                                         ((v & 0x2u) << 1) |
+                                         ((v & 0x4u) >> 1) |
+                                         ((v & 0x8u) >> 3));
+        return static_cast<uint8_t>(r & 0x0Fu);
+    };
+
+    if (decoded) {
+        return reverse_nibble(decoded->first);
     }
 
-    uint8_t nib = 0;
-    for (bool bit : data_nibble)
-        nib = static_cast<uint8_t>((nib << 1) | (bit ? 1 : 0));
-    return nib;
+    // Fall back to the nearest codeword to remain debuggable when errors exceed
+    // the correction capability.
+    uint8_t best_nibble = 0u;
+    int best_distance = static_cast<int>(cw_len) + 1;
+    for (uint32_t nib = 0; nib < 16; ++nib) {
+        auto enc = lora::rx::gr::hamming_encode4(static_cast<uint8_t>(nib), *code_rate, tables);
+        uint16_t ref = static_cast<uint16_t>(enc.first & ((cw_len >= 16u) ? 0xFFFFu : ((1u << cw_len) - 1u)));
+        int distance = std::popcount(static_cast<unsigned>(ref ^ cw_masked));
+        if (distance < best_distance) {
+            best_distance = distance;
+            best_nibble = reverse_nibble(static_cast<uint8_t>(nib));
+        }
+    }
+    return best_nibble & 0x0Fu;
 }
 
 std::optional<size_t> locate_header_start(
@@ -463,17 +474,17 @@ SingleFrameResult decode_single_frame(
     
         for (size_t i = 0; i < payload_symbol_count; ++i) {
             uint32_t raw = raw_bins[cfg.header_symbol_count + i] & (N - 1u);
-            uint32_t shifted = (raw + N - 1u) & (N - 1u);
-            if (ldro) shifted >>= 2;
-            uint32_t gray_decoded = lora::rx::gr::gray_decode(shifted);
+            uint32_t adjusted = (raw + N - 1u) & (N - 1u);
+            uint32_t gray_decoded = lora::rx::gr::gray_decode(adjusted);
+            if (ldro) gray_decoded >>= 2;
             uint32_t natural = (gray_decoded + 1u) & mask;
             reduced_symbols[i] = natural;
-            
+
             // Debug: Show first few symbols with detailed processing
             if (i < 5) {
                 uint32_t original_bin = raw_bins[cfg.header_symbol_count + i];
-                std::cout << "DEBUG: Frame[" << frame_idx << "] Symbol[" << i << "] FFT_bin=" << original_bin << " raw=" << raw 
-                          << " shifted=" << shifted << " gray_decoded=" << gray_decoded 
+                std::cout << "DEBUG: Frame[" << frame_idx << "] Symbol[" << i << "] FFT_bin=" << original_bin << " raw=" << raw
+                          << " adjusted=" << adjusted << " gray_decoded=" << gray_decoded
                           << " natural=" << natural << " (N=" << N << ", mask=0x" << std::hex << mask << std::dec << ")" << std::endl;
             }
         }
@@ -633,60 +644,37 @@ SingleFrameResult decode_single_frame(
         nibbles.resize(expected_nibbles);
 
     auto build_bytes = [&](bool swap) {
-        // Debug: Show original nibbles before dewhitening
         std::cout << "DEBUG: Original nibbles (first 20): ";
-        for (size_t i = 0; i < std::min(size_t(20), nibbles.size()); ++i) {
+        for (size_t i = 0; i < std::min<size_t>(20, nibbles.size()); ++i)
             std::cout << std::hex << (int)nibbles[i] << " ";
-        }
         std::cout << std::dec << std::endl;
-        
-        // Apply GNU Radio compatible dewhitening on nibbles
-        std::vector<uint8_t> dewhitened_nibbles(nibbles.size());
-        auto& whiten_seq = lora::rx::gr::whitening_sequence();
-        for (size_t i = 0; i < nibbles.size(); ++i) {
-            size_t byte_idx = i / 2;  // Which byte in the sequence
-            // Try starting from offset 0 for each frame (like GNU Radio)
-            size_t offset = byte_idx % lora::rx::gr::kWhiteningSeqLen;
-            
-            // Debug: Show whitening sequence values for first few nibbles
-            if (i < 10) {
-                std::cout << "DEBUG: Nibble[" << i << "] orig=" << std::hex << (int)nibbles[i] 
-                          << " offset=" << offset << " whiten_seq=" << (int)whiten_seq[offset] << std::dec;
-            }
-            
-            if (i % 2 == 0) {
-                // Low nibble
-                dewhitened_nibbles[i] = nibbles[i] ^ (whiten_seq[offset] & 0x0F);
-                if (i < 10) {
-                    std::cout << " low_nib=" << std::hex << (int)(whiten_seq[offset] & 0x0F) 
-                              << " result=" << (int)dewhitened_nibbles[i] << std::dec << std::endl;
-                }
-            } else {
-                // High nibble
-                dewhitened_nibbles[i] = nibbles[i] ^ ((whiten_seq[offset] & 0xF0) >> 4);
-                if (i < 10) {
-                    std::cout << " high_nib=" << std::hex << (int)((whiten_seq[offset] & 0xF0) >> 4) 
-                              << " result=" << (int)dewhitened_nibbles[i] << std::dec << std::endl;
-                }
-            }
-        }
-        
-        // Debug: Show dewhitened nibbles
-        std::cout << "DEBUG: Dewhitened nibbles (first 20): ";
-        for (size_t i = 0; i < std::min(size_t(20), dewhitened_nibbles.size()); ++i) {
-            std::cout << std::hex << (int)dewhitened_nibbles[i] << " ";
-        }
-        std::cout << std::dec << std::endl;
-        
-        // Then build bytes from dewhitened nibbles
-        std::vector<uint8_t> bytes((dewhitened_nibbles.size() + 1) / 2);
-        for (size_t i = 0; i < bytes.size(); ++i) {
-            uint8_t a = (i * 2 < dewhitened_nibbles.size()) ? dewhitened_nibbles[i * 2] : 0u;
-            uint8_t b = (i * 2 + 1 < dewhitened_nibbles.size()) ? dewhitened_nibbles[i * 2 + 1] : 0u;
+
+        std::vector<uint8_t> raw_bytes((nibbles.size() + 1) / 2);
+        for (size_t i = 0; i < raw_bytes.size(); ++i) {
+            uint8_t a = (i * 2 < nibbles.size()) ? nibbles[i * 2] : 0u;
+            uint8_t b = (i * 2 + 1 < nibbles.size()) ? nibbles[i * 2 + 1] : 0u;
             uint8_t low = swap ? b : a;
             uint8_t high = swap ? a : b;
-            bytes[i] = static_cast<uint8_t>((high << 4) | low);
+            raw_bytes[i] = static_cast<uint8_t>((high << 4) | low);
         }
+
+        std::cout << "DEBUG: Raw bytes (first 10): ";
+        for (size_t i = 0; i < std::min<size_t>(10, raw_bytes.size()); ++i)
+            std::cout << std::hex << (int)raw_bytes[i] << " ";
+        std::cout << std::dec << std::endl;
+
+        std::vector<uint8_t> bytes = raw_bytes;
+        size_t whiten_len = std::min(effective_payload_len, bytes.size());
+        if (whiten_len > 0) {
+            auto payload_span = std::span<uint8_t>(bytes.data(), whiten_len);
+            lora::rx::gr::dewhiten_payload(payload_span, 0);
+        }
+
+        std::cout << "DEBUG: Dewhitened payload bytes (first 10): ";
+        for (size_t i = 0; i < std::min<size_t>(10, bytes.size()); ++i)
+            std::cout << std::hex << (int)bytes[i] << " ";
+        std::cout << std::dec << std::endl;
+
         return bytes;
     };
 
