@@ -27,13 +27,13 @@ condition even though the samples contained a valid LoRa frame.
 
 ## Verification status
 
-- Attempted to run `python3 scripts/decode_offline_recording_final.py` against the canonical GNU Radio capture, but the wrapper could not locate `/workspace/lora-lite-phy/build/test_gr_pipeline` because the binary has not been rebuilt since the pipeline changes.【9ea1d6†L1-L11】
-- Re-running `cmake -S . -B build` after initialising `external/liquid-dsp` now proceeds past the FFT dependency by compiling the vendored sources, but the configure step currently stops later when `pybind11` is missing; provisioning that package remains a prerequisite for regenerating `test_gr_pipeline` in this container.【F:CMakeLists.txt†L8-L55】【1839c3†L39-L62】
+- Reconfigured the tree with `cmake -S . -B build -Dpybind11_DIR=/root/.local/lib/python3.12/site-packages/pybind11/share/cmake/pybind11` after initialising `external/liquid-dsp`; the configure step now completes and `cmake --build build` produces `test_gr_pipeline` alongside the Python extension.【434ab2†L1-L7】【06b1db†L1-L2】
+- Running `python3 scripts/decode_offline_recording_final.py vectors/sps_125k_bw_125k_sf_7_cr_1_ldro_false_crc_true_implheader_false_nmsgs_8.unknown` now reaches the pipeline but fails while parsing the stdout because the debug dump prints `Payload length: f2`, which the script tries to convert to an integer.【4fd49c†L1-L2】【ce3066†L19-L48】
 
 ## Next steps
 
-- Rebuild `test_gr_pipeline` (the CMake configure step now builds `external/liquid-dsp` automatically when needed) once `pybind11` is provisioned and rerun the offline decode regression end-to-end to capture post-fix evidence.【9ea1d6†L1-L11】【F:CMakeLists.txt†L8-L55】【1839c3†L39-L62】
-- Once the executable is available, record the successful decode output in this document to close the investigation loop and guard against regressions when modifying the payload handling logic again.【9ea1d6†L1-L11】
+- Update either the pipeline logging or the Python parsing to tolerate hexadecimal debug values (e.g., skip the `Payload length: f2` line) so the wrapper can consume the new diagnostics without crashing.【4fd49c†L1-L2】【ce3066†L35-L48】
+- Once the parsing issue is resolved, rerun the offline decode regression end-to-end and record the successful output in this document to close the investigation loop and guard against regressions when modifying the payload handling logic again.
 
 ## Open follow-ups
 - The pipeline still relies on the caller to seed `Config.header_symbol_count` (currently set to 16 in `test_gr_pipeline`). We should
