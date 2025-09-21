@@ -9,6 +9,8 @@
   truncated, so it aborted without returning user data.【F:src/rx/gr_pipeline.cpp†L348-L429】
 
 - Computing the expected number of payload symbols from the header fields (payload length, coding rate, CRC flag) unblocks the decoder for any valid payload length and restored the Python wrapper to working order.【F:src/rx/gr_pipeline.cpp†L28-L47】【F:src/rx/gr_pipeline.cpp†L348-L356】
+- Tightened the Hamming decoder so the lookup tables no longer overwrite data-bit syndromes and mirrored the recovered nibble bits to match GNU Radio’s MSB-first convention, eliminating the earlier `cw=0x28 -> nibble 0x8` oscillation.【F:src/rx/gr/utils.cpp†L72-L116】【F:src/rx/gr_pipeline.cpp†L134-L193】
+- Restored the demapper’s `+1` normalization after Gray decoding and skipped whitening on the CRC trailer so the payload bytes are unwhitened while the trailer stays identical to the capture.【F:src/rx/gr_pipeline.cpp†L472-L705】
 - Follow-up verification initially stalled because the container lacked `liquid-dsp`; CMake now falls back to the vendored `external/liquid-dsp` sources when the system library is absent so future rebuilds of `test_gr_pipeline` can proceed inside clean environments once `pybind11` is also available.【F:CMakeLists.txt†L8-L55】
 - Relaxed the offline decode helper so it accepts hexadecimal header fields, letting the investigation surface the 242-byte payload (CRC currently invalid) instead of crashing on the debug dump.【F:scripts/decode_offline_recording_final.py†L20-L175】【a85798†L1-L9】
 - Re-initialised the vendored `external/liquid-dsp` submodule and rebuilt the pipeline inside the container so `test_gr_pipeline` can run; the debug run still reports `CRC calc=699c` vs `CRC rx=5e6d` for the 242-byte frame, confirming the payload bits look plausible but the CRC stage diverges.【790c15†L1-L4】【7f750c†L1-L17】【f93ffd†L1-L2】【3a6e3f†L23-L36】
@@ -17,10 +19,12 @@
   exposed a second failure mode: the header advertises a 96-byte payload, but only ~18k baseband samples are present so the
   multi-frame loop aborted before producing payload bytes.【ba19bc†L1-L24】 Adding a fallback that clamps the payload symbol
   budget to the available samples and truncates the CRC expectation allows the helper to recover two partial frames (94 and
-  26 bytes) even though their CRCs remain invalid and the decoded text is still garbage, confirming the underlying FEC
-  corruption persists.【F:src/rx/gr_pipeline.cpp†L367-L383】【F:src/rx/gr_pipeline.cpp†L614-L719】【83e45b†L1-L52】【00689f†L1-L5】
+  26 bytes) even though their CRCs remain invalid.【F:src/rx/gr_pipeline.cpp†L367-L383】【F:src/rx/gr_pipeline.cpp†L614-L719】【83e45b†L1-L52】【00689f†L1-L5】 The corrected Hamming/whitening stages now yield deterministic nibble streams (`9 3 2 2 5 …`) and repeatable 94-byte payloads, but the bytes remain non-ASCII (`c6 dc a9 …`) because the FFT demodulator is still mapping the first payload symbols to `124,1,110,109,22…` instead of the values produced by encoding `hello_stupid_world`.【d00c19†L1-L74】【d6e50f†L1-L9】
 - Updated the diagonal interleaver map to mirror GNU Radio’s `mod((i - j - 1), sf)` rotation, but the 500 ksps capture still
   demaps to repeating garbage (`1b 27 29 …`) and a failed CRC, so the corruption predates deinterleaving.【F:src/rx/gr/utils.cpp†L24-L44】【8faf71†L1-L7】
+- Reworked the whitening stage to operate on assembled bytes rather than individual nibbles; the pipeline now logs both the raw
+  (still whitened) byte stream (`39 22 55 a2 …`) and the dewhitened payload (`c6 dc a9 5a …`), confirming that the corruption
+  happens before whitening and persists regardless of nibble ordering.【F:src/rx/gr_pipeline.cpp†L644-L706】【d573ce†L44-L61】
 
 
 ## Root cause analysis
@@ -56,6 +60,9 @@ condition even though the samples contained a valid LoRa frame.
   demapper reports payload symbols such as `natural=124,1,110,109,22` for the first block instead of the sequence produced by
   encoding `hello_stupid_world`, indicating the corruption occurs before FEC decode—likely in the FFT/Gray demap or CFO/STO
   compensation stages.【F:src/rx/gr_pipeline.cpp†L519-L575】【acff51†L16-L58】
+- Compare the byte-level `39 22 55 …` stream recovered before dewhitening with a reference encoder for the string
+  `hello_stupid_world` to pin down whether the error stems from the Hamming decoder or the symbol-to-bit assignment prior to
+  interleaving.【d573ce†L44-L57】
 - After the CRC mismatch is resolved, rerun the offline decode regression end-to-end and capture the successful output in this document to close the investigation and guard against future regressions.
 
 
