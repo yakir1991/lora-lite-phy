@@ -245,6 +245,14 @@ struct SingleFrameResult {
     bool crc_ok = false;
     size_t frame_start = 0;
     size_t frame_length = 0;
+    size_t raw_frame_samples = 0;
+    int detection_os = 1;
+    int detection_phase = 0;
+    std::optional<float> fractional_cfo;
+    std::optional<int> sto;
+    size_t preamble_start_sample = 0;
+    size_t aligned_start_sample = 0;
+    size_t header_start_sample = 0;
 };
 
 SingleFrameResult decode_single_frame(
@@ -280,6 +288,9 @@ SingleFrameResult decode_single_frame(
         return result;
     }
 
+    result.detection_os = det->os;
+    result.detection_phase = det->phase;
+
     auto decimated = lora::rx::gr::decimate_os_phase(samples, det->os, det->phase);
     if (decimated.empty()) {
         result.failure_reason = "decimation_failed";
@@ -313,6 +324,8 @@ SingleFrameResult decode_single_frame(
 
     std::cout << "DEBUG: Fractional CFO estimate=" << *cfo << std::endl;
 
+    result.fractional_cfo = *cfo;
+
     std::vector<std::complex<float>> compensated(decimated.size());
     float two_pi_eps = -2.0f * static_cast<float>(M_PI) * (*cfo);
     for (size_t n = 0; n < decimated.size(); ++n) {
@@ -330,6 +343,8 @@ SingleFrameResult decode_single_frame(
     }
 
     std::cout << "DEBUG: STO estimate=" << *sto << std::endl;
+
+    result.sto = *sto;
 
     size_t aligned_start = preamble_start;
     if (*sto >= 0)
@@ -360,6 +375,15 @@ SingleFrameResult decode_single_frame(
     }
 
     size_t header_start = *header_start_opt;
+    int phase_non_negative = std::max(det->phase, 0);
+    int os_positive = std::max(det->os, 1);
+    size_t os_positive_sz = static_cast<size_t>(os_positive);
+    auto to_raw = [&](size_t decim_idx) -> size_t {
+        return static_cast<size_t>(phase_non_negative) + decim_idx * os_positive_sz;
+    };
+    result.preamble_start_sample = to_raw(preamble_start);
+    result.aligned_start_sample = to_raw(aligned_start);
+    result.header_start_sample = to_raw(header_start);
     bool ldro = determine_ldro(cfg);
     int cfo_int = 0;
     if (header_start >= N) {
@@ -729,6 +753,7 @@ SingleFrameResult decode_single_frame(
         result.success = true;
         result.frame_start = det->start_sample;
         result.frame_length = frame_samples_needed;
+        result.raw_frame_samples = frame_samples_needed * os_positive_sz;
         return result;
     }
 
@@ -776,29 +801,33 @@ PipelineResult GnuRadioLikePipeline::run(std::span<const std::complex<float>> sa
         
         all_frame_payloads.push_back(frame_result.payload);
         all_frame_crc_ok.push_back(frame_result.crc_ok);
-        
-        // Move to next frame - advance by the actual frame length
-        size_t frame_advance = frame_result.frame_start + frame_result.frame_length;
-        std::cout << "Advancing by " << frame_advance << " samples (start=" 
-                  << frame_result.frame_start << ", length=" 
+
+        size_t preamble_start_absolute = current_offset + frame_result.preamble_start_sample;
+        size_t aligned_start_absolute = current_offset + frame_result.aligned_start_sample;
+        size_t header_start_absolute = current_offset + frame_result.header_start_sample;
+
+        if (frame_count == 0) {
+            result.frame_sync.detected = true;
+            result.frame_sync.preamble_start_sample = preamble_start_absolute;
+            result.frame_sync.os = frame_result.detection_os;
+            result.frame_sync.phase = frame_result.detection_phase;
+            result.frame_sync.cfo = frame_result.fractional_cfo.value_or(0.0f);
+            result.frame_sync.sto = frame_result.sto.value_or(0);
+            result.frame_sync.sync_detected = true;
+            result.frame_sync.sync_start_sample = header_start_absolute;
+            result.frame_sync.aligned_start_sample = aligned_start_absolute;
+            result.frame_sync.header_start_sample = header_start_absolute;
+        }
+
+        // Move to next frame - advance by the actual frame length in the raw sample domain
+        size_t frame_advance = frame_result.frame_start + frame_result.raw_frame_samples;
+        std::cout << "Advancing by " << frame_advance << " samples (start="
+                  << frame_result.frame_start << ", raw_frame_samples="
+                  << frame_result.raw_frame_samples << ", decimated_length="
                   << frame_result.frame_length << ")" << std::endl;
-        
+
         current_offset += frame_advance;
         frame_count++;
-        
-        // If we found a frame, update the main result with the first frame's sync info
-        if (frame_count == 1) {
-            result.frame_sync.detected = true;
-            result.frame_sync.preamble_start_sample = frame_result.frame_start;
-            result.frame_sync.os = 1;
-            result.frame_sync.phase = 0;
-            result.frame_sync.cfo = 0.0f;
-            result.frame_sync.sto = 0;
-            result.frame_sync.sync_detected = true;
-            result.frame_sync.sync_start_sample = frame_result.frame_start;
-            result.frame_sync.aligned_start_sample = frame_result.frame_start;
-            result.frame_sync.header_start_sample = frame_result.frame_start;
-        }
     }
     
     if (any_success) {
