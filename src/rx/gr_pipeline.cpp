@@ -311,6 +311,8 @@ SingleFrameResult decode_single_frame(
         return result;
     }
 
+    std::cout << "DEBUG: Fractional CFO estimate=" << *cfo << std::endl;
+
     std::vector<std::complex<float>> compensated(decimated.size());
     float two_pi_eps = -2.0f * static_cast<float>(M_PI) * (*cfo);
     for (size_t n = 0; n < decimated.size(); ++n) {
@@ -325,6 +327,8 @@ SingleFrameResult decode_single_frame(
         result.failure_reason = "sto_estimation_failed";
         return result;
     }
+
+    std::cout << "DEBUG: STO estimate=" << *sto << std::endl;
 
     size_t aligned_start = preamble_start;
     if (*sto >= 0)
@@ -356,6 +360,37 @@ SingleFrameResult decode_single_frame(
 
     size_t header_start = *header_start_opt;
     bool ldro = determine_ldro(cfg);
+    int cfo_int = 0;
+    if (header_start >= N) {
+        const std::complex<float>* down_block = compensated.data() + (header_start - N);
+        for (uint32_t n = 0; n < N; ++n)
+            ws.rxbuf[n] = down_block[n] * ws.upchirp[n];
+        ws.fft(ws.rxbuf.data(), ws.fftbuf.data());
+        uint32_t max_bin = 0u;
+        float max_mag = 0.f;
+        for (uint32_t k = 0; k < N; ++k) {
+            float mag = std::norm(ws.fftbuf[k]);
+            if (mag > max_mag) {
+                max_mag = mag;
+                max_bin = k;
+            }
+        }
+        int down_val = static_cast<int>(max_bin);
+        if (down_val < static_cast<int>(N / 2))
+            cfo_int = down_val / 2;
+        else
+            cfo_int = static_cast<int>((down_val - static_cast<int>(N)) / 2);
+
+        if (cfo_int != 0) {
+            std::cout << "DEBUG: Applying integer CFO correction cfo_int=" << cfo_int << std::endl;
+            float phase_step = -2.0f * static_cast<float>(M_PI) * static_cast<float>(cfo_int) / static_cast<float>(N);
+            for (size_t n = 0; n < compensated.size(); ++n) {
+                float ang = phase_step * static_cast<float>(n);
+                compensated[n] *= std::complex<float>(std::cos(ang), std::sin(ang));
+            }
+        }
+    }
+
     size_t payload_symbols_per_frame = expected_payload_symbols(header, cfg.sf, ldro);
     size_t symbols_per_frame = cfg.header_symbol_count + payload_symbols_per_frame;
     size_t frame_samples_needed = symbols_per_frame * N;
@@ -473,18 +508,24 @@ SingleFrameResult decode_single_frame(
                   << ", mask=0x" << std::hex << mask << std::dec << std::endl;
     
         for (size_t i = 0; i < payload_symbol_count; ++i) {
-            uint32_t raw = raw_bins[cfg.header_symbol_count + i] & (N - 1u);
-            uint32_t adjusted = (raw + N - 1u) & (N - 1u);
-            uint32_t gray_decoded = lora::rx::gr::gray_decode(adjusted);
+            uint32_t fft_bin = raw_bins[cfg.header_symbol_count + i];
+            uint32_t raw = fft_bin & (N - 1u);
+            // GNU Radio's fft_demod hands the Gray-coded symbol index directly to
+            // the gray_demap block without subtracting one.  Mirroring that
+            // behaviour keeps the demapper aligned with captures taken from the
+            // reference pipeline, especially when operating on oversampled
+            // recordings where the extra "-1" wrap was corrupting the payload.
+            uint32_t gray_input = raw;
+            uint32_t gray_decoded = lora::rx::gr::gray_decode(gray_input);
             if (ldro) gray_decoded >>= 2;
             uint32_t natural = (gray_decoded + 1u) & mask;
             reduced_symbols[i] = natural;
 
             // Debug: Show first few symbols with detailed processing
-            if (i < 5) {
-                uint32_t original_bin = raw_bins[cfg.header_symbol_count + i];
-                std::cout << "DEBUG: Frame[" << frame_idx << "] Symbol[" << i << "] FFT_bin=" << original_bin << " raw=" << raw
-                          << " adjusted=" << adjusted << " gray_decoded=" << gray_decoded
+            if (i < 8) {
+                std::cout << "DEBUG: Frame[" << frame_idx << "] Symbol[" << i << "] FFT_bin=" << fft_bin
+                          << " raw=" << raw
+                          << " gray_input=" << gray_input << " gray_decoded=" << gray_decoded
                           << " natural=" << natural << " (N=" << N << ", mask=0x" << std::hex << mask << std::dec << ")" << std::endl;
             }
         }
