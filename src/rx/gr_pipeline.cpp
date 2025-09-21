@@ -365,8 +365,29 @@ SingleFrameResult decode_single_frame(
               << ", max_frames=" << max_frames << std::endl;
 
     if (max_frames == 0) {
-        result.failure_reason = "insufficient_samples_for_frames";
-        return result;
+        size_t available_symbols = available / N;
+        uint32_t cr_app = static_cast<uint32_t>(header.cr);
+        size_t cw_len = static_cast<size_t>(cr_app + 4u);
+        if (available_symbols > cfg.header_symbol_count && cw_len > 0) {
+            size_t payload_symbols_available = available_symbols - cfg.header_symbol_count;
+            size_t payload_symbols_aligned = (payload_symbols_available / cw_len) * cw_len;
+            if (payload_symbols_aligned > 0) {
+                std::cout << "DEBUG: Clamping payload symbols from " << payload_symbols_per_frame
+                          << " to " << payload_symbols_aligned
+                          << " based on available data (" << available_symbols
+                          << " symbols, cw_len=" << cw_len << ")" << std::endl;
+                payload_symbols_per_frame = payload_symbols_aligned;
+                frame_samples_needed = (cfg.header_symbol_count + payload_symbols_per_frame) * N;
+                max_frames = available / frame_samples_needed;
+                std::cout << "DEBUG: Adjusted samples_per_frame=" << frame_samples_needed
+                          << ", max_frames=" << max_frames << std::endl;
+            }
+        }
+
+        if (max_frames == 0) {
+            result.failure_reason = "insufficient_samples_for_frames";
+            return result;
+        }
     }
 
     // Decode multiple frames
@@ -509,8 +530,7 @@ SingleFrameResult decode_single_frame(
             }
             
             for (uint32_t row = 0; row < sf_app; ++row) {
-                // Try LSB-first instead of MSB-first
-                uint8_t bit = static_cast<uint8_t>((symbol >> row) & 0x1u);
+                uint8_t bit = static_cast<uint8_t>((symbol >> (sf_app - 1u - row)) & 0x1u);
                 size_t idx = col * sf_app + row;
                 inter_block[idx] = bit;
                 msb_first_bits.push_back(bit);
@@ -591,8 +611,23 @@ SingleFrameResult decode_single_frame(
         }
     }
 
-    size_t crc_bytes = header.has_crc ? 2u : 0u;
-    size_t needed = static_cast<size_t>(header.payload_len) + crc_bytes;
+    size_t crc_bytes_requested = header.has_crc ? 2u : 0u;
+    size_t available_bytes = nibbles.size() / 2u;
+    size_t available_payload_bytes = (available_bytes > crc_bytes_requested)
+        ? (available_bytes - crc_bytes_requested)
+        : 0u;
+    size_t effective_payload_len = std::min<size_t>(header.payload_len, available_payload_bytes);
+    size_t effective_crc_bytes = (header.has_crc && available_bytes >= effective_payload_len + 2u) ? 2u : 0u;
+    if (effective_payload_len != header.payload_len) {
+        std::cout << "DEBUG: Truncating payload length from " << static_cast<size_t>(header.payload_len)
+                  << " to " << effective_payload_len << " based on available bytes" << std::endl;
+    }
+    if (header.has_crc && effective_crc_bytes == 0 && crc_bytes_requested > 0 && available_bytes > 0) {
+        std::cout << "DEBUG: CRC trailer incomplete (available_bytes=" << available_bytes
+                  << ", expected payload_len=" << static_cast<size_t>(header.payload_len) << ")" << std::endl;
+    }
+
+    size_t needed = effective_payload_len + effective_crc_bytes;
     size_t expected_nibbles = needed * 2u;
     if (expected_nibbles > 0 && nibbles.size() > expected_nibbles)
         nibbles.resize(expected_nibbles);
@@ -660,8 +695,8 @@ SingleFrameResult decode_single_frame(
                                   bool& crc_ok_out) -> bool {
         if (bytes.size() < needed) return false;
 
-        dewhitened_out.assign(bytes.begin(), bytes.begin() + header.payload_len);
-        
+        dewhitened_out.assign(bytes.begin(), bytes.begin() + effective_payload_len);
+
         // Debug: Show dewhitened payload (dewhitening already done in build_bytes)
         std::cout << "DEBUG: Dewhitened payload (first 10 bytes): ";
         for (size_t i = 0; i < std::min(size_t(10), dewhitened_out.size()); ++i) {
@@ -670,14 +705,16 @@ SingleFrameResult decode_single_frame(
         std::cout << std::dec << std::endl;
 
         crc_ok_out = true;
-        if (header.has_crc && cfg.expect_payload_crc) {
+        if (effective_crc_bytes == 2u && cfg.expect_payload_crc) {
             uint16_t crc_calc = crc16.compute(dewhitened_out.data(), dewhitened_out.size());
-            uint16_t crc_rx = static_cast<uint16_t>(bytes[header.payload_len]) |
-                              (static_cast<uint16_t>(bytes[header.payload_len + 1]) << 8);
+            uint16_t crc_rx = static_cast<uint16_t>(bytes[effective_payload_len]) |
+                              (static_cast<uint16_t>(bytes[effective_payload_len + 1]) << 8);
             crc_ok_out = (crc_calc == crc_rx);
-            
-            std::cout << "DEBUG: CRC calc=" << std::hex << crc_calc 
+
+            std::cout << "DEBUG: CRC calc=" << std::hex << crc_calc
                       << ", CRC rx=" << crc_rx << ", CRC OK=" << crc_ok_out << std::dec << std::endl;
+        } else if (header.has_crc && cfg.expect_payload_crc) {
+            crc_ok_out = false;
         }
         return crc_ok_out;
     };
