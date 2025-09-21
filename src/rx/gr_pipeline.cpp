@@ -518,27 +518,40 @@ SingleFrameResult decode_single_frame(
             break;
         }
 
-        auto rotate_left = [](uint32_t value, uint32_t count, uint32_t size) -> uint32_t {
-            if (size == 0u) return 0u;
-            uint32_t len_mask = (size >= 32u) ? 0xFFFFFFFFu : ((1u << size) - 1u);
-            uint32_t capped = value & len_mask;
-            uint32_t shift = count % size;
-            return static_cast<uint32_t>(((capped << shift) & len_mask) | (capped >> (size - shift)));
-        };
-
         auto deinterleave_block = [&](const std::vector<uint32_t>& words) {
             std::vector<uint8_t> out(sf_app, 0u);
             if (sf_app == 0u) return out;
-            uint32_t offset_start = sf_app - 1u;
-            for (uint32_t col = 0; col < words.size(); ++col) {
-                uint32_t rotated = rotate_left(words[col], col, sf_app);
-                uint32_t mask_local = 1u << offset_start;
-                for (int row = static_cast<int>(offset_start); row >= 0 && mask_local != 0u; --row, mask_local >>= 1u) {
-                    if (rotated & mask_local) {
-                        out[static_cast<size_t>(row)] |= static_cast<uint8_t>(1u << col);
-                    }
+
+            size_t cols = words.size();
+            std::vector<std::vector<uint8_t>> inter_bin(cols, std::vector<uint8_t>(sf_app, 0u));
+            for (size_t col = 0; col < cols; ++col) {
+                for (uint32_t row = 0; row < sf_app; ++row) {
+                    uint32_t bit_idx = sf_app - 1u - row;
+                    inter_bin[col][row] = static_cast<uint8_t>((words[col] >> bit_idx) & 0x1u);
                 }
             }
+
+            std::vector<std::vector<uint8_t>> deinter_bin(sf_app, std::vector<uint8_t>(cols, 0u));
+            auto mod = [](int a, int b) {
+                int r = a % b;
+                return static_cast<size_t>((r < 0) ? (r + b) : r);
+            };
+
+            for (size_t col = 0; col < cols; ++col) {
+                for (uint32_t row = 0; row < sf_app; ++row) {
+                    size_t dst_row = mod(static_cast<int>(col) - static_cast<int>(row) - 1, static_cast<int>(sf_app));
+                    deinter_bin[dst_row][col] = inter_bin[col][row];
+                }
+            }
+
+            for (uint32_t row = 0; row < sf_app; ++row) {
+                uint8_t value = 0u;
+                for (size_t col = 0; col < cols; ++col) {
+                    value = static_cast<uint8_t>((value << 1) | deinter_bin[row][col]);
+                }
+                out[row] = value;
+            }
+
             return out;
         };
 
@@ -565,15 +578,18 @@ SingleFrameResult decode_single_frame(
                     break;
                 }
                 uint32_t raw = raw_bins[idx] & (N - 1u);
-                uint32_t adjusted = (raw + N - 1u) & (N - 1u);
-                uint32_t gray_decoded = lora::rx::gr::gray_decode(adjusted);
+                uint32_t gray_decoded = lora::rx::gr::gray_decode(raw);
+                gray_decoded = (gray_decoded + 1u) & (N - 1u);
+                if (cfo_int != 0) {
+                    uint32_t offset = static_cast<uint32_t>(((cfo_int % static_cast<int>(N)) + static_cast<int>(N)) % static_cast<int>(N));
+                    gray_decoded = (gray_decoded + offset) & (N - 1u);
+                }
                 if (ldro) gray_decoded >>= 2;
                 uint32_t mask = (sf_app >= 32u) ? 0xFFFFFFFFu : ((1u << sf_app) - 1u);
                 uint32_t natural = gray_decoded & mask;
                 if (blk == 0 && col < 8) {
                     std::cout << "DEBUG: Symbol " << col
                               << " raw=" << raw
-                              << " adjusted=" << adjusted
                               << " gray_decoded=" << gray_decoded
                               << " natural=" << natural << std::endl;
                 }
@@ -624,26 +640,25 @@ SingleFrameResult decode_single_frame(
             lora::rx::gr::dewhiten_payload(std::span<uint8_t>(dewhitened_words.data(), dewhitened_words.size()), 0);
         }
 
-        auto extract_data_bits = [](uint8_t word) {
-            static constexpr std::array<uint8_t, 4> kDataIdx = {1u, 2u, 3u, 5u};
-            uint8_t res = 0u;
-            for (size_t i = 0; i < kDataIdx.size(); ++i)
-                res |= static_cast<uint8_t>(((word >> kDataIdx[i]) & 0x1u) << i);
-            return static_cast<uint8_t>(res & 0x0Fu);
-        };
-
         std::vector<uint8_t> nibbles;
-        std::vector<uint8_t> raw_bytes;
+        std::vector<uint8_t> whitened_bytes;
         nibbles.reserve(dewhitened_words.size() * 2);
-        raw_bytes.reserve((dewhitened_words.size() + 1) / 2);
+        whitened_bytes.reserve((dewhitened_words.size() + 1) / 2);
 
         for (size_t i = 0; i < dewhitened_words.size(); i += 2) {
-            uint8_t low = extract_data_bits(dewhitened_words[i]);
-            uint8_t high = (i + 1 < dewhitened_words.size()) ? extract_data_bits(dewhitened_words[i + 1]) : 0u;
+            uint8_t low = decode_hamming_codeword(dewhitened_words[i], static_cast<uint32_t>(cw_len), cr_app);
+            uint8_t high = (i + 1 < dewhitened_words.size())
+                ? decode_hamming_codeword(dewhitened_words[i + 1], static_cast<uint32_t>(cw_len), cr_app)
+                : 0u;
             nibbles.push_back(low);
             if (i + 1 < dewhitened_words.size()) nibbles.push_back(high);
             uint8_t combined = static_cast<uint8_t>(((high & 0x0Fu) << 4) | (low & 0x0Fu));
-            raw_bytes.push_back(combined);
+            whitened_bytes.push_back(combined);
+        }
+
+        std::vector<uint8_t> raw_bytes = whitened_bytes;
+        if (!raw_bytes.empty()) {
+            lora::rx::gr::dewhiten_payload(std::span<uint8_t>(raw_bytes.data(), raw_bytes.size()), 0);
         }
 
         size_t crc_bytes_requested = header.has_crc ? 2u : 0u;
@@ -670,6 +685,13 @@ SingleFrameResult decode_single_frame(
             std::cout << "DEBUG: Nibbles (first 20): ";
             for (size_t i = 0; i < std::min<size_t>(20, nibbles.size()); ++i)
                 std::cout << std::hex << static_cast<int>(nibbles[i]) << " ";
+            std::cout << std::dec << std::endl;
+        }
+
+        if (!whitened_bytes.empty()) {
+            std::cout << "DEBUG: Whitened bytes (first 10): ";
+            for (size_t i = 0; i < std::min<size_t>(10, whitened_bytes.size()); ++i)
+                std::cout << std::hex << static_cast<int>(whitened_bytes[i]) << " ";
             std::cout << std::dec << std::endl;
         }
 
