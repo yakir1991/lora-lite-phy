@@ -12,6 +12,7 @@
 - Follow-up verification initially stalled because the container lacked `liquid-dsp`; CMake now falls back to the vendored `external/liquid-dsp` sources when the system library is absent so future rebuilds of `test_gr_pipeline` can proceed inside clean environments once `pybind11` is also available.【F:CMakeLists.txt†L8-L55】
 - Relaxed the offline decode helper so it accepts hexadecimal header fields, letting the investigation surface the 242-byte payload (CRC currently invalid) instead of crashing on the debug dump.【F:scripts/decode_offline_recording_final.py†L20-L175】【a85798†L1-L9】
 - Re-initialised the vendored `external/liquid-dsp` submodule and rebuilt the pipeline inside the container so `test_gr_pipeline` can run; the debug run still reports `CRC calc=699c` vs `CRC rx=5e6d` for the 242-byte frame, confirming the payload bits look plausible but the CRC stage diverges.【790c15†L1-L4】【7f750c†L1-L17】【f93ffd†L1-L2】【3a6e3f†L23-L36】
+- Re-ran the Python harness against the capture and confirmed the C++ CRC engine reproduces the `0x699c` checksum on the 242-byte payload while the on-air trailer still reads `0x5e6d`; recomputing the checksum with the captured trailer and sweeping whitening offsets leaves the mismatch unchanged, so the corruption must stem from an earlier demodulation/FEC stage rather than CRC parameters or dewhitening.【a8c3a5†L1-L10】【bfd100†L1-L2】【675f51†L1-L1】【7843c7†L1-L8】
 
 
 ## Root cause analysis
@@ -35,10 +36,11 @@ condition even though the samples contained a valid LoRa frame.
 - Reconfigured the tree with `cmake -S . -B build -Dpybind11_DIR=/root/.local/lib/python3.12/site-packages/pybind11/share/cmake/pybind11` after initialising `external/liquid-dsp`; the configure step now completes and `cmake --build build` produces `test_gr_pipeline` alongside the Python extension.【434ab2†L1-L7】【06b1db†L1-L2】
 - Running `python3 scripts/decode_offline_recording_final.py vectors/sps_125k_bw_125k_sf_7_cr_1_ldro_false_crc_true_implheader_false_nmsgs_8.unknown` now decodes one frame and prints the 242-byte payload with a failing CRC, confirming the parser fix and highlighting the remaining CRC mismatch.【a85798†L1-L9】
 - Invoking `./build/test_gr_pipeline` against the same capture prints the Hamming-decoded nibbles, dewhitened payload bytes, and the mismatched CRC pair (`calc=699c`, `rx=5e6d`), giving concrete data for the next debugging step.【7adb98†L1-L18】【3a6e3f†L1-L36】【3cf043†L1-L19】
+- Verified with a standalone Python script that the pipeline’s CRC calculator still yields `0x699c` when run over the dewhitened payload bytes and that appending the captured CRC (`0x5e6d`) does not zero the remainder; rotating the whitening sequence at the nibble level across eight offsets also leaves both values unchanged, eliminating simple CRC or whitening misconfiguration as causes.【bfd100†L1-L2】【675f51†L1-L1】【7843c7†L1-L8】
 
 ## Next steps
 
-- Investigate why the pipeline reports mismatched CRC values (`CRC calc=699c`, `CRC rx=5e6d`) on the sample capture so the remaining decoding error can be addressed, validating the whitening offsets, nibble ordering, and CRC polynomial/endianness against the GNU Radio reference.【3a6e3f†L23-L36】
+- Investigate why the pipeline reports mismatched CRC values (`CRC calc=699c`, `CRC rx=5e6d`) on the sample capture by tracing back through the payload demodulation stack—deinterleaving, Hamming decode, and nibble assembly—to spot the corruption that survives CRC recomputation despite matching whitening and polynomial settings.【3a6e3f†L23-L36】【7843c7†L1-L8】
 - After the CRC mismatch is resolved, rerun the offline decode regression end-to-end and capture the successful output in this document to close the investigation and guard against future regressions.
 
 
