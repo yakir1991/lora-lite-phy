@@ -14,6 +14,16 @@ This repository contains a lightweight C++ implementation of the receive-side pr
 
 ## Build Instructions
 
+Ensure the vendored dependencies are available before configuring:
+
+```bash
+git submodule update --init external/liquid-dsp
+```
+
+The configure step will reuse an installed copy of `liquid-dsp` when one is
+available on the host and otherwise builds the `external/liquid-dsp`
+submodule so the pipeline can be compiled without additional manual setup.
+
 ```bash
 cmake -S . -B build
 cmake --build build
@@ -25,7 +35,7 @@ The default build produces three artefacts:
 2. `test_gr_pipeline` – a demo executable that operates on a single IQ vector.
 3. `lora_pipeline.so` – Python module with bindings to the C++ pipeline.
 
-The project depends on [liquid-dsp](https://github.com/jgaeddert/liquid-dsp) for FFT planning and [pybind11](https://github.com/pybind/pybind11) for Python bindings. The bundled CMake configuration expects both libraries to be available on the system.
+The project depends on [liquid-dsp](https://github.com/jgaeddert/liquid-dsp) for FFT planning and [pybind11](https://github.com/pybind/pybind11) for Python bindings. CMake now falls back to the checked-in `external/liquid-dsp` sources if the system library is missing so future debugging sessions have a working FFT backend without additional provisioning.
 
 ## Running the Demo
 
