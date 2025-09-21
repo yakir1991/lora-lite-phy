@@ -28,6 +28,10 @@
 - Instrumented the payload path to print the fractional CFO/STO estimates and derive an integer-CFO rotation from the downchirp
   preceding the header; the 500 ksps capture now reports a negligible fractional offset, applies `cfo_int=-20`, and still emits
   94-byte gibberish payloads with failing CRCs, so the remaining corruption predates whitening and CRC handling.【F:src/rx/gr_pipeline.cpp†L308-L410】【db4446†L1-L64】【63d665†L1-L5】
+- Ported the payload decoder to mirror GNU Radio’s flow: symbol words are rotated, block-deinterleaved, shuffled, dewhitened, and
+  converted straight into nibbles/bytes without the old bit-matrix helpers. Keeping `cw_len` and `blocks` in scope restored the
+  build, but the 500 ksps capture still yields `natural=108,24,74,75,34,52` for the first block and dewhitened bytes such as
+  `bf 17 f2 78 30 6c …` with a failing CRC, so the demapper/Gray normalisation remains suspect.【F:src/rx/gr_pipeline.cpp†L498-L704】【76a685†L1-L33】
 
 
 ## Root cause analysis
@@ -61,10 +65,9 @@ condition even though the samples contained a valid LoRa frame.
 ## Next steps
 
 - Investigate why the pipeline reports mismatched CRC values (`CRC calc=699c`, `CRC rx=5e6d`) on the sample capture by tracing back through the payload demodulation stack—deinterleaving, Hamming decode, and nibble assembly—to spot the corruption that survives CRC recomputation despite matching whitening and polynomial settings.【3a6e3f†L23-L36】【7843c7†L1-L8】
-- Extend that investigation to the 500 ksps capture: even with payload clamping and the corrected diagonal interleaver, the
-  demapper reports payload symbols such as `natural=124,1,110,109,22` for the first block instead of the sequence produced by
-  encoding `hello_stupid_world`, indicating the corruption occurs before FEC decode—likely in the FFT/Gray demap or CFO/STO
-  compensation stages.【F:src/rx/gr_pipeline.cpp†L519-L575】【acff51†L16-L58】
+- Extend that investigation to the 500 ksps capture: even with the GNU Radio-style deinterleaver/whitener in place, the
+  demapper now reports `natural=108,24,74,75,34,52` for the first block and assembles bytes `bf 17 f2 78 30 6c …` instead of the
+  encoded `hello_stupid_world`, keeping the focus on the FFT/Gray demap or CFO/STO compensation stages.【F:src/rx/gr_pipeline.cpp†L498-L704】【76a685†L1-L33】
 - Use the new CFO instrumentation to align the pipeline’s integer rotation with GNU Radio’s reference (e.g., verify the `cfo_int`
   estimate against `frame_sync_impl.cc` and confirm whether the downchirp FFT should rotate `ws.downchirp` or advance the sample
   index) so the demapper sees correctly wrapped bins on the oversampled capture.【F:src/rx/gr_pipeline.cpp†L308-L391】【db4446†L1-L64】
