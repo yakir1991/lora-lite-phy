@@ -105,6 +105,12 @@ conda run -n gnuradio-lora <command>
 
 With the helper scripts above you can generate a canonical vector, inspect GNU Radio's intermediate buffers, and then run either `./build/test_gr_pipeline` or `python3 scripts/decode_offline_recording_final.py` on the same file. The expectation is that the decoded payload bytes and CRC outcomes will match between the two implementations.
 
+## Debugging notes
+
+- See [`docs/offline_decode_investigation.md`](docs/offline_decode_investigation.md) for the post-mortem on a failure where the
+  offline decoder stopped after the header stage because the payload symbol count was hard-coded in the C++ pipeline. The notes
+  summarise the symptom observed via `scripts/decode_offline_recording_final.py`, the fix in `src/rx/gr_pipeline.cpp`, and the
+  open follow-ups that should be considered during future maintenance.
 
 ## New Pipeline Features
 
