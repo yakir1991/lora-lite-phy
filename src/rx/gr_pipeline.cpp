@@ -319,6 +319,7 @@ SingleFrameResult decode_single_frame(
         float ang = two_pi_eps * static_cast<float>(n);
         compensated[n] = decimated[n] * std::complex<float>(std::cos(ang), std::sin(ang));
     }
+    std::vector<std::complex<float>> demod_downchirp(ws.downchirp.begin(), ws.downchirp.end());
 
     int sto_search = cfg.sto_search > 0 ? cfg.sto_search : static_cast<int>(N / 8);
     auto sto = lora::rx::gr::estimate_sto_from_preamble(ws, std::span<const std::complex<float>>(compensated.data(), compensated.size()), cfg.sf, preamble_start,
@@ -384,9 +385,9 @@ SingleFrameResult decode_single_frame(
         if (cfo_int != 0) {
             std::cout << "DEBUG: Applying integer CFO correction cfo_int=" << cfo_int << std::endl;
             float phase_step = -2.0f * static_cast<float>(M_PI) * static_cast<float>(cfo_int) / static_cast<float>(N);
-            for (size_t n = 0; n < compensated.size(); ++n) {
+            for (uint32_t n = 0; n < N; ++n) {
                 float ang = phase_step * static_cast<float>(n);
-                compensated[n] *= std::complex<float>(std::cos(ang), std::sin(ang));
+                demod_downchirp[n] *= std::complex<float>(std::cos(ang), std::sin(ang));
             }
         }
     }
@@ -459,7 +460,7 @@ SingleFrameResult decode_single_frame(
         for (size_t s = 0; s < nsym_total; ++s) {
             const std::complex<float>* block = frame_samples.data() + s * N;
             for (uint32_t n = 0; n < N; ++n)
-                ws.rxbuf[n] = block[n] * ws.downchirp[n];
+                ws.rxbuf[n] = block[n] * demod_downchirp[n];
             ws.fft(ws.rxbuf.data(), ws.fftbuf.data());
             uint32_t max_bin = 0u;
             float max_mag = 0.f;
@@ -495,296 +496,226 @@ SingleFrameResult decode_single_frame(
         }
         payload_symbol_count = payload_symbols_per_frame;
 
+        uint32_t cr_app = static_cast<uint32_t>(header.cr);
+        size_t cw_len = static_cast<size_t>(cr_app + 4u);
+        if (cw_len == 0u) {
+            std::cout << "DEBUG: Frame " << frame_idx << " has invalid cw_len" << std::endl;
+            break;
+        }
+
+        size_t blocks = payload_symbol_count / cw_len;
+        if (blocks == 0u) {
+            std::cout << "DEBUG: Frame " << frame_idx << " has no full codeword blocks (cw_len="
+                      << cw_len << ", payload_symbols=" << payload_symbol_count << ")" << std::endl;
+            break;
+        }
+
+        payload_symbol_count = blocks * cw_len;
+
         uint32_t sf_app = ldro ? (cfg.sf - 2u) : cfg.sf;
         if (sf_app == 0u) {
             std::cout << "DEBUG: Frame " << frame_idx << " has invalid sf_app" << std::endl;
             break;
         }
 
-        std::vector<uint32_t> reduced_symbols(payload_symbol_count);
-        uint32_t mask = (sf_app >= 32u) ? 0xFFFFFFFFu : ((1u << sf_app) - 1u);
-        
-        std::cout << "DEBUG: Frame[" << frame_idx << "] Symbol decoding - " << payload_symbol_count << " symbols, sf_app=" << sf_app 
-                  << ", mask=0x" << std::hex << mask << std::dec << std::endl;
-    
-        for (size_t i = 0; i < payload_symbol_count; ++i) {
-            uint32_t fft_bin = raw_bins[cfg.header_symbol_count + i];
-            uint32_t raw = fft_bin & (N - 1u);
-            // GNU Radio's fft_demod hands the Gray-coded symbol index directly to
-            // the gray_demap block without subtracting one.  Mirroring that
-            // behaviour keeps the demapper aligned with captures taken from the
-            // reference pipeline, especially when operating on oversampled
-            // recordings where the extra "-1" wrap was corrupting the payload.
-            uint32_t gray_input = raw;
-            uint32_t gray_decoded = lora::rx::gr::gray_decode(gray_input);
-            if (ldro) gray_decoded >>= 2;
-            uint32_t natural = (gray_decoded + 1u) & mask;
-            reduced_symbols[i] = natural;
+        auto rotate_left = [](uint32_t value, uint32_t count, uint32_t size) -> uint32_t {
+            if (size == 0u) return 0u;
+            uint32_t len_mask = (size >= 32u) ? 0xFFFFFFFFu : ((1u << size) - 1u);
+            uint32_t capped = value & len_mask;
+            uint32_t shift = count % size;
+            return static_cast<uint32_t>(((capped << shift) & len_mask) | (capped >> (size - shift)));
+        };
 
-            // Debug: Show first few symbols with detailed processing
-            if (i < 8) {
-                std::cout << "DEBUG: Frame[" << frame_idx << "] Symbol[" << i << "] FFT_bin=" << fft_bin
-                          << " raw=" << raw
-                          << " gray_input=" << gray_input << " gray_decoded=" << gray_decoded
-                          << " natural=" << natural << " (N=" << N << ", mask=0x" << std::hex << mask << std::dec << ")" << std::endl;
+        auto deinterleave_block = [&](const std::vector<uint32_t>& words) {
+            std::vector<uint8_t> out(sf_app, 0u);
+            if (sf_app == 0u) return out;
+            uint32_t offset_start = sf_app - 1u;
+            for (uint32_t col = 0; col < words.size(); ++col) {
+                uint32_t rotated = rotate_left(words[col], col, sf_app);
+                uint32_t mask_local = 1u << offset_start;
+                for (int row = static_cast<int>(offset_start); row >= 0 && mask_local != 0u; --row, mask_local >>= 1u) {
+                    if (rotated & mask_local) {
+                        out[static_cast<size_t>(row)] |= static_cast<uint8_t>(1u << col);
+                    }
+                }
             }
+            return out;
+        };
+
+        std::vector<uint32_t> words_block;
+        words_block.reserve(cw_len);
+        std::vector<uint8_t> deinterleaved_words;
+        deinterleaved_words.reserve(blocks * sf_app);
+
+        std::cout << "DEBUG: Deinterleaving (GNU Radio compatible) - " << blocks
+                  << " blocks, sf_app=" << sf_app << ", cw_len=" << cw_len << std::endl;
+
+        bool block_failure = false;
+        for (size_t blk = 0; blk < blocks; ++blk) {
+            words_block.clear();
+            if (blk == 0) std::cout << "DEBUG: Block 0 FFT bins -> Gray: ";
+            for (uint32_t col = 0; col < cw_len; ++col) {
+                size_t idx = cfg.header_symbol_count + blk * cw_len + col;
+                if (idx >= raw_bins.size()) {
+                    std::cout << "DEBUG: Frame " << frame_idx
+                              << " index past raw_bins (idx=" << idx
+                              << ", size=" << raw_bins.size() << ")" << std::endl;
+                    words_block.clear();
+                    block_failure = true;
+                    break;
+                }
+                uint32_t raw = raw_bins[idx] & (N - 1u);
+                uint32_t adjusted = (raw + N - 1u) & (N - 1u);
+                uint32_t gray_decoded = lora::rx::gr::gray_decode(adjusted);
+                if (ldro) gray_decoded >>= 2;
+                uint32_t mask = (sf_app >= 32u) ? 0xFFFFFFFFu : ((1u << sf_app) - 1u);
+                uint32_t natural = gray_decoded & mask;
+                if (blk == 0 && col < 8) {
+                    std::cout << "DEBUG: Symbol " << col
+                              << " raw=" << raw
+                              << " adjusted=" << adjusted
+                              << " gray_decoded=" << gray_decoded
+                              << " natural=" << natural << std::endl;
+                }
+                words_block.push_back(natural);
+                if (blk == 0) {
+                    std::cout << natural << " ";
+                }
+            }
+            if (block_failure || words_block.size() != cw_len) {
+                std::cout << "DEBUG: Frame " << frame_idx << " truncated words_block" << std::endl;
+                block_failure = true;
+                break;
+            }
+            if (blk == 0) std::cout << std::endl;
+
+            auto block_words = deinterleave_block(words_block);
+            if (blk == 0) {
+                std::cout << "DEBUG: Block 0 deinterleaved words: ";
+                for (size_t i = 0; i < block_words.size(); ++i)
+                    std::cout << std::hex << static_cast<int>(block_words[i]) << " ";
+                std::cout << std::dec << std::endl;
+            }
+            deinterleaved_words.insert(deinterleaved_words.end(), block_words.begin(), block_words.end());
         }
-        uint32_t cr_app = static_cast<uint32_t>(header.cr);
-        uint32_t cw_len = cr_app + 4u;
-        if (payload_symbol_count % cw_len != 0) {
-            std::cout << "DEBUG: Frame " << frame_idx << " has misaligned payload symbols" << std::endl;
+
+        if (block_failure || deinterleaved_words.size() != blocks * sf_app) {
+            std::cout << "DEBUG: Frame " << frame_idx
+                      << " incomplete deinterleaving (have " << deinterleaved_words.size()
+                      << ", expected " << (blocks * sf_app) << ")" << std::endl;
             break;
         }
-        size_t blocks = payload_symbol_count / cw_len;
 
-    std::vector<uint8_t> msb_first_bits;
-    msb_first_bits.reserve(static_cast<size_t>(payload_symbol_count) * sf_app);
-    std::vector<uint8_t> deinterleaved_bits;
-    deinterleaved_bits.reserve(static_cast<size_t>(blocks) * sf_app * cw_len);
-
-    auto inter_map = lora::rx::gr::make_diagonal_interleaver(sf_app, cw_len);
-    std::vector<uint8_t> inter_block(inter_map.n_out);
-    std::vector<uint8_t> deinter_block(inter_map.n_out);
-    
-    // Debug: Show interleaver mapping
-    std::cout << "DEBUG: Interleaver mapping (first 20): ";
-    for (size_t i = 0; i < std::min(size_t(20), inter_map.map.size()); ++i) {
-        std::cout << inter_map.map[i] << " ";
-    }
-    std::cout << std::endl;
-
-    std::cout << "DEBUG: Deinterleaving - " << blocks << " blocks, sf_app=" << sf_app 
-              << ", cw_len=" << cw_len << std::endl;
-
-    for (size_t blk = 0; blk < blocks; ++blk) {
-        size_t symbol_offset = blk * cw_len;
-        
-        // Debug: Show symbols for first block
-        if (blk == 0) {
-            std::cout << "DEBUG: Block 0 symbols: ";
-            for (uint32_t col = 0; col < cw_len; ++col) {
-                std::cout << reduced_symbols[symbol_offset + col] << " ";
+        static constexpr std::array<uint8_t, 8> kShufflePattern = {5, 0, 1, 2, 4, 3, 6, 7};
+        std::vector<uint8_t> deshuffled_words;
+        deshuffled_words.reserve(deinterleaved_words.size());
+        for (size_t i = 0; i < deinterleaved_words.size(); ++i) {
+            uint8_t w = deinterleaved_words[i];
+            uint8_t r = 0u;
+            for (size_t j = 0; j < kShufflePattern.size(); ++j) {
+                uint8_t bit = static_cast<uint8_t>((w >> kShufflePattern[j]) & 0x1u);
+                r |= static_cast<uint8_t>(bit << j);
             }
-            std::cout << std::endl;
+            deshuffled_words.push_back(r);
         }
-        
-        for (uint32_t col = 0; col < cw_len; ++col) {
-            uint32_t symbol = reduced_symbols[symbol_offset + col];
-            
-            // Debug: Show symbol to bits conversion for first few symbols
-            if (blk == 0 && col < 3) {
-                std::cout << "DEBUG: Symbol " << symbol << " -> bits: ";
-                for (uint32_t row = 0; row < sf_app; ++row) {
-                    uint8_t bit = static_cast<uint8_t>((symbol >> row) & 0x1u);
-                    std::cout << (int)bit;
-                }
-                std::cout << std::endl;
+
+        std::vector<uint8_t> dewhitened_words = deshuffled_words;
+        if (!dewhitened_words.empty()) {
+            lora::rx::gr::dewhiten_payload(std::span<uint8_t>(dewhitened_words.data(), dewhitened_words.size()), 0);
+        }
+
+        auto extract_data_bits = [](uint8_t word) {
+            static constexpr std::array<uint8_t, 4> kDataIdx = {1u, 2u, 3u, 5u};
+            uint8_t res = 0u;
+            for (size_t i = 0; i < kDataIdx.size(); ++i)
+                res |= static_cast<uint8_t>(((word >> kDataIdx[i]) & 0x1u) << i);
+            return static_cast<uint8_t>(res & 0x0Fu);
+        };
+
+        std::vector<uint8_t> nibbles;
+        std::vector<uint8_t> raw_bytes;
+        nibbles.reserve(dewhitened_words.size() * 2);
+        raw_bytes.reserve((dewhitened_words.size() + 1) / 2);
+
+        for (size_t i = 0; i < dewhitened_words.size(); i += 2) {
+            uint8_t low = extract_data_bits(dewhitened_words[i]);
+            uint8_t high = (i + 1 < dewhitened_words.size()) ? extract_data_bits(dewhitened_words[i + 1]) : 0u;
+            nibbles.push_back(low);
+            if (i + 1 < dewhitened_words.size()) nibbles.push_back(high);
+            uint8_t combined = static_cast<uint8_t>(((high & 0x0Fu) << 4) | (low & 0x0Fu));
+            raw_bytes.push_back(combined);
+        }
+
+        size_t crc_bytes_requested = header.has_crc ? 2u : 0u;
+        size_t available_bytes = raw_bytes.size();
+        size_t available_payload_bytes = (available_bytes > crc_bytes_requested)
+            ? (available_bytes - crc_bytes_requested)
+            : 0u;
+        size_t effective_payload_len = std::min<size_t>(header.payload_len, available_payload_bytes);
+        size_t effective_crc_bytes = (header.has_crc && available_bytes >= effective_payload_len + 2u) ? 2u : 0u;
+        if (effective_payload_len != header.payload_len) {
+            std::cout << "DEBUG: Truncating payload length from " << static_cast<size_t>(header.payload_len)
+                      << " to " << effective_payload_len << " based on available bytes" << std::endl;
+        }
+        if (header.has_crc && effective_crc_bytes == 0 && crc_bytes_requested > 0 && available_bytes > 0) {
+            std::cout << "DEBUG: CRC trailer incomplete (available_bytes=" << available_bytes
+                      << ", expected payload_len=" << static_cast<size_t>(header.payload_len) << ")" << std::endl;
+        }
+
+        size_t needed = effective_payload_len + effective_crc_bytes;
+        if (needed > 0 && raw_bytes.size() > needed)
+            raw_bytes.resize(needed);
+
+        if (!nibbles.empty()) {
+            std::cout << "DEBUG: Nibbles (first 20): ";
+            for (size_t i = 0; i < std::min<size_t>(20, nibbles.size()); ++i)
+                std::cout << std::hex << static_cast<int>(nibbles[i]) << " ";
+            std::cout << std::dec << std::endl;
+        }
+
+        if (!raw_bytes.empty()) {
+            std::cout << "DEBUG: Raw bytes (first 10): ";
+            for (size_t i = 0; i < std::min<size_t>(10, raw_bytes.size()); ++i)
+                std::cout << std::hex << static_cast<int>(raw_bytes[i]) << " ";
+            std::cout << std::dec << std::endl;
+        }
+
+        std::vector<uint8_t> candidate_payload;
+        bool crc_ok = true;
+
+        if (effective_payload_len > raw_bytes.size()) {
+            std::cout << "DEBUG: Insufficient bytes for payload (have " << raw_bytes.size()
+                      << ", need " << effective_payload_len << ")" << std::endl;
+            candidate_payload = raw_bytes;
+            crc_ok = false;
+        } else {
+            candidate_payload.assign(raw_bytes.begin(), raw_bytes.begin() + effective_payload_len);
+            if (effective_crc_bytes == 2u && raw_bytes.size() >= effective_payload_len + 2u && cfg.expect_payload_crc) {
+                uint16_t crc_calc = crc16.compute(candidate_payload.data(), candidate_payload.size());
+                uint16_t crc_rx = static_cast<uint16_t>(raw_bytes[effective_payload_len]) |
+                                  (static_cast<uint16_t>(raw_bytes[effective_payload_len + 1]) << 8);
+                crc_ok = (crc_calc == crc_rx);
+                std::cout << "DEBUG: CRC calc=" << std::hex << crc_calc
+                          << ", CRC rx=" << crc_rx << ", CRC OK=" << crc_ok << std::dec << std::endl;
+            } else if (header.has_crc && cfg.expect_payload_crc) {
+                crc_ok = false;
             }
-            
-            for (uint32_t row = 0; row < sf_app; ++row) {
-                uint8_t bit = static_cast<uint8_t>((symbol >> (sf_app - 1u - row)) & 0x1u);
-                size_t idx = col * sf_app + row;
-                inter_block[idx] = bit;
-                msb_first_bits.push_back(bit);
-            }
         }
 
-        // Debug: Show inter_block before deinterleaving
-        if (blk == 0) {
-            std::cout << "DEBUG: Inter_block before deinterleaving: ";
-            for (size_t i = 0; i < std::min(size_t(20), inter_block.size()); ++i) {
-                std::cout << (int)inter_block[i];
-            }
-            std::cout << std::endl;
-        }
-
-        for (uint32_t dst = 0; dst < inter_map.n_out; ++dst) {
-            uint32_t src = inter_map.map[dst];
-            if (src < deinter_block.size())
-                deinter_block[src] = inter_block[dst];
-        }
-        
-        // Debug: Show deinter_block after deinterleaving
-        if (blk == 0) {
-            std::cout << "DEBUG: Deinter_block after deinterleaving: ";
-            for (size_t i = 0; i < std::min(size_t(20), deinter_block.size()); ++i) {
-                std::cout << (int)deinter_block[i];
-            }
-            std::cout << std::endl;
-        }
-
-        for (uint32_t row = 0; row < sf_app; ++row) {
-            uint16_t cw = 0u;
-            for (uint32_t col = 0; col < cw_len; ++col) {
-                uint8_t bit = deinter_block[row * cw_len + col];
-                // MSB-first for codeword construction (GNU Radio compatible)
-                cw = static_cast<uint16_t>((cw << 1) | bit);
-                deinterleaved_bits.push_back(bit);
-            }
-            
-            // Debug: Show first few codewords
-            if (blk == 0 && row < 5) {
-                std::cout << "DEBUG: Block 0, Row " << row << " -> CW=0x" << std::hex << cw << std::dec << std::endl;
-            }
-        }
-    }
-    
-    std::vector<uint8_t> nibbles;
-    std::cout << "DEBUG: Hamming decoding - processing " << deinterleaved_bits.size() 
-              << " bits in blocks of " << cw_len << std::endl;
-    
-    for (size_t i = 0; i + cw_len <= deinterleaved_bits.size(); i += cw_len) {
-        uint16_t cw = 0u;
-        for (uint32_t b = 0; b < cw_len; ++b)
-            cw = static_cast<uint16_t>((cw << 1) | deinterleaved_bits[i + b]);
-        
-        uint8_t nib = decode_hamming_codeword(cw, cw_len, cr_app);
-        nibbles.push_back(nib & 0x0Fu);
-        
-        // Debug: Show first few codewords
-        if (i < 5 * cw_len) {
-            std::cout << "DEBUG: CW[" << (i/cw_len) << "] = 0x" << std::hex << cw 
-                      << " -> nibble 0x" << (int)(nib & 0x0Fu) << std::dec << std::endl;
-        }
-        
-        // Debug: Show what the codewords should be for "Hello New Pipeline"
-        // Expected nibbles: 4 8 6 5 6 c 6 c 6 f 2 0 4 e 6 5 7 7 2 0
-        // Expected codewords for CR=1 (5 bits): need to calculate
-        if (i < 5 * cw_len) {
-            uint8_t expected_nibble = 0;
-            if (i/cw_len == 0) expected_nibble = 4;  // 'H' = 0x48 -> nibble 4
-            else if (i/cw_len == 1) expected_nibble = 8;  // 'H' = 0x48 -> nibble 8
-            else if (i/cw_len == 2) expected_nibble = 6;  // 'e' = 0x65 -> nibble 6
-            else if (i/cw_len == 3) expected_nibble = 5;  // 'e' = 0x65 -> nibble 5
-            else if (i/cw_len == 4) expected_nibble = 6;  // 'l' = 0x6c -> nibble 6
-            
-            std::cout << "DEBUG: Expected nibble[" << (i/cw_len) << "] = 0x" << std::hex << (int)expected_nibble 
-                      << ", got 0x" << (int)(nib & 0x0Fu) << std::dec << std::endl;
-        }
-    }
-
-    size_t crc_bytes_requested = header.has_crc ? 2u : 0u;
-    size_t available_bytes = nibbles.size() / 2u;
-    size_t available_payload_bytes = (available_bytes > crc_bytes_requested)
-        ? (available_bytes - crc_bytes_requested)
-        : 0u;
-    size_t effective_payload_len = std::min<size_t>(header.payload_len, available_payload_bytes);
-    size_t effective_crc_bytes = (header.has_crc && available_bytes >= effective_payload_len + 2u) ? 2u : 0u;
-    if (effective_payload_len != header.payload_len) {
-        std::cout << "DEBUG: Truncating payload length from " << static_cast<size_t>(header.payload_len)
-                  << " to " << effective_payload_len << " based on available bytes" << std::endl;
-    }
-    if (header.has_crc && effective_crc_bytes == 0 && crc_bytes_requested > 0 && available_bytes > 0) {
-        std::cout << "DEBUG: CRC trailer incomplete (available_bytes=" << available_bytes
-                  << ", expected payload_len=" << static_cast<size_t>(header.payload_len) << ")" << std::endl;
-    }
-
-    size_t needed = effective_payload_len + effective_crc_bytes;
-    size_t expected_nibbles = needed * 2u;
-    if (expected_nibbles > 0 && nibbles.size() > expected_nibbles)
-        nibbles.resize(expected_nibbles);
-
-    auto build_bytes = [&](bool swap) {
-        std::cout << "DEBUG: Original nibbles (first 20): ";
-        for (size_t i = 0; i < std::min<size_t>(20, nibbles.size()); ++i)
-            std::cout << std::hex << (int)nibbles[i] << " ";
-        std::cout << std::dec << std::endl;
-
-        std::vector<uint8_t> raw_bytes((nibbles.size() + 1) / 2);
-        for (size_t i = 0; i < raw_bytes.size(); ++i) {
-            uint8_t a = (i * 2 < nibbles.size()) ? nibbles[i * 2] : 0u;
-            uint8_t b = (i * 2 + 1 < nibbles.size()) ? nibbles[i * 2 + 1] : 0u;
-            uint8_t low = swap ? b : a;
-            uint8_t high = swap ? a : b;
-            raw_bytes[i] = static_cast<uint8_t>((high << 4) | low);
-        }
-
-        std::cout << "DEBUG: Raw bytes (first 10): ";
-        for (size_t i = 0; i < std::min<size_t>(10, raw_bytes.size()); ++i)
-            std::cout << std::hex << (int)raw_bytes[i] << " ";
-        std::cout << std::dec << std::endl;
-
-        std::vector<uint8_t> bytes = raw_bytes;
-        size_t whiten_len = std::min(effective_payload_len, bytes.size());
-        if (whiten_len > 0) {
-            auto payload_span = std::span<uint8_t>(bytes.data(), whiten_len);
-            lora::rx::gr::dewhiten_payload(payload_span, 0);
-        }
-
-        std::cout << "DEBUG: Dewhitened payload bytes (first 10): ";
-        for (size_t i = 0; i < std::min<size_t>(10, bytes.size()); ++i)
-            std::cout << std::hex << (int)bytes[i] << " ";
-        std::cout << std::dec << std::endl;
-
-        return bytes;
-    };
-
-    auto evaluate_candidate = [&](const std::vector<uint8_t>& bytes,
-                                  std::vector<uint8_t>& dewhitened_out,
-                                  bool& crc_ok_out) -> bool {
-        if (bytes.size() < needed) return false;
-
-        dewhitened_out.assign(bytes.begin(), bytes.begin() + effective_payload_len);
-
-        // Debug: Show dewhitened payload (dewhitening already done in build_bytes)
-        std::cout << "DEBUG: Dewhitened payload (first 10 bytes): ";
-        for (size_t i = 0; i < std::min(size_t(10), dewhitened_out.size()); ++i) {
-            std::cout << std::hex << (int)dewhitened_out[i] << " ";
-        }
-        std::cout << std::dec << std::endl;
-
-        crc_ok_out = true;
-        if (effective_crc_bytes == 2u && cfg.expect_payload_crc) {
-            uint16_t crc_calc = crc16.compute(dewhitened_out.data(), dewhitened_out.size());
-            uint16_t crc_rx = static_cast<uint16_t>(bytes[effective_payload_len]) |
-                              (static_cast<uint16_t>(bytes[effective_payload_len + 1]) << 8);
-            crc_ok_out = (crc_calc == crc_rx);
-
-            std::cout << "DEBUG: CRC calc=" << std::hex << crc_calc
-                      << ", CRC rx=" << crc_rx << ", CRC OK=" << crc_ok_out << std::dec << std::endl;
-        } else if (header.has_crc && cfg.expect_payload_crc) {
-            crc_ok_out = false;
-        }
-        return crc_ok_out;
-    };
-
-    std::vector<uint8_t> candidate_payload;
-    bool crc_ok = false;
-
-    auto bytes_default = build_bytes(false);
-    if (evaluate_candidate(bytes_default, candidate_payload, crc_ok) && crc_ok) {
         result.payload = std::move(candidate_payload);
-        result.crc_ok = true;
+        result.crc_ok = crc_ok;
         result.success = true;
         result.frame_start = det->start_sample;
         result.frame_length = frame_samples_needed;
         return result;
-    } else {
-        auto bytes_swapped = build_bytes(true);
-        std::vector<uint8_t> payload_swapped;
-        bool crc_ok_swapped = false;
-        if (evaluate_candidate(bytes_swapped, payload_swapped, crc_ok_swapped) && crc_ok_swapped) {
-            result.payload = std::move(payload_swapped);
-            result.crc_ok = true;
-            result.success = true;
-            result.frame_start = det->start_sample;
-            result.frame_length = frame_samples_needed;
-            return result;
-        } else {
-            result.payload = std::move(candidate_payload);
-            result.crc_ok = crc_ok;
-            result.success = true;  // Accept even with CRC failure for debugging
-            result.frame_start = det->start_sample;
-            result.frame_length = frame_samples_needed;
-            return result;
-        }
     }
 
+    result.failure_reason = "frame_decode_failed";
+    result.success = false;
     return result;
 }
-}
 
-} // namespace
+}  // namespace
 
 GnuRadioLikePipeline::GnuRadioLikePipeline(Config cfg)
     : cfg_(std::move(cfg)),
