@@ -8,7 +8,13 @@
 #include <stdexcept>
 #include <vector>
 
+#if __has_include(<liquid/liquid.h>)
 #include <liquid/liquid.h>
+#elif __has_include(<liquid.h>)
+#include <liquid.h>
+#else
+#error "liquid-dsp headers not found; initialise external/liquid-dsp or install the library."
+#endif
 
 namespace lora::rx::gr {
 
