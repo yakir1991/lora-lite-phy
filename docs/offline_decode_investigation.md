@@ -8,7 +8,7 @@
   header. Any capture whose payload was shorter than the hard-coded count left the loop believing the payload symbols were
   truncated, so it aborted without returning user data.【F:src/rx/gr_pipeline.cpp†L348-L429】
 - Computing the expected number of payload symbols from the header fields (payload length, coding rate, CRC flag) unblocks the decoder for any valid payload length and restored the Python wrapper to working order.【F:src/rx/gr_pipeline.cpp†L28-L47】【F:src/rx/gr_pipeline.cpp†L348-L356】
-- Follow-up verification is currently blocked: rerunning the Python helper fails because `test_gr_pipeline` is missing, and rebuilding the executable requires the external `liquid-dsp` dependency so CMake can configure successfully.【9ea1d6†L1-L11】【8d2bc8†L1-L9】
+- Follow-up verification initially stalled because the container lacked `liquid-dsp`; CMake now falls back to the vendored `external/liquid-dsp` sources when the system library is absent so future rebuilds of `test_gr_pipeline` can proceed inside clean environments once `pybind11` is also available.【F:CMakeLists.txt†L8-L55】
 
 ## Root cause analysis
 `decode_offline_recording_final.py` shells out to the `test_gr_pipeline` executable, parses the diagnostic stdout, and exposes the
@@ -28,11 +28,11 @@ condition even though the samples contained a valid LoRa frame.
 ## Verification status
 
 - Attempted to run `python3 scripts/decode_offline_recording_final.py` against the canonical GNU Radio capture, but the wrapper could not locate `/workspace/lora-lite-phy/build/test_gr_pipeline` because the binary has not been rebuilt since the pipeline changes.【9ea1d6†L1-L11】
-- A subsequent `cmake -S . -B build` configure pass failed immediately with `Could not find LIQUID_LIB`; the container lacks the `liquid-dsp` dependency required to rebuild the helper executable and unblock end-to-end verification.【8d2bc8†L1-L9】
+- Re-running `cmake -S . -B build` after initialising `external/liquid-dsp` now proceeds past the FFT dependency by compiling the vendored sources, but the configure step currently stops later when `pybind11` is missing; provisioning that package remains a prerequisite for regenerating `test_gr_pipeline` in this container.【F:CMakeLists.txt†L8-L55】【1839c3†L39-L62】
 
 ## Next steps
 
-- Provision `liquid-dsp` (or point CMake at an existing installation) so `test_gr_pipeline` can be rebuilt and the offline decode regression can be rerun end-to-end to capture post-fix evidence.【9ea1d6†L1-L11】【8d2bc8†L1-L9】
+- Rebuild `test_gr_pipeline` (the CMake configure step now builds `external/liquid-dsp` automatically when needed) once `pybind11` is provisioned and rerun the offline decode regression end-to-end to capture post-fix evidence.【9ea1d6†L1-L11】【F:CMakeLists.txt†L8-L55】【1839c3†L39-L62】
 - Once the executable is available, record the successful decode output in this document to close the investigation loop and guard against regressions when modifying the payload handling logic again.【9ea1d6†L1-L11】
 
 ## Open follow-ups
