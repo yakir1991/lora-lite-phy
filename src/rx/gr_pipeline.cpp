@@ -31,15 +31,19 @@ size_t expected_payload_symbols(const lora::rx::gr::LocalHeader& hdr,
     int sf_eff = static_cast<int>(sf) - (ldro ? 2 : 0);
     if (sf_eff <= 0) return 0;
 
-    int num = static_cast<int>(8 * hdr.payload_len) - 4 * static_cast<int>(sf) + 28;
-    if (hdr.has_crc) num += 16;
-    if (num < 0) num = 0;
+    int numerator = static_cast<int>(8 * hdr.payload_len);
+    numerator -= 4 * static_cast<int>(sf);
+    numerator += 28;
+    if (hdr.has_crc) numerator += 16;
+    if (numerator < 0) numerator = 0;
 
     int denom = 4 * sf_eff;
     if (denom <= 0) return 0;
 
-    size_t codewords = (num == 0) ? 0 : static_cast<size_t>((num + denom - 1) / denom);
     uint32_t cr_app = static_cast<uint32_t>(hdr.cr);
+    if (numerator == 0) return 0;
+
+    size_t codewords = static_cast<size_t>((numerator + denom - 1) / denom);
     return codewords * static_cast<size_t>(cr_app + 4u);
 }
 
@@ -340,45 +344,44 @@ SingleFrameResult decode_single_frame(
     }
 
     size_t header_start = *header_start_opt;
-    // For multi-frame decoding, we need to decode multiple frames of 18 bytes each
-    // Each frame has: header (5 symbols) + payload (30 symbols for 18 bytes with CR=1)
-    uint32_t cr_plus4 = static_cast<uint32_t>(header.cr) + 4u;
     bool ldro = determine_ldro(cfg);
-    
-    // Each frame is 18 bytes, so we need 30 symbols for payload (18 bytes * 8 bits / 4.8 bits/symbol)
-    size_t payload_symbols_per_frame = 30;  // 18 bytes with CR=1
+    size_t payload_symbols_per_frame = expected_payload_symbols(header, cfg.sf, ldro);
     size_t symbols_per_frame = cfg.header_symbol_count + payload_symbols_per_frame;
-    size_t samples_per_frame = symbols_per_frame * N;
-    
+    size_t frame_samples_needed = symbols_per_frame * N;
+
     std::cout << "DEBUG: Multi-frame decoding - payload_symbols_per_frame=" << payload_symbols_per_frame
               << ", symbols_per_frame=" << symbols_per_frame
-              << ", samples_per_frame=" << samples_per_frame << std::endl;
-    
-    size_t available = compensated.size() - header_start;
-    size_t max_frames = available / samples_per_frame;
-    
-    std::cout << "DEBUG: Available samples=" << available 
+              << ", samples_per_frame=" << frame_samples_needed << std::endl;
+
+    if (payload_symbols_per_frame == 0 || frame_samples_needed == 0) {
+        result.failure_reason = "invalid_frame_geometry";
+        return result;
+    }
+
+    size_t available = (compensated.size() > header_start) ? (compensated.size() - header_start) : 0u;
+    size_t max_frames = available / frame_samples_needed;
+
+    std::cout << "DEBUG: Available samples=" << available
               << ", max_frames=" << max_frames << std::endl;
-    
+
     if (max_frames == 0) {
         result.failure_reason = "insufficient_samples_for_frames";
         return result;
     }
 
     // Decode multiple frames
-    result.frame_count = 0;
     size_t current_offset = header_start;
-    
+
     for (size_t frame_idx = 0; frame_idx < max_frames; ++frame_idx) {
         std::cout << "DEBUG: Decoding frame " << frame_idx << " at offset " << current_offset << std::endl;
-        
-        if (current_offset + samples_per_frame > compensated.size()) {
+
+        if (current_offset + frame_samples_needed > compensated.size()) {
             std::cout << "DEBUG: Not enough samples for frame " << frame_idx << std::endl;
             break;
         }
-        
+
         std::vector<std::complex<float>> frame_samples(compensated.begin() + current_offset,
-                                                       compensated.begin() + current_offset + samples_per_frame);
+                                                       compensated.begin() + current_offset + frame_samples_needed);
         size_t nsym_total = frame_samples.size() / N;
         if (nsym_total == 0) {
             std::cout << "DEBUG: Frame " << frame_idx << " has no symbols" << std::endl;
@@ -418,9 +421,12 @@ SingleFrameResult decode_single_frame(
             std::cout << "DEBUG: Frame " << frame_idx << " has no payload symbols" << std::endl;
             break;
         }
-        if (payload_symbol_count > payload_symbols_per_frame) {
-            payload_symbol_count = payload_symbols_per_frame;
+        if (payload_symbol_count < payload_symbols_per_frame) {
+            std::cout << "DEBUG: Frame " << frame_idx << " missing payload symbols (have "
+                      << payload_symbol_count << ", need " << payload_symbols_per_frame << ")" << std::endl;
+            break;
         }
+        payload_symbol_count = payload_symbols_per_frame;
 
         uint32_t sf_app = ldro ? (cfg.sf - 2u) : cfg.sf;
         if (sf_app == 0u) {
@@ -707,6 +713,9 @@ SingleFrameResult decode_single_frame(
             return result;
         }
     }
+
+    return result;
+}
 }
 
 } // namespace
