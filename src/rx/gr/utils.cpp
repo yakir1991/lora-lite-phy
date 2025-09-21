@@ -98,7 +98,7 @@ HammingTables make_hamming_tables() {
         for (int i = 0; i < nbits; ++i) {
             uint16_t cw = base ^ (1u << i);
             uint8_t syn = compute_syndrome(cw, nbits);
-            if (syn < arr.size())
+            if (syn < arr.size() && arr[syn] < 0)
                 arr[syn] = static_cast<int8_t>(i);
         }
     };
