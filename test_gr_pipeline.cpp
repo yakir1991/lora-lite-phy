@@ -7,26 +7,29 @@
 #include <complex>
 #include <span>
 
-int main(int argc, char** argv) {
-    std::string vec_path = "vectors/sps_125k_bw_125k_sf_7_cr_1_ldro_false_crc_true_implheader_false_nmsgs_8.unknown";
-    if (argc > 1) vec_path = argv[1];
+namespace {
 
-    // Read the vector file
-    std::ifstream file(vec_path, std::ios::binary);
+std::vector<std::complex<float>> load_samples(const std::string& path) {
+    std::ifstream file(path, std::ios::binary);
     if (!file) {
-        std::cerr << "Failed to open vector file: " << vec_path << std::endl;
-        return 1;
+        std::cerr << "Failed to open vector file: " << path << std::endl;
+        return {};
     }
-    
+
     std::vector<std::complex<float>> samples;
     float buf[2];
     while (file.read(reinterpret_cast<char*>(buf), sizeof(buf))) {
         samples.emplace_back(buf[0], buf[1]);
     }
-    
-    std::cout << "Loaded " << samples.size() << " samples" << std::endl;
-    
-    // Configure the pipeline
+
+    if (samples.empty()) {
+        std::cerr << "No samples loaded from " << path << std::endl;
+    }
+
+    return samples;
+}
+
+lora::rx::pipeline::Config make_default_config() {
     lora::rx::pipeline::Config cfg;
     cfg.sf = 7;
     cfg.min_preamble_syms = 8;
@@ -36,6 +39,62 @@ int main(int argc, char** argv) {
     cfg.expected_sync_word = 0x34;
     cfg.decode_payload = true;
     cfg.expect_payload_crc = true;
+    return cfg;
+}
+
+bool run_oversampled_multi_frame_regression() {
+    const std::string regression_path =
+        "vectors/bw_125k_sf_7_cr_1_ldro_false_crc_true_implheader_false_os2_sps250k.unknown";
+    auto samples = load_samples(regression_path);
+    if (samples.empty()) {
+        std::cerr << "Regression input missing or empty: " << regression_path << std::endl;
+        return false;
+    }
+
+    auto cfg = make_default_config();
+    lora::rx::pipeline::GnuRadioLikePipeline pipeline(cfg);
+    auto result = pipeline.run(samples);
+    if (!result.success) {
+        std::cerr << "Regression pipeline failed: " << result.failure_reason << std::endl;
+        return false;
+    }
+
+    if (result.frame_count < 2 || result.individual_frame_payloads.size() < 2) {
+        std::cerr << "Regression expected at least two frames but saw " << result.frame_count << std::endl;
+        return false;
+    }
+
+    if (result.frame_sync.os <= 1) {
+        std::cerr << "Regression expected oversampling detection > 1 but got " << result.frame_sync.os << std::endl;
+        return false;
+    }
+
+    if (result.individual_frame_crc_ok.size() >= 2 && !result.individual_frame_crc_ok[1]) {
+        std::cerr << "Regression decoded second frame with failing CRC" << std::endl;
+        return false;
+    }
+
+    std::cout << "Oversampled multi-frame regression passed: frame_count=" << result.frame_count
+              << ", detected os=" << result.frame_sync.os << std::endl;
+    return true;
+}
+
+} // namespace
+
+int main(int argc, char** argv) {
+    std::string vec_path = "vectors/sps_125k_bw_125k_sf_7_cr_1_ldro_false_crc_true_implheader_false_nmsgs_8.unknown";
+    if (argc > 1) vec_path = argv[1];
+
+    auto samples = load_samples(vec_path);
+    if (samples.empty()) {
+        std::cerr << "Unable to load samples from " << vec_path << std::endl;
+        return 1;
+    }
+
+    std::cout << "Loaded " << samples.size() << " samples" << std::endl;
+
+    // Configure the pipeline
+    auto cfg = make_default_config();
     
     // Create and run pipeline
     lora::rx::pipeline::GnuRadioLikePipeline pipeline(cfg);
@@ -206,6 +265,11 @@ int main(int argc, char** argv) {
         std::cout << "  dbg_hdr_nibbles_cr48: ";
         for (int i = 0; i < 10; ++i) std::cout << (int)ws2.dbg_hdr_nibbles_cr48[i] << ' ';
         std::cout << std::endl;
+    }
+
+    if (!run_oversampled_multi_frame_regression()) {
+        std::cerr << "Oversampled multi-frame regression failed" << std::endl;
+        return 1;
     }
 
     return 0;
