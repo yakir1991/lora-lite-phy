@@ -19,6 +19,8 @@
   budget to the available samples and truncates the CRC expectation allows the helper to recover two partial frames (94 and
   26 bytes) even though their CRCs remain invalid and the decoded text is still garbage, confirming the underlying FEC
   corruption persists.【F:src/rx/gr_pipeline.cpp†L367-L383】【F:src/rx/gr_pipeline.cpp†L614-L719】【83e45b†L1-L52】【00689f†L1-L5】
+- Updated the diagonal interleaver map to mirror GNU Radio’s `mod((i - j - 1), sf)` rotation, but the 500 ksps capture still
+  demaps to repeating garbage (`1b 27 29 …`) and a failed CRC, so the corruption predates deinterleaving.【F:src/rx/gr/utils.cpp†L24-L44】【8faf71†L1-L7】
 
 
 ## Root cause analysis
@@ -50,9 +52,10 @@ condition even though the samples contained a valid LoRa frame.
 ## Next steps
 
 - Investigate why the pipeline reports mismatched CRC values (`CRC calc=699c`, `CRC rx=5e6d`) on the sample capture by tracing back through the payload demodulation stack—deinterleaving, Hamming decode, and nibble assembly—to spot the corruption that survives CRC recomputation despite matching whitening and polynomial settings.【3a6e3f†L23-L36】【7843c7†L1-L8】
-- Extend that investigation to the 500 ksps capture: even with payload clamping and MSB-first bit ordering, the first
-  frame’s codewords still decode to incorrect nibbles and the recovered bytes never contain `hello_stupid_world`, so the FEC
-  stages or Gray mapping are still misaligned for higher-rate captures.【F:src/rx/gr_pipeline.cpp†L519-L575】【83e45b†L24-L46】【00689f†L1-L5】
+- Extend that investigation to the 500 ksps capture: even with payload clamping and the corrected diagonal interleaver, the
+  demapper reports payload symbols such as `natural=124,1,110,109,22` for the first block instead of the sequence produced by
+  encoding `hello_stupid_world`, indicating the corruption occurs before FEC decode—likely in the FFT/Gray demap or CFO/STO
+  compensation stages.【F:src/rx/gr_pipeline.cpp†L519-L575】【acff51†L16-L58】
 - After the CRC mismatch is resolved, rerun the offline decode regression end-to-end and capture the successful output in this document to close the investigation and guard against future regressions.
 
 
