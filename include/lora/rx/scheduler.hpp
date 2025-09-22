@@ -126,12 +126,16 @@ struct Scheduler {
     RxState st = RxState::SEARCH_PREAMBLE;
     FrameCtx ctx{};
     size_t small_fail_step_raw = 0; // (N*OS)/8
+    bool frame_ready = false;
+    FrameCtx last_frame{};
 
     void init(const RxConfig& c) {
         cfg = c;
         H_raw = dec_syms_to_raw_samples(8, cfg); // history 8 symbols (preamble length)
         W_raw = dec_syms_to_raw_samples(64, cfg);// search window (preamble + sync + header + some payload)
         small_fail_step_raw = dec_syms_to_raw_samples(1, cfg) / FAIL_STEP_DIV;
+        frame_ready = false;
+        last_frame = FrameCtx{};
     }
 
     bool step(Ring& r) {
@@ -198,6 +202,8 @@ struct Scheduler {
             // Here emit JSON/structure - no allocations, just print or write to external buffer
             DEBUGF("EMIT: frame_start=%zu frame_end=%zu len_raw=%zu crc_ok=%d",
                    ctx.frame_start_raw, ctx.frame_end_raw, ctx.frame_end_raw - ctx.frame_start_raw, int(ctx.p.crc_ok));
+            last_frame = ctx;
+            frame_ready = true;
             st = RxState::ADVANCE;
             break;
         }
@@ -224,4 +230,4 @@ struct Scheduler {
 };
 
 // Offline pipeline runner - fed in chunks (also offline)
-void run_pipeline_offline(const cfloat* iq, size_t iq_len, const RxConfig& cfg);
+std::vector<FrameCtx> run_pipeline_offline(const cfloat* iq, size_t iq_len, const RxConfig& cfg);
