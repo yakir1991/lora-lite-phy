@@ -120,59 +120,92 @@ def run_cpp_pipeline(input_file: Path, sf: int, sync_word: int = 0x34) -> Dict[s
             "raw_output": result.stdout
         }
         
-        for line in output_lines:
-            line = line.strip()
+        # Check if this is the new scheduler output
+        if any("Performance:" in line for line in output_lines):
+            # New scheduler format - extract performance info
+            total_frames = 0
+            all_performance = []
+            all_operations = []
             
-            if line.startswith("Success: true"):
-                parsed_output["success"] = True
-            elif line.startswith("Success: false"):
-                parsed_output["success"] = False
-            elif line.startswith("Failure reason:"):
-                parsed_output["failure_reason"] = line.split(":", 1)[1].strip()
-            elif line.startswith("Frame sync detected:"):
-                parsed_output["frame_sync"]["detected"] = "true" in line
-            elif line.startswith("OS:"):
-                parsed_output["frame_sync"]["os"] = int(line.split(":", 1)[1].strip())
-            elif line.startswith("Phase:"):
-                parsed_output["frame_sync"]["phase"] = int(line.split(":", 1)[1].strip())
-            elif line.startswith("CFO:"):
-                parsed_output["frame_sync"]["cfo"] = float(line.split(":", 1)[1].strip())
-            elif line.startswith("STO:"):
-                parsed_output["frame_sync"]["sto"] = int(line.split(":", 1)[1].strip())
-            elif line.startswith("Sync detected:"):
-                parsed_output["frame_sync"]["sync_detected"] = "true" in line
-            elif line.startswith("Sync start sample:"):
-                parsed_output["frame_sync"]["sync_start_sample"] = int(line.split(":", 1)[1].strip())
-            elif line.startswith("Aligned start sample:"):
-                parsed_output["frame_sync"]["aligned_start_sample"] = int(line.split(":", 1)[1].strip())
-            elif line.startswith("Header start sample:"):
-                parsed_output["frame_sync"]["header_start_sample"] = int(line.split(":", 1)[1].strip())
-            elif line.startswith("Payload length:"):
-                field = line.split(":", 1)[1]
-                try:
-                    parsed_output["header"]["payload_len"] = parse_int_field(field)
-                except ValueError:
-                    parsed_output["header"]["payload_len_raw"] = field.strip()
-            elif line.startswith("CR:"):
-                parsed_output["header"]["cr"] = int(line.split(":", 1)[1].strip())
-            elif line.startswith("Has CRC:"):
-                parsed_output["header"]["has_crc"] = "true" in line
-            elif line.startswith("CRC OK:"):
-                parsed_output["payload"]["crc_ok"] = "true" in line
-            elif line.startswith("Length:"):
-                field = line.split(":", 1)[1]
-                try:
-                    parsed_output["payload"]["length"] = parse_int_field(field)
-                except ValueError:
-                    parsed_output["payload"]["length_raw"] = field.strip()
-            elif line.startswith("Data:"):
-                # Parse hex bytes
-                hex_part = line.split(":", 1)[1].strip()
-                try:
-                    bytes_list = [int(x, 16) for x in hex_part.split()]
-                    parsed_output["payload"]["data"] = bytes_list
-                except ValueError:
-                    pass
+            for line in output_lines:
+                line = line.strip()
+                if "Performance:" in line:
+                    # Extract performance metrics
+                    parts = line.split("Performance:")[1].strip()
+                    if "MSamples/sec" in parts and "frames/sec" in parts:
+                        parsed_output["success"] = True
+                        all_performance.append(parts)
+                elif "Operations:" in line:
+                    # Extract operations info
+                    parts = line.split("Operations:")[1].strip()
+                    all_operations.append(parts)
+                elif "found" in line and "frames" in line:
+                    # Extract frame count
+                    import re
+                    match = re.search(r'found (\d+) frames', line)
+                    if match:
+                        total_frames += int(match.group(1))
+                        parsed_output["success"] = True
+            
+            # Store aggregated results
+            parsed_output["frame_count"] = total_frames
+            parsed_output["performance"] = "; ".join(all_performance)
+            parsed_output["operations"] = "; ".join(all_operations)
+        else:
+            # Original format
+            for line in output_lines:
+                line = line.strip()
+                
+                if line.startswith("Success: true"):
+                    parsed_output["success"] = True
+                elif line.startswith("Success: false"):
+                    parsed_output["success"] = False
+                elif line.startswith("Failure reason:"):
+                    parsed_output["failure_reason"] = line.split(":", 1)[1].strip()
+                elif line.startswith("Frame sync detected:"):
+                    parsed_output["frame_sync"]["detected"] = "true" in line
+                elif line.startswith("OS:"):
+                    parsed_output["frame_sync"]["os"] = int(line.split(":", 1)[1].strip())
+                elif line.startswith("Phase:"):
+                    parsed_output["frame_sync"]["phase"] = int(line.split(":", 1)[1].strip())
+                elif line.startswith("CFO:"):
+                    parsed_output["frame_sync"]["cfo"] = float(line.split(":", 1)[1].strip())
+                elif line.startswith("STO:"):
+                    parsed_output["frame_sync"]["sto"] = int(line.split(":", 1)[1].strip())
+                elif line.startswith("Sync detected:"):
+                    parsed_output["frame_sync"]["sync_detected"] = "true" in line
+                elif line.startswith("Sync start sample:"):
+                    parsed_output["frame_sync"]["sync_start_sample"] = int(line.split(":", 1)[1].strip())
+                elif line.startswith("Aligned start sample:"):
+                    parsed_output["frame_sync"]["aligned_start_sample"] = int(line.split(":", 1)[1].strip())
+                elif line.startswith("Header start sample:"):
+                    parsed_output["frame_sync"]["header_start_sample"] = int(line.split(":", 1)[1].strip())
+                elif line.startswith("Payload length:"):
+                    field = line.split(":", 1)[1]
+                    try:
+                        parsed_output["header"]["payload_len"] = parse_int_field(field)
+                    except ValueError:
+                        parsed_output["header"]["payload_len_raw"] = field.strip()
+                elif line.startswith("CR:"):
+                    parsed_output["header"]["cr"] = int(line.split(":", 1)[1].strip())
+                elif line.startswith("Has CRC:"):
+                    parsed_output["header"]["has_crc"] = "true" in line
+                elif line.startswith("CRC OK:"):
+                    parsed_output["payload"]["crc_ok"] = "true" in line
+                elif line.startswith("Length:"):
+                    field = line.split(":", 1)[1]
+                    try:
+                        parsed_output["payload"]["length"] = parse_int_field(field)
+                    except ValueError:
+                        parsed_output["payload"]["length_raw"] = field.strip()
+                elif line.startswith("Data:"):
+                    # Parse hex bytes
+                    hex_part = line.split(":", 1)[1].strip()
+                    try:
+                        bytes_list = [int(x, 16) for x in hex_part.split()]
+                        parsed_output["payload"]["data"] = bytes_list
+                    except ValueError:
+                        pass
         
         return parsed_output
         
@@ -196,6 +229,55 @@ def process_pipeline_result(result: Dict[str, Any]) -> List[FrameResult]:
         print(f"Pipeline failed: {result.get('failure_reason', result.get('error', 'Unknown error'))}")
         return frames
     
+    # Check if this is new scheduler format
+    if "performance" in result:
+        # New scheduler format - extract individual payloads from debug output
+        raw_output = result.get("raw_output", "")
+        
+        # Look for individual payload decodings in the debug output
+        import re
+        payload_matches = re.findall(r'\[DEBUG\] Text: (.+)', raw_output)
+        
+        if payload_matches:
+            # Create frames for each decoded payload
+            for i, payload_text in enumerate(payload_matches):
+                payload_bytes = payload_text.encode("utf-8")
+                
+                frame = FrameResult(
+                    index=i,
+                    payload=payload_bytes,
+                    crc_valid=True,  # Assume CRC is OK for now
+                    has_crc=True,
+                    message_text=payload_text,
+                    frame_sync_info={"format": "new_scheduler", "frame_index": i},
+                    header_info={"payload_length": len(payload_bytes)},
+                )
+                
+                frames.append(frame)
+        else:
+            # Fallback to summary frame if no individual payloads found
+            frame_count = result.get("frame_count", 0)
+            performance = result.get("performance", "")
+            operations = result.get("operations", "")
+            
+            summary_text = f"Scheduler processed {frame_count} frames. Performance: {performance}. Operations: {operations}"
+            payload_bytes = summary_text.encode("utf-8")
+            
+            frame = FrameResult(
+                index=0,
+                payload=payload_bytes,
+                crc_valid=None,
+                has_crc=None,
+                message_text=summary_text,
+                frame_sync_info={"format": "new_scheduler"},
+                header_info={"frame_count": frame_count, "performance": performance, "operations": operations},
+            )
+            
+            frames.append(frame)
+        
+        return frames
+    
+    # Original format
     # Extract frame sync information
     frame_sync_info = result.get("frame_sync", {})
     

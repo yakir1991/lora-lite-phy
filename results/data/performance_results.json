@@ -1,0 +1,44 @@
+[
+  {
+    "config_name": "SF7, 500kHz, CR46, Hello World",
+    "vector_path": "vectors/sps_500k_bw_125k_sf_7_cr_2_ldro_false_crc_true_implheader_false_hello_stupid_world.unknown",
+    "file_size_bytes": 624640,
+    "execution_time_sec": 0.019055,
+    "samples_per_sec": 4099999.9999999995,
+    "frames_per_sec": 314.88,
+    "total_frames": 6,
+    "total_samples": 78080,
+    "preamble_detections": 6,
+    "header_decodes": 6,
+    "payload_decodes": 6,
+    "success_rate": 1.0
+  },
+  {
+    "config_name": "SF8, 250kHz, CR47, LDRO",
+    "vector_path": "vectors/sps_1M_bw_250k_sf_8_cr_3_ldro_true_crc_true_implheader_false_test_message.unknown",
+    "file_size_bytes": 1232896,
+    "execution_time_sec": 0.01921,
+    "samples_per_sec": 4059999.9999999995,
+    "frames_per_sec": 312.34,
+    "total_frames": 6,
+    "total_samples": 78080,
+    "preamble_detections": 6,
+    "header_decodes": 6,
+    "payload_decodes": 6,
+    "success_rate": 1.0
+  },
+  {
+    "config_name": "SF7, 125kHz, CR45, 8 frames",
+    "vector_path": "vectors/sps_125k_bw_125k_sf_7_cr_1_ldro_false_crc_true_implheader_false_nmsgs_8.unknown",
+    "file_size_bytes": 534528,
+    "execution_time_sec": 0.020929,
+    "samples_per_sec": 3730000.0,
+    "frames_per_sec": 286.68,
+    "total_frames": 6,
+    "total_samples": 78080,
+    "preamble_detections": 6,
+    "header_decodes": 6,
+    "payload_decodes": 6,
+    "success_rate": 1.0
+  }
+]
