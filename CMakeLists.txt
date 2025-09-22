@@ -53,15 +53,14 @@ if(LIQUID_INCLUDE_DIR STREQUAL "LIQUID_INCLUDE_DIR-NOTFOUND")
     set(LIQUID_INCLUDE_DIR "")
 endif()
 
-# Find pybind11
-find_package(pybind11 REQUIRED)
+# pybind11 removed - using scheduler only
 
 add_library(lora_gr
     src/workspace.cpp
     src/rx/gr/utils.cpp
     src/rx/gr/primitives.cpp
     src/rx/gr/header_decode.cpp
-    src/rx/gr_pipeline.cpp
+    src/rx/scheduler/scheduler.cpp
 )
 
 target_include_directories(lora_gr PUBLIC
@@ -70,10 +69,16 @@ target_include_directories(lora_gr PUBLIC
 )
 target_link_libraries(lora_gr PUBLIC ${LIQUID_LIB})
 
-add_executable(test_gr_pipeline test_gr_pipeline.cpp)
+add_executable(test_gr_pipeline tests/test_gr_pipeline.cpp)
 
 target_link_libraries(test_gr_pipeline PRIVATE lora_gr)
 
-# Python bindings
-pybind11_add_module(lora_pipeline python_bindings.cpp)
-target_link_libraries(lora_pipeline PRIVATE lora_gr pybind11::module)
+# Python bindings removed - using scheduler only
+
+# Scheduler unit tests
+add_executable(test_scheduler tests/test_scheduler.cpp)
+target_link_libraries(test_scheduler PRIVATE lora_gr)
+
+# Scheduler example
+add_executable(scheduler_example examples/scheduler_example.cpp)
+target_link_libraries(scheduler_example PRIVATE lora_gr)
