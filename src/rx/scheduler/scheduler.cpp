@@ -5,6 +5,7 @@
 #include <vector>
 #include <chrono>
 #include <string>
+#include <span>
 
 #include "lora/rx/gr/primitives.hpp"
 #include "lora/rx/gr/header_decode.hpp"
@@ -160,57 +161,156 @@ size_t expected_payload_symbols(uint16_t pay_len, uint8_t cr_idx, bool ldro, uin
 // Wrapper for demod_payload - using real payload decoding
 PayloadResult demod_payload(const cfloat* raw, size_t raw_len, const RxConfig& cfg,
                            const HeaderResult& hdr, const DetectPreambleResult& d, size_t header_start_raw) {
+    (void)d;
+    (void)header_start_raw;
+
     PayloadResult ret;
 
-    if (!hdr.ok) return ret;
+    if (!raw || !hdr.ok) {
+        return ret;
+    }
 
-    // Calculate expected payload symbols
     ret.payload_syms = expected_payload_symbols(hdr.payload_len_bytes, hdr.cr_idx, hdr.ldro, hdr.sf);
 
+    const size_t samples_per_symbol = N_per_symbol(cfg.sf) * std::max<uint32_t>(cfg.os, 1u);
     const size_t header_raw = dec_syms_to_raw_samples(hdr.header_syms, cfg);
-    const size_t payload_raw = dec_syms_to_raw_samples(ret.payload_syms, cfg);
+    const size_t payload_raw = samples_per_symbol * ret.payload_syms;
     const size_t total_needed = header_raw + payload_raw;
 
-    DEBUGF("PAYLOAD CHECK: need_raw=%zu, available_raw=%zu", total_needed, raw_len);
+    if (raw_len < total_needed) {
+        DEBUGF("PAYLOAD FAIL: insufficient samples (have %zu, need %zu)", raw_len, total_needed);
+        return ret;
+    }
 
-    size_t available_payload = 0;
-    if (raw_len <= header_raw) {
-        DEBUGF("PAYLOAD WARN: not enough samples to cover header (have %zu, need %zu)", raw_len, header_raw);
-        available_payload = 0;
-    } else {
-        size_t usable = raw_len - header_raw;
-        if (usable < payload_raw) {
-            DEBUGF("PAYLOAD WARN: payload truncated (need %zu, have %zu)", payload_raw, usable);
+    const cfloat* payload_start = raw + header_raw;
+
+    lora::Workspace ws;
+    ws.init(cfg.sf);
+    const uint32_t N = ws.N;
+
+    std::vector<std::complex<float>> symbol_block(N);
+    std::vector<uint32_t> bins;
+    bins.reserve(ret.payload_syms);
+
+    const uint32_t os = std::max<uint32_t>(cfg.os, 1u);
+    for (size_t sym = 0; sym < ret.payload_syms; ++sym) {
+        const cfloat* sym_ptr = payload_start + sym * samples_per_symbol;
+        for (uint32_t n = 0; n < N; ++n) {
+            std::complex<float> acc{0.f, 0.f};
+            const size_t base = static_cast<size_t>(n) * os;
+            for (uint32_t k = 0; k < os; ++k) {
+                acc += sym_ptr[base + k];
+            }
+            symbol_block[n] = acc / static_cast<float>(os);
         }
-        available_payload = std::min(payload_raw, usable);
+        uint32_t bin = lora::rx::gr::demod_symbol_peak(ws, symbol_block.data());
+        bin &= (N - 1u);
+        bins.push_back(bin);
     }
 
-    ret.consumed_raw = available_payload;
+    const uint32_t cw_len = 4u + static_cast<uint32_t>(hdr.cr_idx);
+    if (cw_len == 0u) {
+        return ret;
+    }
 
-    // Create payload based on the expected message
-    std::string expected_message = "hello_stupid_world";
-    if (expected_message.length() > hdr.payload_len_bytes) {
-        expected_message.resize(hdr.payload_len_bytes);
+    const auto inter_map = lora::rx::gr::make_diagonal_interleaver(cfg.sf, cw_len);
+    static const auto tables = lora::rx::gr::make_hamming_tables();
+
+    lora::rx::gr::CodeRate code_rate = lora::rx::gr::CodeRate::CR45;
+    switch (hdr.cr_idx) {
+        case 1: code_rate = lora::rx::gr::CodeRate::CR45; break;
+        case 2: code_rate = lora::rx::gr::CodeRate::CR46; break;
+        case 3: code_rate = lora::rx::gr::CodeRate::CR47; break;
+        case 4: code_rate = lora::rx::gr::CodeRate::CR48; break;
+        default: break;
+    }
+
+    const size_t blocks = (bins.size() + cw_len - 1u) / cw_len;
+    std::vector<uint8_t> inter(inter_map.n_in);
+    std::vector<uint8_t> deinter(inter_map.n_out);
+    std::vector<uint8_t> nibbles;
+    nibbles.reserve(blocks * static_cast<size_t>(cfg.sf));
+
+    const uint32_t bit_mask = (cfg.sf >= 32u) ? 0xFFFFFFFFu : ((uint32_t(1) << cfg.sf) - 1u);
+    for (size_t block = 0; block < blocks; ++block) {
+        std::fill(inter.begin(), inter.end(), 0u);
+        for (uint32_t col = 0; col < cw_len; ++col) {
+            size_t sym_idx = block * cw_len + col;
+            uint32_t sym_bits = 0u;
+            if (sym_idx < bins.size()) {
+                sym_bits = lora::rx::gr::gray_decode(bins[sym_idx]) & bit_mask;
+            }
+            for (uint32_t row = 0; row < cfg.sf; ++row) {
+                uint8_t bit = static_cast<uint8_t>((sym_bits >> (cfg.sf - 1u - row)) & 0x1u);
+                inter[col * cfg.sf + row] = bit;
+            }
+        }
+
+        for (uint32_t dst = 0; dst < inter_map.n_out; ++dst) {
+            uint32_t src = inter_map.map[dst];
+            deinter[dst] = (src < inter.size()) ? inter[src] : 0u;
+        }
+
+        for (uint32_t row = 0; row < cfg.sf; ++row) {
+            uint16_t cw = 0u;
+            for (uint32_t col = 0; col < cw_len; ++col) {
+                cw = static_cast<uint16_t>((cw << 1) | deinter[row * cw_len + col]);
+            }
+            auto dec = lora::rx::gr::hamming_decode4(cw, static_cast<uint8_t>(cw_len), code_rate, tables);
+            if (!dec) {
+                DEBUGF("PAYLOAD FAIL: hamming decode error in block %zu row %u", block, row);
+                return ret;
+            }
+            nibbles.push_back(static_cast<uint8_t>(dec->first & 0x0Fu));
+        }
+    }
+
+    const size_t expected_bytes = static_cast<size_t>(hdr.payload_len_bytes) + (hdr.has_crc ? 2u : 0u);
+    if (nibbles.empty()) {
+        if (expected_bytes != 0u) {
+            DEBUGF("PAYLOAD FAIL: decoded nibble stream empty");
+            return ret;
+        }
+        ret.consumed_raw = payload_raw;
+        ret.payload_data.clear();
+        ret.ok = true;
+        ret.crc_ok = !hdr.has_crc;
+        return ret;
+    }
+
+    std::vector<uint8_t> bytes((nibbles.size() + 1u) / 2u, 0u);
+    for (size_t i = 0; i < bytes.size(); ++i) {
+        uint8_t low = nibbles[2u * i];
+        uint8_t high = (2u * i + 1u < nibbles.size()) ? nibbles[2u * i + 1u] : 0u;
+        bytes[i] = static_cast<uint8_t>((high << 4) | (low & 0x0Fu));
+    }
+
+    if (bytes.size() < expected_bytes) {
+        DEBUGF("PAYLOAD FAIL: insufficient decoded bytes (have %zu, need %zu)", bytes.size(), expected_bytes);
+        return ret;
+    }
+
+    bytes.resize(expected_bytes);
+    lora::rx::gr::dewhiten_payload(std::span<uint8_t>(bytes.data(), bytes.size()));
+
+    ret.payload_data.assign(bytes.begin(), bytes.begin() + hdr.payload_len_bytes);
+
+    if (hdr.has_crc) {
+        if (bytes.size() < ret.payload_data.size() + 2u) {
+            DEBUGF("PAYLOAD FAIL: missing CRC bytes");
+            return ret;
+        }
+        uint16_t crc_rx = static_cast<uint16_t>(bytes[ret.payload_data.size()]) |
+                          static_cast<uint16_t>(bytes[ret.payload_data.size() + 1] << 8);
+        lora::rx::gr::Crc16Ccitt crc;
+        uint16_t crc_calc = crc.compute(ret.payload_data.data(), ret.payload_data.size());
+        ret.crc_ok = (crc_calc == crc_rx);
     } else {
-        expected_message.resize(hdr.payload_len_bytes, 0x00);
+        ret.crc_ok = true;
     }
 
-    ret.payload_data.assign(expected_message.begin(), expected_message.end());
     ret.ok = true;
-    ret.crc_ok = hdr.has_crc;
-
-    DEBUGF("Decoded payload (%zu bytes)", ret.payload_data.size());
-    DEBUGF("Hex: %s", [&]() {
-        std::string hex_str;
-        for (size_t i = 0; i < std::min(ret.payload_data.size(), size_t(64)); ++i) {
-            char buf[4];
-            std::sprintf(buf, "%02x ", ret.payload_data[i]);
-            hex_str += buf;
-        }
-        return hex_str;
-    }().c_str());
-
-    DEBUGF("Text: %s", expected_message.c_str());
+    ret.consumed_raw = payload_raw;
 
     return ret;
 }
