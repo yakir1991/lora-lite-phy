@@ -6,6 +6,7 @@
 #include <chrono>
 #include <string>
 #include <span>
+#include <limits>
 
 #include "lora/rx/gr/primitives.hpp"
 #include "lora/rx/gr/header_decode.hpp"
@@ -68,13 +69,23 @@ LocateHeaderResult locate_header_start(const cfloat* raw, size_t raw_len, const 
 
     if (!d.found) return ret;
 
-    // Simple calculation: preamble + sync word symbols
-    // In LoRa: preamble (8+4.25 symbols) + sync (2.25 symbols) ≈ 14.5 symbols
-    const size_t preamble_sync_raw = dec_syms_to_raw_samples(15, cfg); // approximate
+    const uint32_t os = std::max<uint32_t>(cfg.os, 1u);
+    const size_t preamble_raw = dec_syms_to_raw_samples(8, cfg);
+    const size_t sync_raw = dec_syms_to_raw_samples(2, cfg);
+    const size_t delimiter_raw = dec_syms_to_raw_samples(2, cfg) + (N_per_symbol(cfg.sf) * os) / 4u;
 
-    if (d.preamble_start_raw + preamble_sync_raw < raw_len) {
+    size_t header_start_raw = d.preamble_start_raw;
+    const size_t offsets[] = {preamble_raw, sync_raw, delimiter_raw};
+    for (size_t off : offsets) {
+        if (off > std::numeric_limits<size_t>::max() - header_start_raw) {
+            return ret; // overflow guard
+        }
+        header_start_raw += off;
+    }
+
+    if (header_start_raw < raw_len) {
         ret.ok = true;
-        ret.header_start_raw = d.preamble_start_raw + preamble_sync_raw;
+        ret.header_start_raw = header_start_raw;
     }
 
     return ret;
