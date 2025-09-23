@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <memory>
 #include <vector>
+#include <limits>
 
 // logging (can be replaced with existing macro)
 #define DEBUGF(fmt, ...) std::printf("[DEBUG] " fmt "\n", ##__VA_ARGS__)
@@ -188,12 +189,35 @@ struct Scheduler {
             ctx.h = demod_header(raw, win_len, cfg, ctx.l, ctx.d);
             if (!ctx.h.ok) { st = RxState::ADVANCE; break; }
 
-            ctx.frame_start_raw = win_head + ctx.l.header_start_raw; // absolute RAW
+            size_t refined_local = ctx.l.header_start_raw;
+            if (ctx.h.detected_os > 0) {
+                const size_t detected_os = static_cast<size_t>(ctx.h.detected_os);
+                if (ctx.h.header_start_decim <= std::numeric_limits<size_t>::max() / detected_os) {
+                    size_t candidate = ctx.h.header_start_decim * detected_os;
+                    if (candidate < win_len) {
+                        refined_local = candidate;
+                    } else {
+                        DEBUGF("DEMOD_HEADER: refined header %zu outside window len=%zu", candidate, win_len);
+                    }
+                } else {
+                    DEBUGF("DEMOD_HEADER: overflow when scaling header_start_decim=%zu os=%zu", ctx.h.header_start_decim, detected_os);
+                }
+            } else {
+                DEBUGF("DEMOD_HEADER: invalid detected_os=%u", ctx.h.detected_os);
+            }
+
+            ctx.l.header_start_raw = refined_local;
+            ctx.frame_start_raw = win_head + refined_local; // absolute RAW aligned to detected timing
             st = RxState::DEMOD_PAYLOAD;
             break;
         }
         case RxState::DEMOD_PAYLOAD: {
             const size_t local_off = ctx.l.header_start_raw;
+            if (local_off >= win_len) {
+                DEBUGF("PAY: header offset %zu outside window len=%zu", local_off, win_len);
+                st = RxState::ADVANCE;
+                break;
+            }
             ctx.p = demod_payload(raw + local_off, win_len - local_off, cfg, ctx.h, ctx.d, ctx.frame_start_raw);
             DEBUGF("PAY: ok=%d payload_syms=%zu consumed_raw=%zu crc_ok=%d",
                    int(ctx.p.ok), ctx.p.payload_syms, ctx.p.consumed_raw, int(ctx.p.crc_ok));
