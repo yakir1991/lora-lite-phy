@@ -82,12 +82,12 @@ struct LocateHeaderResult {
 
 struct HeaderResult {
     bool   ok = false;
-    uint8_t sf = 7;
-    uint8_t cr_idx = 1;  // 1→4/5, 2→4/6, ...
+    uint8_t sf = 0;
+    uint8_t cr_idx = 0;  // 1→4/5, 2→4/6, ...
     bool ldro = false;
-    bool has_crc = true;
+    bool has_crc = false;
     uint16_t payload_len_bytes = 0;
-    size_t header_syms = 16; // always 16 in LoRa explicit
+    size_t header_syms = 0; // set to 16 for LoRa explicit headers when decoded
     uint32_t detected_os = 0;
     int detected_phase = 0;
     size_t det_start_raw = 0;
