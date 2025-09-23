@@ -113,7 +113,8 @@ struct PayloadResult {
 DetectPreambleResult detect_preamble_dynamic(const cfloat* raw, size_t raw_len, const RxConfig& cfg, size_t history_raw);
 LocateHeaderResult   locate_header_start(const cfloat* raw, size_t raw_len, const RxConfig& cfg, const DetectPreambleResult& d);
 HeaderResult         demod_header(const cfloat* raw, size_t raw_len, const RxConfig& cfg, const LocateHeaderResult& h, const DetectPreambleResult& d);
-size_t               expected_payload_symbols(uint16_t pay_len, uint8_t cr_idx, bool ldro, uint8_t sf); // exists
+size_t               expected_payload_symbols(uint16_t pay_len, uint8_t cr_idx, bool ldro, uint8_t sf,
+                                              bool has_crc, bool implicit_header = false); // exists
 PayloadResult        demod_payload(const cfloat* raw, size_t raw_len, const RxConfig& cfg,
                                    const HeaderResult& hdr, const DetectPreambleResult& d, size_t header_start_raw);
 
