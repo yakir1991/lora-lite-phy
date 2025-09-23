@@ -146,7 +146,7 @@ void test_header_result() {
     result.ldro = false;
     result.has_crc = true;
     result.payload_len_bytes = 10;
-    result.header_syms = 16;
+    result.header_syms = 8;
     
     assert(result.ok == true);
     assert(result.sf == 7);
@@ -154,7 +154,7 @@ void test_header_result() {
     assert(result.ldro == false);
     assert(result.has_crc == true);
     assert(result.payload_len_bytes == 10);
-    assert(result.header_syms == 16);
+    assert(result.header_syms == 8);
     
     std::cout << "HeaderResult tests passed!" << std::endl;
 }

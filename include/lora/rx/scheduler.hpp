@@ -88,7 +88,7 @@ struct HeaderResult {
     bool ldro = false;
     bool has_crc = false;
     uint16_t payload_len_bytes = 0;
-    size_t header_syms = 0; // set to 16 for LoRa explicit headers when decoded
+    size_t header_syms = 0; // set to 8 for LoRa explicit headers when decoded
     uint32_t detected_os = 0;
     int detected_phase = 0;
     size_t det_start_raw = 0;
@@ -244,7 +244,7 @@ struct Scheduler {
             DEBUGF("PAY: ok=%d payload_syms=%zu consumed_raw=%zu crc_ok=%d",
                    int(ctx.p.ok), ctx.p.payload_syms, ctx.p.consumed_raw, int(ctx.p.crc_ok));
 
-            // Account for header length (16 symbols) if demod_payload didn't include consumption:
+            // Account for header length (ctx.h.header_syms symbols) if demod_payload didn't include consumption:
             const size_t header_raw = dec_syms_to_raw_samples(ctx.h.header_syms, cfg);
             const size_t consumed_raw_total = header_raw + ctx.p.consumed_raw;
             ctx.frame_end_raw = ctx.frame_start_raw + consumed_raw_total;

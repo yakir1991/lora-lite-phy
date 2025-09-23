@@ -127,7 +127,7 @@ HeaderResult demod_header(const cfloat* raw, size_t raw_len, const RxConfig& cfg
     ret.ldro = cfg.ldro;
     ret.has_crc = header->has_crc;
     ret.payload_len_bytes = header->payload_len;
-    ret.header_syms = 16;
+    ret.header_syms = 8;
 
     switch (header->cr) {
         case lora::rx::gr::CodeRate::CR45: ret.cr_idx = 1; break;
