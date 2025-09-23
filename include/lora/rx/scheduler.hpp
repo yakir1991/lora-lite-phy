@@ -88,6 +88,16 @@ struct HeaderResult {
     bool has_crc = true;
     uint16_t payload_len_bytes = 0;
     size_t header_syms = 16; // always 16 in LoRa explicit
+    uint32_t detected_os = 0;
+    int detected_phase = 0;
+    size_t det_start_raw = 0;
+    size_t start_decim = 0;
+    size_t preamble_start_decim = 0;
+    size_t aligned_start_decim = 0;
+    size_t header_start_decim = 0;
+    size_t sync_start_decim = 0;
+    float fractional_cfo = 0.0f;
+    int sto = 0;
 };
 
 struct PayloadResult {
@@ -175,9 +185,7 @@ struct Scheduler {
             break;
         }
         case RxState::DEMOD_HEADER: {
-            ctx.h = demod_header(raw + ctx.l.header_start_raw, win_len - ctx.l.header_start_raw, cfg, ctx.l, ctx.d);
-            DEBUGF("HDR: ok=%d sf=%u cr=%u ldro=%d has_crc=%d pay_len=%u",
-                   int(ctx.h.ok), ctx.h.sf, ctx.h.cr_idx, int(ctx.h.ldro), int(ctx.h.has_crc), ctx.h.payload_len_bytes);
+            ctx.h = demod_header(raw, win_len, cfg, ctx.l, ctx.d);
             if (!ctx.h.ok) { st = RxState::ADVANCE; break; }
 
             ctx.frame_start_raw = win_head + ctx.l.header_start_raw; // absolute RAW
