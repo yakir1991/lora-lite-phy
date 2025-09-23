@@ -46,7 +46,28 @@ std::optional<LocalHeader> parse_standard_lora_header(const uint8_t* hdr, size_t
     uint8_t cr_idx = static_cast<uint8_t>((n2 >> 1) & 0x7);
 
     uint8_t chk_calc = compute_header_crc(n0, n1, n2);
-    if (chk_calc != chk_rx) return std::nullopt;
+    if (const char* dbg = std::getenv("LORA_HDR_DEBUG")) {
+        std::fprintf(stderr,
+                     "[hdr-debug] nibbles: n0=%u n1=%u n2=%u n3=%u chk_rx=0x%02x chk_calc=0x%02x pay=%u cr_idx=%u has_crc=%u\n",
+                     unsigned(n0),
+                     unsigned(n1),
+                     unsigned(n2),
+                     unsigned(n3),
+                     unsigned(chk_rx),
+                     unsigned(chk_calc),
+                     unsigned(payload_len),
+                     unsigned(cr_idx),
+                     unsigned(has_crc));
+    }
+    if (chk_calc != chk_rx) {
+        if (!std::getenv("LORA_HDR_IGNORE_CRC")) {
+            return std::nullopt;
+        }
+        std::fprintf(stderr,
+                     "[hdr-debug] CRC mismatch ignored (rx=0x%02x calc=0x%02x)\n",
+                     unsigned(chk_rx),
+                     unsigned(chk_calc));
+    }
 
     LocalHeader out;
     out.payload_len = payload_len;
@@ -73,6 +94,10 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
 
     (void)cr;
 
+    if (const char* dump_env = std::getenv("LORA_HDR_DUMP_BINS")) {
+        std::cout << "[hdr-env] LORA_HDR_DUMP_BINS=" << dump_env << std::endl;
+    }
+
     ws.dbg_hdr_filled = false;
     ws.dbg_hdr_sf = 0;
     std::fill(std::begin(ws.dbg_hdr_syms_raw), std::end(ws.dbg_hdr_syms_raw), 0u);
@@ -81,7 +106,7 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
     std::fill(std::begin(ws.dbg_hdr_nibbles_cr48), std::end(ws.dbg_hdr_nibbles_cr48), 0u);
     std::fill(std::begin(ws.dbg_hdr_nibbles_cr45), std::end(ws.dbg_hdr_nibbles_cr45), 0u);
 
-    auto det = detect_preamble_os(ws, samples, sf, min_preamble_syms, {4, 2, 1, 8});
+    auto det = detect_preamble_os(ws, samples, sf, min_preamble_syms, {1, 2, 4, 8});
     if (!det) return std::nullopt;
 
     ws.dbg_hdr_os = det->os;
@@ -97,6 +122,17 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
     auto aligned0 = std::span<const std::complex<float>>(decim.data() + start_decim,
                                                          decim.size() - start_decim);
 
+    if (std::getenv("LORA_HDR_DUMP_BINS")) {
+        std::fprintf(stderr,
+                     "[hdr-dump] det_os=%d det_phase=%d det_start=%zu samples_in=%zu decim_size=%zu start_decim=%zu\n",
+                     det->os,
+                     det->phase,
+                     det->start_sample,
+                     samples.size(),
+                     decim.size(),
+                     start_decim);
+    }
+
     auto pos0 = detect_preamble(ws, aligned0, sf, min_preamble_syms);
     if (!pos0) return std::nullopt;
     ws.dbg_hdr_preamble_start = start_decim + *pos0;
@@ -110,6 +146,17 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
     for (size_t n = 0; n < aligned0.size(); ++n) {
         float ang = two_pi_eps * static_cast<float>(n);
         comp[n] = aligned0[n] * std::complex<float>(std::cos(ang), std::sin(ang));
+    }
+
+    if (std::getenv("LORA_HDR_DUMP_BINS")) {
+        std::fprintf(stderr,
+                     "[hdr-dump] samples=%zu decim=%zu start_decim=%zu aligned0=%zu comp=%zu pos0=%zu\n",
+                     samples.size(),
+                     decim.size(),
+                     start_decim,
+                     aligned0.size(),
+                     comp.size(),
+                     pos0.value());
     }
 
     auto sto = estimate_sto_from_preamble(ws, comp, sf, *pos0, min_preamble_syms, static_cast<int>(ws.N / 8));
@@ -151,9 +198,21 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
             size_t idx = static_cast<size_t>(idx_l);
             if (idx + N > aligned.size()) continue;
             uint32_t sym = demod_symbol_peak(ws, &aligned[idx]);
-            std::cout << "DEBUG: Sync search at idx=" << idx << " sym=" << sym << " net1=" << net1 << " net2=" << net2 << std::endl;
+            if (std::getenv("LORA_HDR_DEBUG")) {
+                std::fprintf(stderr,
+                             "[hdr-debug] sync search idx=%zu sym=%u net1=%u net2=%u\n",
+                             idx,
+                             sym,
+                             net1,
+                             net2);
+            }
             if (std::abs(int(sym) - int(net1)) <= 2 || std::abs(int(sym) - int(net2)) <= 2) {
-                std::cout << "DEBUG: Found sync at idx=" << idx << " sym=" << sym << std::endl;
+                if (std::getenv("LORA_HDR_DEBUG")) {
+                    std::fprintf(stderr,
+                                 "[hdr-debug] sync found at idx=%zu sym=%u\n",
+                                 idx,
+                                 sym);
+                }
                 sync_start = idx;
                 found_sync = true;
                 break;
@@ -166,11 +225,14 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
     ws.dbg_hdr_sync_start = start_decim + aligned_start + sync_start;
 
     size_t header_start = sync_start + (2u * N + N / 4u);
-    std::cout << "DEBUG: sync_start=" << sync_start << ", header_start=" << header_start << ", N=" << N << std::endl;
+    if (std::getenv("LORA_HDR_DEBUG")) {
+        std::fprintf(stderr,
+                     "[hdr-debug] sync_start=%zu header_start=%zu N=%u\n",
+                     sync_start,
+                     header_start,
+                     N);
+    }
 
-    // Let's understand the frame structure better
-    std::cout << "DEBUG: Original header_start=" << header_start << std::endl;
-    
     if (const char* sym_off = std::getenv("LORA_HDR_BASE_SYM_OFF")) {
         long v = std::strtol(sym_off, nullptr, 10);
         long delta = v * static_cast<long>(N);
@@ -181,6 +243,14 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
         long v = std::strtol(samp_off, nullptr, 10);
         if (v >= 0) header_start = std::min(aligned.size(), header_start + static_cast<size_t>(v));
         else header_start = (header_start >= static_cast<size_t>(-v)) ? (header_start - static_cast<size_t>(-v)) : 0u;
+    }
+
+    if (std::getenv("LORA_HDR_DUMP_BINS")) {
+        std::fprintf(stderr,
+                     "[hdr-dump] aligned_start=%zu aligned_size=%zu header_start=%zu\n",
+                     static_cast<size_t>(aligned_start),
+                     aligned.size(),
+                     header_start);
     }
 
     ws.dbg_hdr_header_start = start_decim + aligned_start + header_start;
@@ -221,7 +291,16 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
     size_t best_header_start = header_start;
 
     auto try_decode = [&](size_t start) -> std::optional<LocalHeader> {
-        if (start + hdr_nsym * N > aligned.size()) return std::nullopt;
+        if (start + hdr_nsym * N > aligned.size()) {
+            if (std::getenv("LORA_HDR_DUMP_BINS")) {
+                std::fprintf(stderr,
+                             "[hdr-dump] skip start=%zu aligned=%zu need=%zu\n",
+                             start,
+                             aligned.size(),
+                             hdr_nsym * static_cast<size_t>(N));
+            }
+            return std::nullopt;
+        }
         auto header_span = std::span<const std::complex<float>>(aligned.data() + start,
                                                                 aligned.size() - start);
 
@@ -234,6 +313,22 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
             corr_bins[s] = corr;
         }
 
+        if (std::getenv("LORA_HDR_DUMP_BINS")) {
+            std::cout << "[hdr-dump-enter]" << std::endl;
+            static bool dumped_once = false;
+            if (!dumped_once) {
+                dumped_once = true;
+                std::fprintf(stderr, "[hdr-dump] candidate_start=%zu\n", start);
+                std::fprintf(stderr, " raw:");
+                for (size_t i = 0; i < raw_bins.size(); ++i) std::fprintf(stderr, " %u", raw_bins[i]);
+                std::fprintf(stderr, "\n corr:");
+                for (size_t i = 0; i < corr_bins.size(); ++i) std::fprintf(stderr, " %u", corr_bins[i]);
+                std::fprintf(stderr, "\n");
+                std::fflush(stderr);
+                std::cout << "[hdr-dump-stdout] candidate_start=" << start << std::endl;
+            }
+        }
+
         std::array<uint8_t, 10> hdr_nibbles{};
         size_t nib_idx = 0;
         auto decode_block = [&](size_t block_idx) -> bool {
@@ -241,8 +336,9 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
             std::vector<uint8_t> inter(cw_len * sf_app);
             for (uint32_t col = 0; col < cw_len; ++col) {
                 size_t idx = block_idx * 8 + col;
-                uint32_t gray_val = (raw_bins[idx] + N - 1u) & (N - 1u);
-                uint32_t sym = lora::rx::gr::gray_decode(gray_val) >> 2u;
+                uint32_t corr_symbol = corr_bins[idx];
+                uint32_t gray_decoded = lora::rx::gr::gray_decode(corr_symbol);
+                uint32_t sym = (sf > 2u) ? (gray_decoded >> 2u) : gray_decoded;
                 for (uint32_t row = 0; row < sf_app; ++row)
                     inter[col * sf_app + row] = static_cast<uint8_t>((sym >> (sf_app - 1u - row)) & 0x1u);
             }
