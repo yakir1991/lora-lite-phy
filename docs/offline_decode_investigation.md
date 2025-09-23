@@ -80,7 +80,7 @@ condition even though the samples contained a valid LoRa frame.
 
 ## Open follow-ups
 - The pipeline still relies on the caller to seed `Config.header_symbol_count` (currently set to 16 in `test_gr_pipeline`). We should
-  move this derivation inside the pipeline so Python bindings or future tools cannot forget to initialise it.【F:test_gr_pipeline.cpp†L26-L40】【F:src/rx/gr_pipeline.cpp†L349-L420】
+  move this derivation inside the pipeline so Python bindings or future tools cannot forget to initialise it.【F:tests/test_gr_pipeline.cpp†L26-L40】【F:src/rx/gr_pipeline.cpp†L349-L420】
 - Add regression coverage that runs the C++ pipeline across multiple payload lengths via the Python harness, ensuring the JSON
   parsing path exercised by `decode_offline_recording_final.py` stays healthy.【F:scripts/decode_offline_recording_final.py†L75-L209】
 - Convert the verbose debug prints that surfaced during this investigation (`Frame 0 missing payload symbols`, FFT dumps, etc.)
@@ -89,4 +89,4 @@ condition even though the samples contained a valid LoRa frame.
 ## Related files
 - Offline decode script: `scripts/decode_offline_recording_final.py`
 - GNU Radio compatible pipeline implementation: `src/rx/gr_pipeline.cpp`
-- Standalone CLI used by the script: `test_gr_pipeline.cpp`
+- Standalone CLI used by the script: `tests/test_gr_pipeline.cpp`

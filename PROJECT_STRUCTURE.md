@@ -23,7 +23,7 @@ lora-lite-phy/
 │           ├── 📄 header_decode.hpp # Header decode header
 │           └── 📄 utils.hpp         # Utils header
 ├── 📁 tests/                        # Test executables
-│   ├── 📄 test_gr_pipeline.cpp      # Main test executable
+│   ├── 📄 test_gr_pipeline.cpp      # Main CLI/test executable
 │   └── 📄 test_scheduler.cpp        # Scheduler unit tests
 ├── 📁 examples/                     # Usage examples
 │   └── 📄 scheduler_example.cpp     # Scheduler usage example
@@ -75,7 +75,7 @@ lora-lite-phy/
 - **`utils.cpp`** - Utility functions and helpers
 
 ### Tests (`tests/`)
-- **`test_gr_pipeline.cpp`** - Main test executable
+- **`test_gr_pipeline.cpp`** - Main CLI/test executable
 - **`test_scheduler.cpp`** - Scheduler unit tests
 
 ### Examples (`examples/`)
