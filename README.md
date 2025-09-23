@@ -184,7 +184,7 @@ Visual performance comparisons are available in `results/charts/`:
 
 ### Adding New Features
 
-1. **Scheduler**: Modify `src/rx/scheduler/scheduler.hpp` and `scheduler.cpp`
+1. **Scheduler**: Modify `include/lora/rx/scheduler.hpp` and `src/rx/scheduler/scheduler.cpp`
 2. **Primitives**: Add to `src/rx/gr/` directory
 3. **Tests**: Add to `tests/` directory
 4. **Documentation**: Update relevant docs
