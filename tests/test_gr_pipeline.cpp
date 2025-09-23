@@ -141,6 +141,38 @@ std::string bytes_to_hex(const std::vector<uint8_t>& data) {
     return oss.str();
 }
 
+bool verify_phase_aligned_payload(const FrameCtx& frame,
+                                  std::string_view expected_prefix,
+                                  std::string_view context) {
+    if (frame.h.detected_phase == 0) {
+        return true;
+    }
+
+    if (frame.p.payload_data.size() < expected_prefix.size()) {
+        std::cerr << context << ": payload shorter than expected prefix '" << expected_prefix << "'" << std::endl;
+        return false;
+    }
+
+    std::string actual_prefix;
+    actual_prefix.reserve(expected_prefix.size());
+    for (size_t i = 0; i < expected_prefix.size(); ++i) {
+        actual_prefix.push_back(static_cast<char>(frame.p.payload_data[i]));
+    }
+
+    if (actual_prefix != expected_prefix) {
+        std::vector<uint8_t> actual_bytes(frame.p.payload_data.begin(),
+                                          frame.p.payload_data.begin() + expected_prefix.size());
+        std::vector<uint8_t> expected_bytes(expected_prefix.begin(), expected_prefix.end());
+
+        std::cerr << context << ": payload prefix mismatch when detected_phase=" << frame.h.detected_phase
+                  << ". Expected '" << expected_prefix << "' (" << bytes_to_hex(expected_bytes)
+                  << ") but got '" << actual_prefix << "' (" << bytes_to_hex(actual_bytes) << ")" << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
 bool decode_vector_file(const std::string& path) {
     namespace fs = std::filesystem;
 
@@ -172,11 +204,24 @@ bool decode_vector_file(const std::string& path) {
     const FrameCtx& frame = frames.front();
     const bool header_ok = frame.h.ok;
     const bool payload_ok = frame.p.ok && !frame.p.payload_data.empty();
-    const bool success = header_ok && payload_ok;
+    std::string failure_reason;
+    if (!header_ok || !payload_ok) {
+        failure_reason = "payload decoding failed";
+    } else {
+        const std::string filename = file_path.filename().string();
+        const bool is_hello_vector = filename.find("hello_stupid_world") != std::string::npos;
+        if (is_hello_vector && frame.h.detected_phase != 0) {
+            if (!verify_phase_aligned_payload(frame, "hello", path)) {
+                failure_reason = "phase-adjusted payload prefix mismatch";
+            }
+        }
+    }
+
+    const bool success = failure_reason.empty();
 
     std::cout << "Success: " << (success ? "true" : "false") << std::endl;
     if (!success) {
-        std::cout << "Failure reason: payload decoding failed" << std::endl;
+        std::cout << "Failure reason: " << failure_reason << std::endl;
     }
 
     const bool sync_detected = frame.d.found;
@@ -296,9 +341,34 @@ bool run_scheduler_hello_world_test() {
     cfg.bandwidth_hz = 125000.0f;
 
     std::cout << "Testing scheduler with hello world vector: " << samples.size() << " samples" << std::endl;
-    run_pipeline_offline(samples.data(), samples.size(), cfg);
-    std::cout << "Hello world test completed successfully" << std::endl;
-    return true;
+    const auto frames = run_pipeline_offline(samples.data(), samples.size(), cfg);
+    if (frames.empty()) {
+        std::cerr << "Hello world test failed: decoder did not yield any frames" << std::endl;
+        return false;
+    }
+
+    const FrameCtx& frame = frames.front();
+    if (!frame.h.ok || !frame.p.ok || frame.p.payload_data.empty()) {
+        std::cerr << "Hello world test failed: payload decoding unsuccessful" << std::endl;
+        return false;
+    }
+
+    bool prefix_ok = true;
+    if (frame.h.detected_phase != 0) {
+        prefix_ok = verify_phase_aligned_payload(frame, "hello", test_path);
+        if (!prefix_ok) {
+            std::cerr << "Hello world test failed: payload prefix misaligned when detected_phase="
+                      << frame.h.detected_phase << std::endl;
+        }
+    } else {
+        std::cout << "Hello world vector reported zero detected_phase; prefix alignment check skipped." << std::endl;
+    }
+
+    if (prefix_ok) {
+        std::cout << "Hello world test completed successfully" << std::endl;
+    }
+
+    return prefix_ok;
 }
 
 } // namespace

@@ -194,11 +194,27 @@ struct Scheduler {
             if (ctx.h.detected_os > 0) {
                 const size_t detected_os = static_cast<size_t>(ctx.h.detected_os);
                 if (ctx.h.header_start_decim <= std::numeric_limits<size_t>::max() / detected_os) {
-                    size_t candidate = ctx.h.header_start_decim * detected_os;
-                    if (candidate < win_len) {
-                        refined_local = candidate;
+                    const size_t scaled_decim = ctx.h.header_start_decim * detected_os;
+                    if (scaled_decim <= static_cast<size_t>(std::numeric_limits<int64_t>::max())) {
+                        const int64_t scaled_signed = static_cast<int64_t>(scaled_decim);
+                        const int64_t phase_offset = static_cast<int64_t>(ctx.h.detected_phase);
+                        if (phase_offset > 0 && scaled_signed > std::numeric_limits<int64_t>::max() - phase_offset) {
+                            DEBUGF("DEMOD_HEADER: phase adjustment overflow (base=%zu phase=%d)", scaled_decim, ctx.h.detected_phase);
+                        } else {
+                            const int64_t candidate_signed = scaled_signed + phase_offset;
+                            if (candidate_signed >= 0) {
+                                const size_t candidate = static_cast<size_t>(candidate_signed);
+                                if (candidate < win_len) {
+                                    refined_local = candidate;
+                                } else {
+                                    DEBUGF("DEMOD_HEADER: refined header %zu outside window len=%zu", candidate, win_len);
+                                }
+                            } else {
+                                DEBUGF("DEMOD_HEADER: phase-adjusted header < 0 (base=%zu phase=%d)", scaled_decim, ctx.h.detected_phase);
+                            }
+                        }
                     } else {
-                        DEBUGF("DEMOD_HEADER: refined header %zu outside window len=%zu", candidate, win_len);
+                        DEBUGF("DEMOD_HEADER: scaled header_start_decim=%zu exceeds int64 range", scaled_decim);
                     }
                 } else {
                     DEBUGF("DEMOD_HEADER: overflow when scaling header_start_decim=%zu os=%zu", ctx.h.header_start_decim, detected_os);
@@ -208,7 +224,12 @@ struct Scheduler {
             }
 
             ctx.l.header_start_raw = refined_local;
-            ctx.frame_start_raw = win_head + refined_local; // absolute RAW aligned to detected timing
+            if (win_head <= std::numeric_limits<size_t>::max() - refined_local) {
+                ctx.frame_start_raw = win_head + refined_local; // absolute RAW aligned to detected timing
+            } else {
+                ctx.frame_start_raw = win_head;
+                DEBUGF("DEMOD_HEADER: overflow computing frame_start_raw (win_head=%zu refined=%zu)", win_head, refined_local);
+            }
             st = RxState::DEMOD_PAYLOAD;
             break;
         }
