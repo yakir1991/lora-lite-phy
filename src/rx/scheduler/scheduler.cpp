@@ -155,16 +155,17 @@ HeaderResult demod_header(const cfloat* raw, size_t raw_len, const RxConfig& cfg
 }
 
 // expected_payload_symbols - from existing code
-size_t expected_payload_symbols(uint16_t pay_len, uint8_t cr_idx, bool ldro, uint8_t sf) {
+size_t expected_payload_symbols(uint16_t pay_len, uint8_t cr_idx, bool ldro, uint8_t sf,
+                                bool has_crc, bool implicit_header) {
     // LoRa: nb_sym_pay = 8 + max( ceil( (8*PL - 4*SF + 28 + 16*CRC - 20*IH) / (4*(SF - 2*DE)) ) * (CR+4), 0 )
     const int SF = sf;
     const int DE = ldro ? 1 : 0;
-    const int IH = 0; // explicit header
-    const int CRC = 1; // assume CRC present
+    const int IH = implicit_header ? 1 : 0; // 0 = explicit header
+    const int CRC = has_crc ? 1 : 0;
     const int CR  = cr_idx; // 1..4
     int num = (8*int(pay_len) - 4*SF + 28 + 16*CRC - 20*IH);
     int den = 4 * (SF - 2*DE);
-    int ceil_term = (num <= 0) ? 0 : ( (num + den - 1) / den );
+    int ceil_term = (num <= 0) ? 0 : ((num + den - 1) / den);
     int nb_sym_pay = 8 + std::max(ceil_term * (CR + 4), 0);
     return size_t(nb_sym_pay);
 }
@@ -181,7 +182,8 @@ PayloadResult demod_payload(const cfloat* raw, size_t raw_len, const RxConfig& c
         return ret;
     }
 
-    ret.payload_syms = expected_payload_symbols(hdr.payload_len_bytes, hdr.cr_idx, hdr.ldro, hdr.sf);
+    ret.payload_syms = expected_payload_symbols(hdr.payload_len_bytes, hdr.cr_idx, hdr.ldro, hdr.sf,
+                                               hdr.has_crc);
 
     const size_t samples_per_symbol = N_per_symbol(cfg.sf) * std::max<uint32_t>(cfg.os, 1u);
     const size_t header_raw = dec_syms_to_raw_samples(hdr.header_syms, cfg);

@@ -188,17 +188,21 @@ void test_expected_payload_symbols() {
     std::cout << "Testing expected_payload_symbols..." << std::endl;
     
     // Test with different parameters
-    size_t symbols1 = expected_payload_symbols(10, 1, false, 7); // SF=7, CR=1, no LDRO
-    assert(symbols1 > 0);
-    
-    size_t symbols2 = expected_payload_symbols(10, 1, true, 7); // SF=7, CR=1, with LDRO
+    size_t symbols1 = expected_payload_symbols(10, 1, false, 7, true); // SF=7, CR=1, no LDRO, CRC on
+    assert(symbols1 == 28);
+
+    size_t symbols2 = expected_payload_symbols(10, 1, true, 7, true); // SF=7, CR=1, with LDRO, CRC on
     assert(symbols2 > 0);
-    
-    size_t symbols3 = expected_payload_symbols(10, 3, false, 8); // SF=8, CR=3, no LDRO
+
+    size_t symbols3 = expected_payload_symbols(10, 3, false, 8, true); // SF=8, CR=3, no LDRO, CRC on
     assert(symbols3 > 0);
-    
+
     // LDRO should affect the calculation
     assert(symbols1 != symbols2);
+
+    size_t symbols_no_crc = expected_payload_symbols(10, 1, false, 7, false); // CRC off
+    assert(symbols_no_crc == 23);
+    assert(symbols_no_crc < symbols1);
     
     std::cout << "expected_payload_symbols tests passed!" << std::endl;
 }
