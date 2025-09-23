@@ -57,7 +57,7 @@ cmake --build build
 ### Build Artifacts
 
 1. **`liblora_gr.a`** – Static library with scheduler and primitives
-2. **`test_gr_pipeline`** – Main test executable
+2. **`test_gr_pipeline`** – Main CLI/test executable (implemented in `tests/test_gr_pipeline.cpp`)
 3. **`test_scheduler`** – Scheduler unit tests
 4. **`scheduler_example`** – Usage example
 
