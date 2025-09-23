@@ -19,6 +19,18 @@ import numpy as np
 
 HEX_VALUE_RE = re.compile(r"^[0-9a-fA-F]+$")
 
+HDR_DEBUG_RE = re.compile(
+    r"\[DEBUG\] HDR: ok=(?P<ok>[01]) sf=(?P<sf>\d+) cr=(?P<cr>\d+) ldro=(?P<ldro>\d+) "
+    r"has_crc=(?P<has_crc>[01]) pay_len=(?P<payload_len>\d+)"
+)
+HEX_DEBUG_RE = re.compile(r"\[DEBUG\] Hex:\s*(?P<hex>.+)")
+TEXT_DEBUG_RE = re.compile(r"\[DEBUG\] Text:\s*(?P<text>.+)")
+PAY_DEBUG_RE = re.compile(
+    r"\[DEBUG\] PAY: ok=(?P<ok>[01]) payload_syms=(?P<payload_syms>\d+) "
+    r"consumed_raw=(?P<consumed_raw>\d+) crc_ok=(?P<crc_ok>[01])"
+)
+EMIT_DEBUG_RE = re.compile(r"\[DEBUG\] EMIT:.*crc_ok=(?P<crc_ok>[01])")
+
 
 def parse_int_field(text: str) -> int:
     """Parse an integer field that may be rendered in decimal or hexadecimal."""
@@ -231,50 +243,145 @@ def process_pipeline_result(result: Dict[str, Any]) -> List[FrameResult]:
     
     # Check if this is new scheduler format
     if "performance" in result:
-        # New scheduler format - extract individual payloads from debug output
         raw_output = result.get("raw_output", "")
-        
-        # Look for individual payload decodings in the debug output
-        import re
-        payload_matches = re.findall(r'\[DEBUG\] Text: (.+)', raw_output)
-        
-        if payload_matches:
-            # Create frames for each decoded payload
-            for i, payload_text in enumerate(payload_matches):
-                payload_bytes = payload_text.encode("utf-8")
-                
-                frame = FrameResult(
-                    index=i,
+        scheduler_frames: List[FrameResult] = []
+        current_frame: Optional[Dict[str, Any]] = None
+
+        def finalize_current_frame() -> None:
+            nonlocal current_frame
+            if not current_frame:
+                return
+
+            header = current_frame.get("header", {}) if isinstance(current_frame.get("header"), dict) else {}
+            header_payload_len = header.get("payload_len")
+            payload_hex: List[int] = list(current_frame.get("payload_hex", []))
+            if header_payload_len is not None and isinstance(header_payload_len, int):
+                if header_payload_len < len(payload_hex):
+                    payload_hex = payload_hex[:header_payload_len]
+                elif header_payload_len > len(payload_hex):
+                    # Pad with zeros if the scheduler truncated debug output
+                    payload_hex.extend([0] * (header_payload_len - len(payload_hex)))
+
+            payload_bytes = bytes(payload_hex)
+            if not payload_bytes and current_frame.get("text"):
+                payload_bytes = current_frame["text"].encode("utf-8")
+
+            message_text: Optional[str] = current_frame.get("text")
+            if payload_bytes:
+                trimmed_bytes = payload_bytes.rstrip(b"\x00")
+                try:
+                    decoded = trimmed_bytes.decode("utf-8")
+                except UnicodeDecodeError:
+                    decoded = trimmed_bytes.decode("latin-1", errors="replace")
+                message_text = decoded
+
+            header_info: Dict[str, Any] = {}
+            if header:
+                header_info = {
+                    "sf": header.get("sf"),
+                    "cr": header.get("cr"),
+                    "ldro": header.get("ldro"),
+                    "has_crc": header.get("has_crc"),
+                    "payload_len": header_payload_len,
+                    "header_ok": header.get("ok"),
+                }
+
+            frame_sync_info: Dict[str, Any] = {"format": "new_scheduler"}
+            if "payload_syms" in current_frame:
+                frame_sync_info["payload_syms"] = current_frame["payload_syms"]
+            if "consumed_raw" in current_frame:
+                frame_sync_info["consumed_raw"] = current_frame["consumed_raw"]
+
+            scheduler_frames.append(
+                FrameResult(
+                    index=len(scheduler_frames),
                     payload=payload_bytes,
-                    crc_valid=True,  # Assume CRC is OK for now
-                    has_crc=True,
-                    message_text=payload_text,
-                    frame_sync_info={"format": "new_scheduler", "frame_index": i},
-                    header_info={"payload_length": len(payload_bytes)},
+                    crc_valid=current_frame.get("crc_ok"),
+                    has_crc=header.get("has_crc") if header else None,
+                    message_text=message_text,
+                    frame_sync_info=frame_sync_info,
+                    header_info=header_info,
                 )
-                
-                frames.append(frame)
-        else:
-            # Fallback to summary frame if no individual payloads found
-            frame_count = result.get("frame_count", 0)
-            performance = result.get("performance", "")
-            operations = result.get("operations", "")
-            
-            summary_text = f"Scheduler processed {frame_count} frames. Performance: {performance}. Operations: {operations}"
-            payload_bytes = summary_text.encode("utf-8")
-            
-            frame = FrameResult(
-                index=0,
-                payload=payload_bytes,
-                crc_valid=None,
-                has_crc=None,
-                message_text=summary_text,
-                frame_sync_info={"format": "new_scheduler"},
-                header_info={"frame_count": frame_count, "performance": performance, "operations": operations},
             )
-            
-            frames.append(frame)
-        
+
+            current_frame = None
+
+        for line in raw_output.splitlines():
+            stripped = line.strip()
+            if not stripped:
+                continue
+
+            hdr_match = HDR_DEBUG_RE.match(stripped)
+            if hdr_match:
+                finalize_current_frame()
+                header = {
+                    "ok": hdr_match.group("ok") == "1",
+                    "sf": int(hdr_match.group("sf")),
+                    "cr": int(hdr_match.group("cr")),
+                    "ldro": int(hdr_match.group("ldro")),
+                    "has_crc": hdr_match.group("has_crc") == "1",
+                    "payload_len": int(hdr_match.group("payload_len")),
+                }
+                current_frame = {"header": header, "payload_hex": []}
+                continue
+
+            if current_frame is None:
+                continue
+
+            hex_match = HEX_DEBUG_RE.match(stripped)
+            if hex_match:
+                hex_tokens = hex_match.group("hex").split()
+                for token in hex_tokens:
+                    try:
+                        current_frame.setdefault("payload_hex", []).append(int(token, 16))
+                    except ValueError:
+                        continue
+                continue
+
+            text_match = TEXT_DEBUG_RE.match(stripped)
+            if text_match:
+                current_frame["text"] = text_match.group("text")
+                continue
+
+            pay_match = PAY_DEBUG_RE.match(stripped)
+            if pay_match:
+                current_frame["payload_syms"] = int(pay_match.group("payload_syms"))
+                current_frame["consumed_raw"] = int(pay_match.group("consumed_raw"))
+                current_frame["crc_ok"] = pay_match.group("crc_ok") == "1"
+                continue
+
+            emit_match = EMIT_DEBUG_RE.match(stripped)
+            if emit_match:
+                if "crc_ok" not in current_frame:
+                    current_frame["crc_ok"] = emit_match.group("crc_ok") == "1"
+                finalize_current_frame()
+                continue
+
+        finalize_current_frame()
+
+        if scheduler_frames:
+            return scheduler_frames
+
+        # Fallback to summary frame if no individual payloads found
+        frame_count = result.get("frame_count", 0)
+        performance = result.get("performance", "")
+        operations = result.get("operations", "")
+
+        summary_text = f"Scheduler processed {frame_count} frames. Performance: {performance}. Operations: {operations}"
+        payload_bytes = summary_text.encode("utf-8")
+
+        frame = FrameResult(
+            index=0,
+            payload=payload_bytes,
+            crc_valid=None,
+            has_crc=None,
+            message_text=summary_text,
+            frame_sync_info={"format": "new_scheduler"},
+            header_info={"frame_count": frame_count, "performance": performance, "operations": operations},
+        )
+
+        frames.append(frame)
+
         return frames
     
     # Original format
