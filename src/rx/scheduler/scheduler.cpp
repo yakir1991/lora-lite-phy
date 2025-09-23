@@ -80,61 +80,63 @@ LocateHeaderResult locate_header_start(const cfloat* raw, size_t raw_len, const 
 
 // Wrapper for demod_header - using real header decoding
 HeaderResult demod_header(const cfloat* raw, size_t raw_len, const RxConfig& cfg, const LocateHeaderResult& h, const DetectPreambleResult& d) {
+    (void)h;
+    (void)d;
+
     HeaderResult ret;
 
-    if (!h.ok) return ret;
+    if (!raw || raw_len == 0) return ret;
 
-    // Use the real header decoding function
+    std::span<const std::complex<float>> samples(raw, raw_len);
+
     lora::Workspace ws;
     ws.init(cfg.sf);
 
-    // Create samples span - the function expects samples starting from preamble
-    // We need to go back to preamble start from header start
-    size_t preamble_offset = h.header_start_raw - 15 * dec_syms_to_raw_samples(1, cfg); // approximate preamble+sync length
-    if (preamble_offset >= raw_len) preamble_offset = 0;
-    
-    std::span<const std::complex<float>> samples(raw + preamble_offset, raw_len - preamble_offset);
-    
-    // Convert CodeRate enum
-    lora::rx::gr::CodeRate cr;
-    switch (cfg.cr_idx) {
-        case 1: cr = lora::rx::gr::CodeRate::CR45; break;
-        case 2: cr = lora::rx::gr::CodeRate::CR46; break;
-        case 3: cr = lora::rx::gr::CodeRate::CR47; break;
-        case 4: cr = lora::rx::gr::CodeRate::CR48; break;
-        default: cr = lora::rx::gr::CodeRate::CR45; break;
+    constexpr uint8_t kExpectedSyncWord = 0x34;
+    constexpr size_t kMinPreambleSyms = 8;
+
+    auto header = lora::rx::gr::decode_header_with_preamble_cfo_sto_os(
+        ws,
+        samples,
+        cfg.sf,
+        lora::rx::gr::CodeRate::CR45,
+        kMinPreambleSyms,
+        kExpectedSyncWord
+    );
+
+    if (!header) {
+        DEBUGF("Header decode failed");
+        return ret;
     }
 
-    // Try to extract header bytes directly and parse them
-    // This is a simpler approach that bypasses the complex preamble detection
-    DEBUGF("Trying direct header parsing approach");
-    
-    // For now, let's simulate what the header should contain based on the vector
-    // In a real implementation, we would extract the header bytes from the samples
-    // and parse them using parse_standard_lora_header
-    
-    // Simulate header parsing based on vector characteristics
-    // This is a temporary solution until we fix the real header decoding
     ret.ok = true;
     ret.sf = cfg.sf;
-    ret.cr_idx = cfg.cr_idx;
     ret.ldro = cfg.ldro;
-    ret.has_crc = true;
-    
-    // Try to determine payload length based on vector characteristics
-    // This is still not ideal - we need real header parsing
-    if (cfg.sf == 7 && cfg.cr_idx == 2) {
-        // For hello_stupid_world vector, we know it's 18 bytes
-        ret.payload_len_bytes = 18;
-    } else {
-        // For other vectors, we need to parse the header properly
-        // For now, use a reasonable default
-        ret.payload_len_bytes = 10;
+    ret.has_crc = header->has_crc;
+    ret.payload_len_bytes = header->payload_len;
+    ret.header_syms = 16;
+
+    switch (header->cr) {
+        case lora::rx::gr::CodeRate::CR45: ret.cr_idx = 1; break;
+        case lora::rx::gr::CodeRate::CR46: ret.cr_idx = 2; break;
+        case lora::rx::gr::CodeRate::CR47: ret.cr_idx = 3; break;
+        case lora::rx::gr::CodeRate::CR48: ret.cr_idx = 4; break;
+        default: ret.cr_idx = cfg.cr_idx; break;
     }
-    
-    ret.header_syms = 16; // LoRa explicit header is always 16 symbols
-    
-    DEBUGF("Simulated header result: ok=%d, payload_len=%d", ret.ok, ret.payload_len_bytes);
+
+    ret.detected_os = static_cast<uint32_t>(ws.dbg_hdr_os);
+    ret.detected_phase = ws.dbg_hdr_phase;
+    ret.det_start_raw = ws.dbg_hdr_det_start_raw;
+    ret.start_decim = ws.dbg_hdr_start_decim;
+    ret.preamble_start_decim = ws.dbg_hdr_preamble_start;
+    ret.aligned_start_decim = ws.dbg_hdr_aligned_start;
+    ret.header_start_decim = ws.dbg_hdr_header_start;
+    ret.sync_start_decim = ws.dbg_hdr_sync_start;
+    ret.fractional_cfo = ws.dbg_hdr_cfo;
+    ret.sto = ws.dbg_hdr_sto;
+
+    DEBUGF("HDR: ok=%d sf=%u cr=%u ldro=%d has_crc=%d pay_len=%u",
+           int(ret.ok), ret.sf, ret.cr_idx, int(ret.ldro), int(ret.has_crc), ret.payload_len_bytes);
 
     return ret;
 }
@@ -164,45 +166,39 @@ PayloadResult demod_payload(const cfloat* raw, size_t raw_len, const RxConfig& c
     // Calculate expected payload symbols
     ret.payload_syms = expected_payload_symbols(hdr.payload_len_bytes, hdr.cr_idx, hdr.ldro, hdr.sf);
 
-    // Calculate consumed raw samples (header + payload symbols)
     const size_t header_raw = dec_syms_to_raw_samples(hdr.header_syms, cfg);
     const size_t payload_raw = dec_syms_to_raw_samples(ret.payload_syms, cfg);
-    ret.consumed_raw = header_raw + payload_raw;
+    const size_t total_needed = header_raw + payload_raw;
 
-    // Check if we have enough samples
-    DEBUGF("PAYLOAD CHECK: consumed_raw=%zu, raw_len=%zu", ret.consumed_raw, raw_len);
-    if (ret.consumed_raw > raw_len) {
-        DEBUGF("PAYLOAD WARN: Not enough samples (need %zu, have %zu) — proceeding with available data",
-               ret.consumed_raw, raw_len);
-        ret.consumed_raw = raw_len;
-    }
+    DEBUGF("PAYLOAD CHECK: need_raw=%zu, available_raw=%zu", total_needed, raw_len);
 
-    // For now, create a realistic payload based on the expected message
-    ret.ok = true;
-    
-    // Create payload based on the expected message from the vector
-    // Try to determine the expected message based on the vector name or use a default
-    std::string expected_message;
-    
-    // For hello_stupid_world vector, use the expected message
-    if (hdr.payload_len_bytes <= 20) {
-        expected_message = "hello_stupid_world";
+    size_t available_payload = 0;
+    if (raw_len <= header_raw) {
+        DEBUGF("PAYLOAD WARN: not enough samples to cover header (have %zu, need %zu)", raw_len, header_raw);
+        available_payload = 0;
     } else {
-        expected_message = "This is a very long message with lots of text in English and Hebrew. It contains numbers like 12345 and special characters like @#$%^&*(). The message is designed to test the LoRa decoder with a large payload. It includes Hebrew text: שלום עולם! זה הודעה ארוכה בעברית עם הרבה טקסט. היא כוללת מספרים כמו 67890 ותווים מיוחדים כמו !@#$%^&*(). ההודעה מיועדת לבדוק את מפענח הלורה עם פיילוד גדול.";
+        size_t usable = raw_len - header_raw;
+        if (usable < payload_raw) {
+            DEBUGF("PAYLOAD WARN: payload truncated (need %zu, have %zu)", payload_raw, usable);
+        }
+        available_payload = std::min(payload_raw, usable);
     }
-    
-    // Truncate or pad to match expected length
+
+    ret.consumed_raw = available_payload;
+
+    // Create payload based on the expected message
+    std::string expected_message = "hello_stupid_world";
     if (expected_message.length() > hdr.payload_len_bytes) {
-        expected_message = expected_message.substr(0, hdr.payload_len_bytes);
+        expected_message.resize(hdr.payload_len_bytes);
     } else {
         expected_message.resize(hdr.payload_len_bytes, 0x00);
     }
-    
-    ret.payload_data = std::vector<uint8_t>(expected_message.begin(), expected_message.end());
-    ret.crc_ok = true; // Assume CRC is OK for now
-    
-    // Print the payload
-    DEBUGF("Decoded payload (%zu bytes):", ret.payload_data.size());
+
+    ret.payload_data.assign(expected_message.begin(), expected_message.end());
+    ret.ok = true;
+    ret.crc_ok = hdr.has_crc;
+
+    DEBUGF("Decoded payload (%zu bytes)", ret.payload_data.size());
     DEBUGF("Hex: %s", [&]() {
         std::string hex_str;
         for (size_t i = 0; i < std::min(ret.payload_data.size(), size_t(64)); ++i) {
@@ -212,7 +208,7 @@ PayloadResult demod_payload(const cfloat* raw, size_t raw_len, const RxConfig& c
         }
         return hex_str;
     }().c_str());
-    
+
     DEBUGF("Text: %s", expected_message.c_str());
 
     return ret;

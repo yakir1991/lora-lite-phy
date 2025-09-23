@@ -5,24 +5,28 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-set(LIQUID_LIB "")
-set(LIQUID_INCLUDE_DIR "")
-find_library(
-    LIQUID_LIB
-    NAMES liquid
-    PATHS
-        ${CMAKE_CURRENT_SOURCE_DIR}/local_lib
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/liquid-dsp/build
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/liquid-dsp
-    PATH_SUFFIXES "" lib
-    NO_DEFAULT_PATH
-)
+if(NOT DEFINED LIQUID_LIB OR LIQUID_LIB STREQUAL "")
+    unset(LIQUID_LIB CACHE)
+    find_library(
+        LIQUID_LIB
+        NAMES liquid
+        PATHS
+            ${CMAKE_CURRENT_SOURCE_DIR}/local_lib
+            ${CMAKE_CURRENT_SOURCE_DIR}/external/liquid-dsp/build
+            ${CMAKE_CURRENT_SOURCE_DIR}/external/liquid-dsp
+            /usr/lib
+            /usr/lib/x86_64-linux-gnu
+        PATH_SUFFIXES "" lib
+        NO_DEFAULT_PATH
+    )
+endif()
 
-if(NOT LIQUID_LIB)
+if(NOT DEFINED LIQUID_LIB OR LIQUID_LIB STREQUAL "")
+    unset(LIQUID_LIB CACHE)
     find_library(LIQUID_LIB NAMES liquid)
 endif()
 
-if(NOT LIQUID_LIB)
+if(NOT DEFINED LIQUID_LIB OR LIQUID_LIB STREQUAL "")
     set(LIQUID_SUBMODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/liquid-dsp)
     if(EXISTS ${LIQUID_SUBMODULE_DIR}/CMakeLists.txt)
         message(STATUS "liquid-dsp not found on host; building from ${LIQUID_SUBMODULE_DIR}")
