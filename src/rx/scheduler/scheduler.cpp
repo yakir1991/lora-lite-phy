@@ -4,6 +4,7 @@
 #include <cstring>
 #include <vector>
 #include <chrono>
+#include <string>
 
 #include "lora/rx/gr/primitives.hpp"
 #include "lora/rx/gr/header_decode.hpp"
