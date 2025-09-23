@@ -7,7 +7,7 @@ lora-lite-phy/
 ├── 📁 src/                          # Source code
 │   ├── 📁 rx/
 │   │   ├── 📁 scheduler/            # Scheduler-based receiver
-│   │   │   ├── 📄 scheduler.hpp     # Scheduler header
+│   │   │   ├── 📄 scheduler.hpp     # Compatibility shim to public header
 │   │   │   └── 📄 scheduler.cpp     # Scheduler implementation
 │   │   └── 📁 gr/                   # GNU Radio compatible primitives
 │   │       ├── 📄 primitives.cpp    # Core primitives
@@ -66,8 +66,8 @@ lora-lite-phy/
 ## 🎯 Key Components
 
 ### Core Scheduler (`src/rx/scheduler/`)
-- **`scheduler.hpp`** - Main scheduler class and data structures
 - **`scheduler.cpp`** - Scheduler implementation with state machine
+- **Public header** – Located at `include/lora/rx/scheduler.hpp`
 
 ### GNU Radio Primitives (`src/rx/gr/`)
 - **`primitives.cpp`** - Core signal processing primitives
