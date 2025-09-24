@@ -32,6 +32,10 @@ std::vector<FrameOut> Receiver::run() {
         if (!det.found) return {};
         ctx_.preamble_start_raw = det.start_raw;
         ctx_.os = det.os; ctx_.phase = det.phase;
+        if (ctx_.cfg.debug_detection) {
+            std::fprintf(stderr, "[detect] preamble raw=%zu os=%d phase=%d\n",
+                         ctx_.preamble_start_raw, ctx_.os, ctx_.phase);
+        }
         ctx_.state = RxState::LOCATE_HEADER;
     }
 
@@ -69,13 +73,35 @@ std::vector<FrameOut> Receiver::run() {
     out.start_sample = ctx_.preamble_start_raw;
     out.os = ctx_.os;
     out.phase = ctx_.phase;
+    out.cfo_fraction = eps;
+    out.cfo_integer = cfo_int;
+    out.sfd_found = sfd_found;
+    out.sfd_decim_pos = sfd_pos;
+    if (ctx_.cfg.debug_detection) {
+        std::fprintf(stderr, "[detect] frac CFO=%.6f bins int CFO=%d\n", eps, cfo_int);
+        if (sfd_found) {
+            std::fprintf(stderr, "[detect] SFD at decim=%zu (hdr start=%zu)\n", sfd_pos, hdr_start);
+        } else {
+            std::fprintf(stderr, "[detect] SFD fallback hdr start=%zu\n", hdr_start);
+        }
+    }
 
     // Helper lambda to demod+decode header from a given decim position
     const uint32_t sf = ctx_.cfg.sf;
     const uint32_t sf_app = (sf > 2u) ? (sf - 2u) : sf;
     const uint32_t cw_len = 8u; // CR4/8 for header
     auto gray_to_bin = [](uint32_t g){ uint32_t b = g; for (int s=1; s<16; ++s) b ^= (g>>s); return b; };
-    struct HdrTry { std::vector<uint32_t> bins; std::vector<uint8_t> nibbles; int len{-1}; int cr{-1}; bool has_crc{false}; bool crc_ok{false}; int dist{1000000000}; };
+    struct HdrTry {
+        std::vector<uint32_t> bins;
+        std::vector<uint8_t> nibbles;
+        std::vector<uint8_t> inter_bits;
+        std::vector<uint8_t> deinter_bits;
+        int len{-1};
+        int cr{-1};
+        bool has_crc{false};
+        bool crc_ok{false};
+        int dist{1000000000};
+    };
     auto try_decode = [&](size_t pos)->HdrTry{
         HdrTry ht;
         // Demod 8 symbols
@@ -107,6 +133,10 @@ std::vector<FrameOut> Receiver::run() {
                 deinter[static_cast<size_t>(dest_row) * cw_len + col] = inter[col * sf_app + row];
             }
         }
+        if (ctx_.cfg.capture_header_bits) {
+            ht.inter_bits = inter;
+            ht.deinter_bits = deinter;
+        }
         // Hamming(8,4)
         ht.nibbles.reserve(sf_app);
         int total_dist = 0;
@@ -123,7 +153,7 @@ std::vector<FrameOut> Receiver::run() {
         ht.dist = total_dist;
         if (ht.nibbles.size() >= 5) {
             // Try all row rotations to account for potential row index offset
-            bool any_ok=false; int best_err=1e9; int best_rot=0; int best_len=-1; int best_cr=-1; bool best_has_crc=false; bool best_crc_ok=false;
+            int best_err=1e9; int best_rot=0; int best_len=-1; int best_cr=-1; bool best_has_crc=false; bool best_crc_ok=false;
             for (uint32_t rot = 0; rot < sf_app; ++rot) {
                 auto nib = ht.nibbles; // copy
                 // rotate left by rot
@@ -144,7 +174,7 @@ std::vector<FrameOut> Receiver::run() {
                 uint8_t calc = static_cast<uint8_t>((c4 << 4) | (c3 << 3) | (c2 << 2) | (c1 << 1) | c0);
                 int err = static_cast<int>(hdr_chk) - static_cast<int>(calc);
                 bool ok = (hdr_chk == calc) && (len_byte > 0);
-                if (ok) { best_rot = static_cast<int>(rot); best_len = len_byte; best_cr = cr; best_has_crc = has_crc; best_crc_ok = true; any_ok=true; break; }
+                if (ok) { best_rot = static_cast<int>(rot); best_len = len_byte; best_cr = cr; best_has_crc = has_crc; best_crc_ok = true; break; }
                 int adiff = std::abs(err);
                 if (adiff < best_err) { best_err = adiff; best_rot = static_cast<int>(rot); best_len = len_byte; best_cr = cr; best_has_crc = has_crc; }
             }
@@ -175,6 +205,12 @@ std::vector<FrameOut> Receiver::run() {
         for (int k = static_cast<int>(sf) - 1; k >= 0; --k)
             out.header_bits.push_back( (b >> k) & 1u );
     }
+    if (ctx_.cfg.capture_header_bits) {
+        out.header_rows = sf_app;
+        out.header_cols = cw_len;
+        out.header_interleaver_bits = best.inter_bits;
+        out.header_deinterleaver_bits = best.deinter_bits;
+    }
     // Store parsed header fields
     out.payload_len = best.len;
     out.cr_idx = best.cr;
@@ -184,126 +220,200 @@ std::vector<FrameOut> Receiver::run() {
     size_t i = best_pos + 8*N;
 
     // Payload decode path
-    if (best.cr >= 1 && best.cr <= 4 && best.len > 0) {
-        const int cr_app = best.cr; // coding rate index maps to CR=4/(4+cr)
-        const int cw_len = 4 + cr_app; // bits per codeword row
-    const uint32_t rows = ctx_.cfg.sf; // rows in interleaver for payload (LDRO not handled here)
-        // Number of codeword columns = number of payload symbols to cover required bytes (nibbles)
-        // Each column contributes one bit to each row; 1 symbol -> rows bits -> after deinterleaving produce rows codewords of cw_len.
-        // We need 2*len bytes including potential CRC later, but we don't know CRC yet; demod until we at least fill payload length + optional CRC bytes
-        const int expected_bytes = best.len + (best.has_crc ? 2 : 0);
+    if (best.cr >= 1 && best.cr <= 4 && best.len >= 0) {
+        const int cr_app = best.cr;
+        const int cw_len = 4 + cr_app;
+        const uint32_t rows = ctx_.cfg.sf;
+        const int expected_bytes = std::max(best.len, 0) + (best.has_crc ? 2 : 0);
         const int expected_nibbles = expected_bytes * 2;
-        // Each deinterleaved pass over rows produces rows nibbles (one per row). We need expected_nibbles total.
-        // For each block of cw_len symbols we can deinterleave into rows codewords of cw_len bits; but in LoRa, interleaver length is cw_len columns per codeword group.
-        // We iterate symbol by symbol, filling inter[col][row] = bit, then after cw_len columns, deinterleave rows and Hamming-decode to 1 nibble per row.
-    std::vector<uint8_t> inter(static_cast<size_t>(rows) * cw_len);
         auto gray_to_bin = [](uint32_t g){ uint32_t b = g; for (int s=1; s<16; ++s) b ^= (g>>s); return b; };
-    auto push_decode_block = [&](std::vector<uint8_t>& nibbles_out){
-            // Deinterleave diagonally: dest_row = mod(col - row - 1, rows)
+        std::vector<uint8_t> inter(static_cast<size_t>(rows) * cw_len, 0u);
+
+        auto push_decode_block = [&](std::vector<uint8_t>& nibbles_out, size_t symbol_offset) {
             std::vector<uint8_t> deinter(static_cast<size_t>(rows) * cw_len);
             for (int col = 0; col < cw_len; ++col) {
                 for (uint32_t row = 0; row < rows; ++row) {
-                    int dest_row = ( (col - static_cast<int>(row) - 1) % static_cast<int>(rows) + static_cast<int>(rows) ) % static_cast<int>(rows);
+                    int dest_row = ((col - static_cast<int>(row) - 1) % static_cast<int>(rows) + static_cast<int>(rows)) % static_cast<int>(rows);
                     deinter[static_cast<size_t>(dest_row) * cw_len + col] = inter[static_cast<size_t>(col) * rows + row];
                 }
             }
-            // For each row, take cw_len bits MSB-first and Hamming-decode to nibble
+            if (ctx_.cfg.capture_payload_blocks) {
+                FrameOut::PayloadBlockBits block;
+                block.rows = rows;
+                block.cols = static_cast<uint32_t>(cw_len);
+                block.symbol_offset = symbol_offset;
+                block.inter_bits = inter;
+                block.deinter_bits = deinter;
+                out.payload_blocks_bits.push_back(std::move(block));
+            }
             for (uint32_t r = 0; r < rows; ++r) {
                 uint8_t bits8[8]{};
                 for (int c = 0; c < cw_len; ++c) bits8[c] = deinter[r * cw_len + c] & 1u;
-                bool corr=false; int dist=0;
+                bool corr = false; int dist = 0;
                 uint8_t nib = hamming_payload_decode_bits_msb(bits8, cw_len, &corr, &dist);
-                // Reverse bit order in nibble to match GR implementation (MSB<=>LSB)
                 uint8_t rev = static_cast<uint8_t>(((nib & 0x1) << 3) | ((nib & 0x2) << 1) | ((nib & 0x4) >> 1) | ((nib & 0x8) >> 3));
-                nibbles_out.push_back(rev & 0x0F);
+                nibbles_out.push_back(static_cast<uint8_t>(rev & 0x0F));
             }
         };
 
         std::vector<uint8_t> nibbles;
-        nibbles.reserve(static_cast<size_t>(expected_nibbles));
+        if (expected_nibbles > 0) nibbles.reserve(static_cast<size_t>(expected_nibbles));
+        size_t payload_symbol_index = 0;
         int col = 0;
-        while (static_cast<int>(nibbles.size()) < expected_nibbles && i + N <= decim.size()) {
-            // Demod one symbol
+        while (expected_nibbles > 0 && static_cast<int>(nibbles.size()) < expected_nibbles && i + N <= decim.size()) {
             auto dr = demod_symbol_peak_fft_best_shift(std::span<const std::complex<float>>(decim.data()+i, N+4 <= decim.size()-i ? N+4 : N), std::span<const std::complex<float>>(down_.data(), N), eps, 2);
             i += N;
             uint32_t bin = dr.bin;
-            bin = (bin + N - (static_cast<uint32_t>( ( (cfo_int % static_cast<int>(N)) + static_cast<int>(N) ) % static_cast<int>(N) ))) % N;
+            bin = (bin + N - (static_cast<uint32_t>(((cfo_int % static_cast<int>(N)) + static_cast<int>(N)) % static_cast<int>(N)))) % N;
             out.payload_bins.push_back(bin);
-            // Map to Gray->bin, header reduced-rate does not apply; take msb-first sf bits
             uint32_t Nsym = (1u << ctx_.cfg.sf);
             uint32_t b_bin = gray_to_bin(bin);
-            // Apply LoRa symbol alignment: shift by -1 after Gray decode, like header
             uint32_t s_adj = (b_bin + Nsym - 1u) % Nsym;
             for (uint32_t row = 0; row < rows; ++row) {
                 uint32_t bit = (s_adj >> (ctx_.cfg.sf - 1u - row)) & 1u;
                 inter[static_cast<size_t>(col) * rows + row] = static_cast<uint8_t>(bit);
             }
-            col++;
+            ++col;
+            ++payload_symbol_index;
             if (col == cw_len) {
-                push_decode_block(nibbles);
+                push_decode_block(nibbles, payload_symbol_index - static_cast<size_t>(cw_len));
                 col = 0;
+                std::fill(inter.begin(), inter.end(), 0u);
             }
         }
-        // Truncate to requested nibbles
-        if (static_cast<int>(nibbles.size()) > expected_nibbles) nibbles.resize(expected_nibbles);
-        // Assemble bytes
-        out.payload_bytes.clear(); out.payload_bytes.reserve(expected_bytes);
-        for (int k = 0; k + 1 < expected_nibbles; k += 2) {
+        if (expected_nibbles >= 0 && static_cast<int>(nibbles.size()) > expected_nibbles) nibbles.resize(expected_nibbles);
+
+        out.payload_bytes.clear();
+        if (expected_bytes > 0) out.payload_bytes.reserve(expected_bytes);
+        for (int k = 0; k + 1 < static_cast<int>(nibbles.size()); k += 2) {
             uint8_t low = static_cast<uint8_t>(nibbles[k] & 0x0F);
-            uint8_t high = static_cast<uint8_t>(nibbles[k+1] & 0x0F);
-            uint8_t byte = static_cast<uint8_t>((high << 4) | low);
-            out.payload_bytes.push_back(byte);
+            uint8_t high = static_cast<uint8_t>(nibbles[k + 1] & 0x0F);
+            out.payload_bytes.push_back(static_cast<uint8_t>((high << 4) | low));
         }
-        // Dewhitening: XOR only first payload_len bytes with whitening sequence; leave CRC bytes unchanged
-        static const uint8_t whitening_seq[] = {
-            0xFF,0xFE,0xFC,0xF8,0xF0,0xE1,0xC2,0x85,0x0B,0x17,0x2F,0x5E,0xBC,0x78,0xF1,0xE3,
-            0xC6,0x8D,0x1A,0x34,0x68,0xD0,0xA0,0x40,0x80,0x01,0x02,0x04,0x08,0x11,0x23,0x47,
-            0x8E,0x1C,0x38,0x71,0xE2,0xC4,0x89,0x12,0x25,0x4B,0x97,0x2E,0x5C,0xB8,0x70,0xE0,
-            0xC0,0x81,0x03,0x06,0x0C,0x19,0x32,0x64,0xC9,0x92,0x24,0x49,0x93,0x26,0x4D,0x9B,
-            0x37,0x6E,0xDC,0xB9,0x72,0xE4,0xC8,0x90,0x20,0x41,0x82,0x05,0x0A,0x15,0x2B,0x56,
-            0xAD,0x5B,0xB6,0x6D,0xDA,0xB5,0x6B,0xD6,0xAC,0x59,0xB2,0x65,0xCB,0x96,0x2C,0x58,
-            0xB0,0x61,0xC3,0x87,0x0F,0x1F,0x3E,0x7D,0xFB,0xF6,0xED,0xDB,0xB7,0x6F,0xDE,0xBD,
-            0x7A,0xF5,0xEB,0xD7,0xAE,0x5D,0xBA,0x74,0xE8,0xD1,0xA2,0x44,0x88,0x10,0x21,0x43,
-            0x86,0x0D,0x1B,0x36,0x6C,0xD8,0xB1,0x63,0xC7,0x8F,0x1E,0x3C,0x79,0xF3,0xE7,0xCE,
-            0x9C,0x39,0x73,0xE6,0xCC,0x98,0x31,0x62,0xC5,0x8B,0x16,0x2D,0x5A,0xB4,0x69,0xD2,
-            0xA4,0x48,0x91,0x22,0x45,0x8A,0x14,0x29,0x52,0xA5,0x4A,0x95,0x2A,0x54,0xA9,0x53,
-            0xA7,0x4E,0x9D,0x3B,0x77,0xEE,0xDD,0xBB,0x76,0xEC,0xD9,0xB3,0x67,0xCF,0x9E,0x3D,
-            0x7B,0xF7,0xEF,0xDF,0xBF,0x7E,0xFD,0xFA,0xF4,0xE9,0xD3,0xA6,0x4C,0x99,0x33,0x66,
-            0xCD,0x9A,0x35,0x6A,0xD4,0xA8,0x51,0xA3,0x46,0x8C,0x18,0x30,0x60,0xC1,0x83,0x07,
-            0x0E,0x1D,0x3A,0x75,0xEA,0xD5,0xAA,0x55,0xAB,0x57,0xAF,0x5F,0xBE,0x7C,0xF9,0xF2,
-            0xE5,0xCA,0x94,0x28,0x50,0xA1,0x42,0x84,0x09,0x13,0x27,0x4F,0x9F,0x3F,0x7F
+
+        if (ctx_.cfg.trace_crc) {
+            out.payload_bytes_raw = out.payload_bytes;
+        } else {
+            out.payload_bytes_raw.clear();
+        }
+        out.payload_whitening_prns.clear();
+        out.payload_crc_trace.clear();
+
+        struct WhiteningLfsr {
+            uint8_t state{0xFF};
+            uint8_t step() {
+                uint8_t b0 = (state >> 0) & 1u;
+                uint8_t b1 = (state >> 1) & 1u;
+                uint8_t b2 = (state >> 2) & 1u;
+                uint8_t b5 = (state >> 5) & 1u;
+                uint8_t next = static_cast<uint8_t>(b5 ^ b2 ^ b1 ^ b0);
+                state = static_cast<uint8_t>(((state << 1) | next) & 0xFFu);
+                return state;
+            }
         };
-        for (int j = 0; j < best.len && j < static_cast<int>(out.payload_bytes.size()); ++j) {
-            out.payload_bytes[j] = static_cast<uint8_t>(out.payload_bytes[j] ^ whitening_seq[j]);
-        }
-        // CRC16 (poly 0x1021) verification matching gr-lora-sdr:
-        // - Compute CRC over the first (payload_len - 2) dewhitened payload bytes
-        // - XOR the resulting CRC with the last 2 dewhitened data bytes
-        // - Compare against the two subsequent (unwhitened) CRC bytes (LSB then MSB)
-        if (best.has_crc && static_cast<int>(out.payload_bytes.size()) >= best.len + 2) {
-            auto crc16 = [](const uint8_t* data, uint32_t len){
-                uint16_t crc = 0x0000;
-                for (uint32_t i2 = 0; i2 < len; ++i2) {
-                    uint8_t newByte = data[i2];
-                    for (unsigned char j = 0; j < 8; ++j) {
-                        if (((crc & 0x8000) >> 8) ^ (newByte & 0x80)) crc = static_cast<uint16_t>((crc << 1) ^ 0x1021);
-                        else crc = static_cast<uint16_t>(crc << 1);
-                        newByte <<= 1;
+        auto crc16_step = [](uint16_t crc, uint8_t byte) {
+            uint16_t c = crc;
+            uint8_t newByte = byte;
+            for (unsigned char bit = 0; bit < 8; ++bit) {
+                if (((c & 0x8000) >> 8) ^ (newByte & 0x80)) {
+                    c = static_cast<uint16_t>((c << 1) ^ 0x1021);
+                } else {
+                    c = static_cast<uint16_t>(c << 1);
+                }
+                newByte <<= 1;
+            }
+            return c;
+        };
+
+        WhiteningLfsr lfsr;
+        uint16_t crc_semtech = 0x0000;
+        uint16_t crc_gr = 0x0000;
+        uint8_t tail_last = 0u;
+        uint8_t tail_second_last = 0u;
+        bool have_tail_last = false;
+        bool have_tail_second = false;
+
+        for (int j = 0; j < static_cast<int>(out.payload_bytes.size()); ++j) {
+            uint8_t raw = out.payload_bytes[j];
+            bool is_payload_byte = j < best.len;
+            bool is_crc_byte = best.has_crc && j >= best.len && j < best.len + 2;
+            uint16_t sem_before = crc_semtech;
+            uint16_t gr_before = crc_gr;
+            if (is_payload_byte) {
+                uint8_t prn = lfsr.step();
+                if (ctx_.cfg.trace_crc) out.payload_whitening_prns.push_back(prn);
+                uint8_t dewhite = static_cast<uint8_t>(raw ^ prn);
+                out.payload_bytes[j] = dewhite;
+                crc_semtech = crc16_step(crc_semtech, dewhite);
+                if (best.len >= 2 && j < best.len - 2) {
+                    crc_gr = crc16_step(crc_gr, dewhite);
+                } else {
+                    if (best.len >= 2) {
+                        if (j == best.len - 2) {
+                            tail_second_last = dewhite;
+                            have_tail_second = true;
+                        }
+                        if (j == best.len - 1) {
+                            tail_last = dewhite;
+                            have_tail_last = true;
+                        }
                     }
                 }
-                return crc;
-            };
-            if (best.len >= 2) {
-                const uint32_t plen = static_cast<uint32_t>(best.len);
-                uint16_t m_crc = crc16(out.payload_bytes.data(), plen - 2);
-                m_crc = static_cast<uint16_t>(m_crc ^ out.payload_bytes[plen - 1] ^ (out.payload_bytes[plen - 2] << 8));
-                uint16_t crc_rx = static_cast<uint16_t>(out.payload_bytes[plen] | (out.payload_bytes[plen + 1] << 8));
-                out.payload_crc_ok = (m_crc == crc_rx);
             } else {
-                out.payload_crc_ok = false; // undefined CRC for payload smaller than 2 bytes
             }
-        } else if (!best.has_crc && static_cast<int>(out.payload_bytes.size()) >= best.len) {
-            out.payload_crc_ok = true; // no CRC to check
+            if (ctx_.cfg.trace_crc) {
+                FrameOut::PayloadTraceEntry entry;
+                entry.index = j;
+                entry.raw_byte = raw;
+                entry.is_crc_byte = is_crc_byte;
+                entry.crc_semtech_before = sem_before;
+                entry.crc_gr_before = gr_before;
+                entry.crc_semtech_after = crc_semtech;
+                entry.crc_gr_after = crc_gr;
+                if (is_payload_byte) {
+                    entry.whitening = out.payload_whitening_prns.empty() ? 0 : out.payload_whitening_prns.back();
+                    entry.dewhitened = out.payload_bytes[j];
+                    entry.counted_semtech = true;
+                    entry.counted_gr = (best.len >= 2 && j < best.len - 2);
+                } else {
+                    entry.whitening = 0;
+                    entry.dewhitened = raw;
+                    entry.counted_semtech = false;
+                    entry.counted_gr = false;
+                }
+                out.payload_crc_trace.push_back(entry);
+            }
+        }
+
+        uint16_t crc_gr_val = crc_gr;
+        if (best.len >= 2 && have_tail_last && have_tail_second) {
+            crc_gr_val = static_cast<uint16_t>(crc_gr_val ^ tail_last ^ (static_cast<uint16_t>(tail_second_last) << 8));
+        }
+
+        uint16_t crc_rx = 0;
+        bool crc_rx_available = false;
+        if (best.has_crc && static_cast<int>(out.payload_bytes.size()) >= best.len + 2) {
+            crc_rx = static_cast<uint16_t>(out.payload_bytes[best.len] | (out.payload_bytes[best.len + 1] << 8));
+            crc_rx_available = true;
+        }
+
+        out.payload_crc_semtech = crc_semtech;
+        out.payload_crc_gr = crc_gr_val;
+        out.payload_crc_rx = crc_rx;
+        if (best.has_crc) {
+            if (crc_rx_available) {
+                out.payload_crc_semtech_ok = (crc_semtech == crc_rx);
+                out.payload_crc_gr_ok = (crc_gr_val == crc_rx);
+                out.payload_crc_ok = out.payload_crc_semtech_ok;
+            } else {
+                out.payload_crc_semtech_ok = false;
+                out.payload_crc_gr_ok = false;
+                out.payload_crc_ok = false;
+            }
+        } else {
+            out.payload_crc_semtech_ok = true;
+            out.payload_crc_gr_ok = true;
+            out.payload_crc_ok = true;
         }
     }
 
