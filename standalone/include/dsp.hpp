@@ -26,6 +26,10 @@ uint32_t demod_symbol_peak_cfo(std::span<const std::complex<float>> block,
                                float eps);
 
 // FFT-based demod: dechirp (with optional CFO) then FFT and pick max-magnitude bin
+struct FFTBinPeak { uint32_t bin; float power; };
+FFTBinPeak demod_symbol_peak_fft_with_power(std::span<const std::complex<float>> block,
+                                            std::span<const std::complex<float>> downchirp,
+                                            float eps = 0.0f);
 uint32_t demod_symbol_peak_fft(std::span<const std::complex<float>> block,
                                std::span<const std::complex<float>> downchirp,
                                float eps = 0.0f);
