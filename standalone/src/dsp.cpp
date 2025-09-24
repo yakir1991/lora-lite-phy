@@ -1,5 +1,6 @@
 #include "dsp.hpp"
 #include <algorithm>
+#include <bit>
 #include <cmath>
 
 namespace lora::standalone {
