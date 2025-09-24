@@ -303,11 +303,11 @@ std::vector<FrameOut> Receiver::run() {
             uint8_t state{0xFF};
             uint8_t step() {
                 uint8_t prn = state;
-                uint8_t b0 = (state >> 0) & 1u;
-                uint8_t b1 = (state >> 1) & 1u;
-                uint8_t b2 = (state >> 2) & 1u;
-                uint8_t b5 = (state >> 5) & 1u;
-                uint8_t next = static_cast<uint8_t>(b5 ^ b2 ^ b1 ^ b0);
+                uint8_t b3 = static_cast<uint8_t>((state >> 3) & 1u);
+                uint8_t b4 = static_cast<uint8_t>((state >> 4) & 1u);
+                uint8_t b5 = static_cast<uint8_t>((state >> 5) & 1u);
+                uint8_t b7 = static_cast<uint8_t>((state >> 7) & 1u);
+                uint8_t next = static_cast<uint8_t>(b7 ^ b5 ^ b4 ^ b3);
                 state = static_cast<uint8_t>(((state << 1) | next) & 0xFFu);
                 return prn;
             }
