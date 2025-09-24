@@ -32,19 +32,32 @@
   - Sync word and CRC support.
   - LDRO: considered later, after a working MVP.
 - **Data path for TX:**
-  1) Whitening  
-  2) Hamming encoding according to CR  
-  3) Interleaving (diagonal)  
-  4) Gray mapping  
+  1) Whitening
+  2) Hamming encoding according to CR
+  3) Interleaving (diagonal)
+  4) Gray mapping
   5) Symbol-to-chirp modulation using precomputed reference upchirps
 - **Data path for RX (aligned symbols; synchronization added later):**
-  1) Dechirp using precomputed downchirp (complex conjugate)  
-  2) FFT (size equals 2^SF)  
-  3) Symbol decision (argmax bin; soft metrics optional later)  
-  4) Gray demapping  
-  5) Deinterleaving  
-  6) Hamming decoding  
+  1) Dechirp using precomputed downchirp (complex conjugate)
+  2) FFT (size equals 2^SF)
+  3) Symbol decision (argmax bin; soft metrics optional later)
+  4) Gray demapping
+  5) Deinterleaving
+  6) Hamming decoding
   7) Dewhitening and CRC validation
+
+---
+
+## Findings from webinar & repository review (Sep 2025)
+- **Preamble structure** – The LoRa frame begins with raw upchirps for coarse synchronization, two sync-word upchirps that switch public/private modes, and a 2.25-symbol downchirp frame delimiter that marks the hand-off to header processing.【fb7e34†L1-L24】 This validates the current detection roadmap and highlights the need to model the quarter-length delimiter chirp explicitly when polishing the CFO/TO estimators.
+- **Header layout and spill-over** – Eight header symbols are always transmitted with CR = 4/8; they carry payload length, coding rate, CRC presence, and a header CRC, while any unused bits in those symbols are immediately filled with payload content.【fb7e34†L32-L60】 This matches the C++ header pipeline and reinforces the requirement to keep the payload decoder tolerant to header-sourced payload bytes.
+- **Payload protection flow** – Payload bytes are whitened only after Hamming encoding/interleaving and use the LFSR polynomial \(x^4 + x^3 + x^2 + 1\).【41c092†L1-L25】【1f7f55†L1-L37】 The four CR modes map directly onto shortened/extended (4,7) Hamming variants, consistent with the hard-decision LUTs already implemented in the standalone RX.
+- **Interleaving and Gray mapping** – The diagonal interleaver redistributes correlated bit errors across successive codewords, and Gray mapping ensures adjacent symbol decisions differ by a single bit, minimizing BER impact from near-misses.【428894†L1-L34】【21025d†L1-L34】 These behaviors line up with the repository’s emphasis on precise interleaver geometry and Gray-domain symbol alignment in the README.
+
+## Immediate next steps after review
+1. **Codify header spill-over tests** – Add targeted vectors or unit tests that confirm payload bytes recovered from the header tail are aligned with the deinterleaver/decoder expectations before expanding to additional captures.【fb7e34†L32-L60】【F:README.md†L63-L96】
+2. **Cross-check whitening traces** – Use the existing `--debug-crc` diagnostics to capture whitening sequences and ensure the \(x^4 + x^3 + x^2 + 1\) polynomial is reflected end-to-end ahead of broadening payload validation beyond SF7/CR2.【41c092†L1-L25】【F:README.md†L97-L132】
+3. **Document interleaver/Gray assumptions** – Extend developer notes or comments in the RX pipeline to reference the diagonal interleaver rotation and Gray mapping rationale so future contributors retain parity with the spec while tackling LDRO and synchronization follow-ups.【428894†L1-L34】【21025d†L1-L34】【F:README.md†L133-L160】
 
 ---
 
