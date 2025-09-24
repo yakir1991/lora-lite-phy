@@ -276,8 +276,10 @@ std::vector<FrameOut> Receiver::run() {
         for (int j = 0; j < best.len && j < static_cast<int>(out.payload_bytes.size()); ++j) {
             out.payload_bytes[j] = static_cast<uint8_t>(out.payload_bytes[j] ^ whitening_seq[j]);
         }
-        // CRC16 (poly 0x1021) per gr-lora-sdr, computed over dewhitened payload bytes (length = payload_len),
-        // and compared directly to the two following CRC bytes (LSB then MSB). CRC bytes are not dewhitened.
+        // CRC16 (poly 0x1021) verification matching gr-lora-sdr:
+        // - Compute CRC over the first (payload_len - 2) dewhitened payload bytes
+        // - XOR the resulting CRC with the last 2 dewhitened data bytes
+        // - Compare against the two subsequent (unwhitened) CRC bytes (LSB then MSB)
         if (best.has_crc && static_cast<int>(out.payload_bytes.size()) >= best.len + 2) {
             auto crc16 = [](const uint8_t* data, uint32_t len){
                 uint16_t crc = 0x0000;
@@ -291,9 +293,15 @@ std::vector<FrameOut> Receiver::run() {
                 }
                 return crc;
             };
-            uint16_t crc_calc = crc16(out.payload_bytes.data(), static_cast<uint32_t>(best.len));
-            uint16_t crc_rx = static_cast<uint16_t>(out.payload_bytes[best.len] | (out.payload_bytes[best.len + 1] << 8));
-            out.payload_crc_ok = (crc_calc == crc_rx);
+            if (best.len >= 2) {
+                const uint32_t plen = static_cast<uint32_t>(best.len);
+                uint16_t m_crc = crc16(out.payload_bytes.data(), plen - 2);
+                m_crc = static_cast<uint16_t>(m_crc ^ out.payload_bytes[plen - 1] ^ (out.payload_bytes[plen - 2] << 8));
+                uint16_t crc_rx = static_cast<uint16_t>(out.payload_bytes[plen] | (out.payload_bytes[plen + 1] << 8));
+                out.payload_crc_ok = (m_crc == crc_rx);
+            } else {
+                out.payload_crc_ok = false; // undefined CRC for payload smaller than 2 bytes
+            }
         } else if (!best.has_crc && static_cast<int>(out.payload_bytes.size()) >= best.len) {
             out.payload_crc_ok = true; // no CRC to check
         }
