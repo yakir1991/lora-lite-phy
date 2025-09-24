@@ -1,0 +1,19 @@
+name: gr310
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - boost-cpp>=1.82
+  - cmake>=3.22,<3.27
+  - doxygen
+  - gcc>=11.2
+  - gnuradio>=3.10
+  - gxx_linux-64
+  - make>=4.2
+  - pkg-config
+  - pybind11
+  - python>=3.12
+  - uhd
+  - volk
+  - pip:
+    - pygccxml
