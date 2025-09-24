@@ -28,17 +28,18 @@ A lightweight, GNU Radio–independent LoRa receive chain written in modern C++ 
   - Header checksum computation and validation
   - Row-rotation search to resolve header nibble ordering; robust field parsing
 
-- Payload pipeline (in progress)
+- Payload pipeline (instrumented)
   - Gray demap + symbol alignment (payload path)
   - Diagonal deinterleaver (rows = sf, cw_len = 4 + cr)
   - Hamming(4,4+cr) hard-decode using LUTs (CR5-specific variant and cropped LUT for CR6–8)
-  - Dewhitening using the standard sequence (bytes 0..payload_len−1); CRC bytes are not dewhitened
-  - CRC16 (poly 0x1021, init 0x0000) verification logic implemented
+  - Dewhitening using the standard PN sequence (bytes 0..payload_len−1); CRC bytes remain untouched
+  - CRC16 (poly 0x1021, init 0x0000) computed following the Semtech data path, with parallel tracking of the gr-lora-sdr variant
+  - Optional payload diagnostics: whitening PRNs, CRC traces, and per-block interleaver bit dumps for offline comparison
 
 - CLI tool
   - Reads interleaved float32 IQ (I then Q)
   - Prints header bins/bits and parsed header fields
-  - Prints payload bytes (hex) and CRC status
+  - Prints payload bytes (hex) and CRC status; debug switches emit JSON, whitening/CRC traces, and interleaver matrices
 
 ## Key findings and decisions
 
@@ -57,12 +58,13 @@ A lightweight, GNU Radio–independent LoRa receive chain written in modern C++ 
 
 - Whitening and CRC
   - Whitening applies to payload bytes only; CRC bytes are transmitted unwhitened in GR’s reference chain.
-  - CRC16 uses poly 0x1021 and init 0x0000, with GR’s add/xor convention taken into account during verification on RX.
+  - Instrumentation shows that the Semtech data-path CRC (full payload, unmodified last two bytes) validates the SF7/CR2 reference payload, while the gr-lora-sdr add/xor shortcut diverges once the payload tail is non-zero.
 
 ## Current status (Sep 2025)
 
 - Header pipeline: robust and checksum-valid on test vectors in `vectors/`.
-- Payload pipeline: decoding produces plausible bytes; CRC verification is still failing on at least one SF7/CR2 reference vector. Recent changes aligned symbol shift and nibble bit order with the reference; further reconciliation (whitening/CRC ordering and boundary handling) is underway.
+- Payload pipeline: Semtech-order CRC verification now passes on `sps_500k_bw_125k_sf_7_cr_2_ldro_false_crc_true_implheader_false_hello_stupid_world.unknown`; vectors with invalid header CRCs remain out of scope.
+- Instrumentation: `--debug-crc` dumps whitening/CRC traces and `--dump-bits` captures interleaver matrices for post-processing.
 
 ## Repository layout
 
@@ -86,20 +88,27 @@ cmake --build standalone/build -j
 standalone/build/lora_rx vectors/test_short_payload.unknown 7 125000 250000
 ```
 
+Debug aids:
+
+- `--json` prints a machine-readable frame summary (bins, bytes, diagnostics).
+- `--debug-crc` enables whitening/CRC traces and exposes Semtech vs gr-lora-sdr checksum comparisons.
+- `--dump-bits` captures header/payload interleaver matrices for external analysis.
+- `--debug-detect` logs preamble/SFD/CFO estimates to stderr.
+
 ## Next steps
 
-1. Finalize payload path so CRC validates across the provided vectors
-   - Reconcile dewhitening and CRC computation order to match GR’s add/xor convention precisely
-   - Add targeted instrumentation to dump deinterleaver rows and nibbles for side-by-side diff vs GR
+1. Broaden payload validation beyond the SF7/CR2 reference
+   - Resolve header-CRC failures on remaining vectors so the payload path can run end-to-end
+   - Compare Semtech-vs-GR CRC outputs on additional coding rates once valid frames are available
 2. LDRO handling
    - Use reduced-rate (sf−2) where required on payload blocks when LDRO is active
 3. Optional soft decisions
    - Add soft-decision Hamming decoding path for improved robustness
 4. Tests
    - Unit tests for Hamming(8,4) and variable-CR payload LUT decoding
-   - Golden-vector smoke tests for header fields and payload CRC
+   - Integrate the new diagnostic scripts (`scripts/validate_payload_boundaries.py`, `scripts/check_deinterleaver.py`) into CI once more vectors decode cleanly
 5. CLI polish
-   - Switches for ASCII/hex, debug dumps, and concise frame summaries
+   - Harden JSON output (e.g., pretty-print, include detection metadata) and consider streaming multiple frames
 6. Performance
    - Replace naive spots with well-tuned FFTs where helpful; add basic benchmarks
 

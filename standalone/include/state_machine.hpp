@@ -13,6 +13,10 @@ struct RxConfig {
     uint32_t fs{250000};
     uint32_t os{2}; // fs/bw
     uint32_t preamble_min{8};
+    bool debug_detection{false};
+    bool capture_header_bits{false};
+    bool capture_payload_blocks{false};
+    bool trace_crc{false};
 };
 
 struct FrameOut {
@@ -30,6 +34,44 @@ struct FrameOut {
     // Decoded payload results (when implemented)
     std::vector<uint8_t> payload_bytes;
     bool payload_crc_ok{false};
+    // Diagnostics
+    float cfo_fraction{0.f};
+    int cfo_integer{0};
+    bool sfd_found{false};
+    size_t sfd_decim_pos{0};
+    std::vector<uint8_t> header_interleaver_bits;
+    std::vector<uint8_t> header_deinterleaver_bits;
+    uint32_t header_rows{0};
+    uint32_t header_cols{0};
+    struct PayloadBlockBits {
+        uint32_t rows{0};
+        uint32_t cols{0};
+        size_t symbol_offset{0};
+        std::vector<uint8_t> inter_bits;   // column-major layout
+        std::vector<uint8_t> deinter_bits; // row-major layout matching decode order
+    };
+    std::vector<PayloadBlockBits> payload_blocks_bits;
+    std::vector<uint8_t> payload_bytes_raw;
+    std::vector<uint8_t> payload_whitening_prns;
+    struct PayloadTraceEntry {
+        int index{0};
+        uint8_t raw_byte{0};
+        uint8_t whitening{0};
+        uint8_t dewhitened{0};
+        uint16_t crc_semtech_before{0};
+        uint16_t crc_semtech_after{0};
+        uint16_t crc_gr_before{0};
+        uint16_t crc_gr_after{0};
+        bool counted_semtech{false};
+        bool counted_gr{false};
+        bool is_crc_byte{false};
+    };
+    std::vector<PayloadTraceEntry> payload_crc_trace;
+    uint16_t payload_crc_semtech{0};
+    uint16_t payload_crc_gr{0};
+    uint16_t payload_crc_rx{0};
+    bool payload_crc_semtech_ok{false};
+    bool payload_crc_gr_ok{false};
 };
 
 enum class RxState { SEARCH_PREAMBLE, LOCATE_HEADER, DEMOD_HEADER, DEMOD_PAYLOAD };
