@@ -130,11 +130,12 @@ uint32_t demod_symbol_peak_cfo(std::span<const std::complex<float>> block,
     return argmax_bin_power(tmp);
 }
 
-uint32_t demod_symbol_peak_fft(std::span<const std::complex<float>> block,
-                               std::span<const std::complex<float>> downchirp,
-                               float eps)
+FFTBinPeak demod_symbol_peak_fft_with_power(std::span<const std::complex<float>> block,
+                                            std::span<const std::complex<float>> downchirp,
+                                            float eps)
 {
     const size_t N = std::min(block.size(), downchirp.size());
+    if (N == 0) return FFTBinPeak{0u, 0.f};
     std::vector<std::complex<float>> tmp(N);
     float tw = -twopi() * eps / static_cast<float>(N);
     std::complex<float> w = {std::cos(tw), std::sin(tw)};
@@ -151,7 +152,15 @@ uint32_t demod_symbol_peak_fft(std::span<const std::complex<float>> block,
         float p = std::norm(tmp[k]);
         if (p > best_p) { best_p = p; best_k = k; }
     }
-    return best_k;
+    if (best_p < 0.f) best_p = 0.f;
+    return FFTBinPeak{best_k, best_p};
+}
+
+uint32_t demod_symbol_peak_fft(std::span<const std::complex<float>> block,
+                               std::span<const std::complex<float>> downchirp,
+                               float eps)
+{
+    return demod_symbol_peak_fft_with_power(block, downchirp, eps).bin;
 }
 
 DemodResult demod_symbol_peak_fft_best_shift(std::span<const std::complex<float>> block,
@@ -165,16 +174,12 @@ DemodResult demod_symbol_peak_fft_best_shift(std::span<const std::complex<float>
         if (sh < 0) {
             size_t off = static_cast<size_t>(-sh);
             if (off + N > block.size()) continue;
-            uint32_t k = demod_symbol_peak_fft(std::span<const std::complex<float>>(block.data()+off, N), downchirp, eps);
-            // Estimate power around k using a tiny re-eval: not storing full spectrum, re-use inner function to approximate via DC proxy
-            // For simplicity, set a placeholder power as inverse of bin index distance from 0 (coarse ranking)
-            float p = 1.0f / (1.0f + std::abs(static_cast<int>(k))); 
-            if (p > best.power) best = DemodResult{k, p, sh};
+            auto peak = demod_symbol_peak_fft_with_power(std::span<const std::complex<float>>(block.data()+off, N), downchirp, eps);
+            if (peak.power > best.power) best = DemodResult{peak.bin, peak.power, sh};
         } else {
             if (sh + N > block.size()) continue;
-            uint32_t k = demod_symbol_peak_fft(std::span<const std::complex<float>>(block.data()+sh, N), downchirp, eps);
-            float p = 1.0f / (1.0f + std::abs(static_cast<int>(k)));
-            if (p > best.power) best = DemodResult{k, p, sh};
+            auto peak = demod_symbol_peak_fft_with_power(std::span<const std::complex<float>>(block.data()+sh, N), downchirp, eps);
+            if (peak.power > best.power) best = DemodResult{peak.bin, peak.power, sh};
         }
     }
     return best;
