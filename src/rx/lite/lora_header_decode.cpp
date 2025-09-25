@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <vector>
+#include <optional>
 
 #include "lora/rx/lite/lora_primitives.hpp"
 #include "lora/rx/lite/lora_utils.hpp"
@@ -40,8 +41,12 @@ std::optional<LocalHeader> parse_standard_lora_header(const uint8_t* hdr, size_t
     uint8_t n3 = hdr[3] & 0x0F;
     uint8_t chk_rx = static_cast<uint8_t>(((hdr[3] & 0x01) << 4) | (hdr[4] & 0x0F));
 
-    // Fixed: GNU Radio uses (n3 << 4) | n0 for payload length
-    uint8_t payload_len = static_cast<uint8_t>((n3 << 4) | n0);
+    // GNU Radio header_decoder_impl treats the first 5 *nibbles* in order as:
+    //   in[0] (hi 4 bits of length), in[1] (lo 4 bits of length), in[2] (flags: CR + CRC),
+    //   in[3] (MSB of checksum stored in bit0), in[4] (low 4 bits of checksum)
+    // We reconstruct the same ordering here: hdr[i] low nibble corresponds to in[i].
+    // Previous implementation incorrectly used (n3 << 4)|n0 which swapped nibbles.
+    uint8_t payload_len = static_cast<uint8_t>((n0 << 4) | n1);
     bool has_crc = (n2 & 0x1) != 0;
     uint8_t cr_idx = static_cast<uint8_t>((n2 >> 1) & 0x7);
 
