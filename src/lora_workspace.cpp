@@ -39,6 +39,7 @@ void Workspace::reset_debug_variables() {
     dbg_hdr_header_start = 0;
     dbg_hdr_cfo = 0.0f;
     dbg_hdr_sto = 0;
+    dbg_hdr_cfo_int = 0;
 
     std::fill(std::begin(dbg_hdr_syms_raw), std::end(dbg_hdr_syms_raw), 0u);
     std::fill(std::begin(dbg_hdr_syms_corr), std::end(dbg_hdr_syms_corr), 0u);

@@ -1,0 +1,351 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classgr_1_1lora__sdr_1_1header__impl" kind="class" language="C++" prot="public">
+    <compoundname>gr::lora_sdr::header_impl</compoundname>
+    <basecompoundref refid="classgr_1_1lora__sdr_1_1header" prot="public" virt="non-virtual">gr::lora_sdr::header</basecompoundref>
+    <includes refid="header__impl_8h" local="no">header_impl.h</includes>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1header__impl_1add166cd35985b68d1b47775d7bc6bd74" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::header_impl::m_impl_head</definition>
+        <argsstring></argsstring>
+        <name>m_impl_head</name>
+        <qualifiedname>gr::lora_sdr::header_impl::m_impl_head</qualifiedname>
+        <briefdescription>
+<para>indicate if the header is implicit </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" line="12" column="12" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" bodystart="12" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1header__impl_1a98332592978639984f93f49783886231" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::header_impl::m_has_crc</definition>
+        <argsstring></argsstring>
+        <name>m_has_crc</name>
+        <qualifiedname>gr::lora_sdr::header_impl::m_has_crc</qualifiedname>
+        <briefdescription>
+<para>indicate the presence of a payload crc </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" line="13" column="12" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" bodystart="13" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1header__impl_1afcbe1e73136c6aec3d6e60b31b0d9e7a" prot="private" static="no" mutable="no">
+        <type>uint8_t</type>
+        <definition>uint8_t gr::lora_sdr::header_impl::m_cr</definition>
+        <argsstring></argsstring>
+        <name>m_cr</name>
+        <qualifiedname>gr::lora_sdr::header_impl::m_cr</qualifiedname>
+        <briefdescription>
+<para>Transmission coding rate. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" line="14" column="15" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" bodystart="14" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1header__impl_1a5e67c8fa72fdb77854ceb2993a658842" prot="private" static="no" mutable="no">
+        <type>uint8_t</type>
+        <definition>uint8_t gr::lora_sdr::header_impl::m_payload_len</definition>
+        <argsstring></argsstring>
+        <name>m_payload_len</name>
+        <qualifiedname>gr::lora_sdr::header_impl::m_payload_len</qualifiedname>
+        <briefdescription>
+<para>Payload length. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" line="15" column="15" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" bodystart="15" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1header__impl_1ab07563732110ca9928d12b7211bf9d48" prot="private" static="no" mutable="no">
+        <type>unsigned int</type>
+        <definition>unsigned int gr::lora_sdr::header_impl::m_cnt_nibbles</definition>
+        <argsstring></argsstring>
+        <name>m_cnt_nibbles</name>
+        <qualifiedname>gr::lora_sdr::header_impl::m_cnt_nibbles</qualifiedname>
+        <briefdescription>
+<para>count the processes nibbles in a frame </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" line="16" column="20" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" bodystart="16" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1header__impl_1a8cd1c51d30cba425066d96ea8c8d815d" prot="private" static="no" mutable="no">
+        <type>unsigned int</type>
+        <definition>unsigned int gr::lora_sdr::header_impl::m_cnt_header_nibbles</definition>
+        <argsstring></argsstring>
+        <name>m_cnt_header_nibbles</name>
+        <qualifiedname>gr::lora_sdr::header_impl::m_cnt_header_nibbles</qualifiedname>
+        <briefdescription>
+<para>count the number of explicit header nibbles output </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" line="17" column="20" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" bodystart="17" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1header__impl_1a1c5d2c01aea61dc62937e636e6514279" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; uint8_t &gt;</type>
+        <definition>std::vector&lt;uint8_t&gt; gr::lora_sdr::header_impl::m_header</definition>
+        <argsstring></argsstring>
+        <name>m_header</name>
+        <qualifiedname>gr::lora_sdr::header_impl::m_header</qualifiedname>
+        <briefdescription>
+<para>contain the header to prepend </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" line="18" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" bodystart="18" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1header__impl_1a118f87243222fd1f9104df3360a47f09" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::header_impl::m_has_config_tag</definition>
+        <argsstring></argsstring>
+        <name>m_has_config_tag</name>
+        <qualifiedname>gr::lora_sdr::header_impl::m_has_config_tag</qualifiedname>
+        <briefdescription>
+<para>indicate that a configuration tag was received </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" line="20" column="12" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" bodystart="20" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1header__impl_1a1487176fb0bf6732a579555b6401d88b" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; tag_t &gt;</type>
+        <definition>std::vector&lt;tag_t&gt; gr::lora_sdr::header_impl::m_tags</definition>
+        <argsstring></argsstring>
+        <name>m_tags</name>
+        <qualifiedname>gr::lora_sdr::header_impl::m_tags</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" line="23" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" bodystart="23" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="private-func">
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1header__impl_1a939d100f3b5b01893fff314c37f5db76" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::header_impl::msg_handler</definition>
+        <argsstring>(pmt::pmt_t message)</argsstring>
+        <name>msg_handler</name>
+        <qualifiedname>gr::lora_sdr::header_impl::msg_handler</qualifiedname>
+        <param>
+          <type>pmt::pmt_t</type>
+          <declname>message</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" line="24" column="12"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1header__impl_1a58da493055bb078822751d390e4242f7" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>gr::lora_sdr::header_impl::header_impl</definition>
+        <argsstring>(bool impl_head, bool has_crc, uint8_t cr)</argsstring>
+        <name>header_impl</name>
+        <qualifiedname>gr::lora_sdr::header_impl::header_impl</qualifiedname>
+        <param>
+          <type>bool</type>
+          <declname>impl_head</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>has_crc</declname>
+        </param>
+        <param>
+          <type>uint8_t</type>
+          <declname>cr</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" line="27" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1header__impl_1a6a797fc7fd2a4cdc1c351aa239c60020" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>gr::lora_sdr::header_impl::~header_impl</definition>
+        <argsstring>()</argsstring>
+        <name>~header_impl</name>
+        <qualifiedname>gr::lora_sdr::header_impl::~header_impl</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" line="28" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1header__impl_1a1469536f622f9847a889484cb188909d" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::header_impl::set_cr</definition>
+        <argsstring>(uint8_t cr)</argsstring>
+        <name>set_cr</name>
+        <qualifiedname>gr::lora_sdr::header_impl::set_cr</qualifiedname>
+        <reimplements refid="classgr_1_1lora__sdr_1_1header_1aaaf688f6c0b5b4d90b4716767ca017e6">set_cr</reimplements>
+        <param>
+          <type>uint8_t</type>
+          <declname>cr</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" line="30" column="12"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1header__impl_1a9bce169771ff17d6b5eee12eb2226265" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>uint8_t</type>
+        <definition>uint8_t gr::lora_sdr::header_impl::get_cr</definition>
+        <argsstring>()</argsstring>
+        <name>get_cr</name>
+        <qualifiedname>gr::lora_sdr::header_impl::get_cr</qualifiedname>
+        <reimplements refid="classgr_1_1lora__sdr_1_1header_1a8b9f3dfdc3bf53b86d375bf1142a0857">get_cr</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" line="31" column="15"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1header__impl_1ae05493af895b9be8c4da49b9508ea771" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::header_impl::forecast</definition>
+        <argsstring>(int noutput_items, gr_vector_int &amp;ninput_items_required)</argsstring>
+        <name>forecast</name>
+        <qualifiedname>gr::lora_sdr::header_impl::forecast</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>noutput_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_int &amp;</type>
+          <declname>ninput_items_required</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" line="34" column="12"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1header__impl_1afa6f7f180882d6edc93f204d0e2b947a" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int gr::lora_sdr::header_impl::general_work</definition>
+        <argsstring>(int noutput_items, gr_vector_int &amp;ninput_items, gr_vector_const_void_star &amp;input_items, gr_vector_void_star &amp;output_items)</argsstring>
+        <name>general_work</name>
+        <qualifiedname>gr::lora_sdr::header_impl::general_work</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>noutput_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_int &amp;</type>
+          <declname>ninput_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_const_void_star &amp;</type>
+          <declname>input_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_void_star &amp;</type>
+          <declname>output_items</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" line="36" column="11"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="3">
+        <label>gr::block</label>
+      </node>
+      <node id="2">
+        <label>gr::lora_sdr::header</label>
+        <link refid="classgr_1_1lora__sdr_1_1header"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>gr::lora_sdr::header_impl</label>
+        <link refid="classgr_1_1lora__sdr_1_1header__impl"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="3">
+        <label>gr::block</label>
+      </node>
+      <node id="2">
+        <label>gr::lora_sdr::header</label>
+        <link refid="classgr_1_1lora__sdr_1_1header"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>gr::lora_sdr::header_impl</label>
+        <link refid="classgr_1_1lora__sdr_1_1header__impl"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" line="9" column="5" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/header_impl.h" bodystart="10" bodyend="41"/>
+    <listofallmembers>
+      <member refid="classgr_1_1lora__sdr_1_1header__impl_1ae05493af895b9be8c4da49b9508ea771" prot="public" virt="non-virtual"><scope>gr::lora_sdr::header_impl</scope><name>forecast</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1header__impl_1afa6f7f180882d6edc93f204d0e2b947a" prot="public" virt="non-virtual"><scope>gr::lora_sdr::header_impl</scope><name>general_work</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1header__impl_1a9bce169771ff17d6b5eee12eb2226265" prot="public" virt="virtual"><scope>gr::lora_sdr::header_impl</scope><name>get_cr</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1header__impl_1a58da493055bb078822751d390e4242f7" prot="public" virt="non-virtual"><scope>gr::lora_sdr::header_impl</scope><name>header_impl</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1header__impl_1a8cd1c51d30cba425066d96ea8c8d815d" prot="private" virt="non-virtual"><scope>gr::lora_sdr::header_impl</scope><name>m_cnt_header_nibbles</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1header__impl_1ab07563732110ca9928d12b7211bf9d48" prot="private" virt="non-virtual"><scope>gr::lora_sdr::header_impl</scope><name>m_cnt_nibbles</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1header__impl_1afcbe1e73136c6aec3d6e60b31b0d9e7a" prot="private" virt="non-virtual"><scope>gr::lora_sdr::header_impl</scope><name>m_cr</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1header__impl_1a118f87243222fd1f9104df3360a47f09" prot="private" virt="non-virtual"><scope>gr::lora_sdr::header_impl</scope><name>m_has_config_tag</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1header__impl_1a98332592978639984f93f49783886231" prot="private" virt="non-virtual"><scope>gr::lora_sdr::header_impl</scope><name>m_has_crc</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1header__impl_1a1c5d2c01aea61dc62937e636e6514279" prot="private" virt="non-virtual"><scope>gr::lora_sdr::header_impl</scope><name>m_header</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1header__impl_1add166cd35985b68d1b47775d7bc6bd74" prot="private" virt="non-virtual"><scope>gr::lora_sdr::header_impl</scope><name>m_impl_head</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1header__impl_1a5e67c8fa72fdb77854ceb2993a658842" prot="private" virt="non-virtual"><scope>gr::lora_sdr::header_impl</scope><name>m_payload_len</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1header__impl_1a1487176fb0bf6732a579555b6401d88b" prot="private" virt="non-virtual"><scope>gr::lora_sdr::header_impl</scope><name>m_tags</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1header_1a90759b05ba40572668384c4f907e61d0" prot="public" virt="non-virtual"><scope>gr::lora_sdr::header_impl</scope><name>make</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1header__impl_1a939d100f3b5b01893fff314c37f5db76" prot="private" virt="non-virtual"><scope>gr::lora_sdr::header_impl</scope><name>msg_handler</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1header__impl_1a1469536f622f9847a889484cb188909d" prot="public" virt="virtual"><scope>gr::lora_sdr::header_impl</scope><name>set_cr</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1header_1ad0f8f34cf2512b58ee2244f9b3d3672d" prot="public" virt="non-virtual"><scope>gr::lora_sdr::header_impl</scope><name>sptr</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1header__impl_1a6a797fc7fd2a4cdc1c351aa239c60020" prot="public" virt="non-virtual"><scope>gr::lora_sdr::header_impl</scope><name>~header_impl</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

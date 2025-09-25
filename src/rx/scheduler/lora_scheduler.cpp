@@ -64,7 +64,13 @@ HeaderResult demod_header(const cfloat* raw, size_t raw_len, const RxConfig& cfg
     constexpr uint8_t kExpectedSyncWord = 0x34;
     constexpr size_t kMinPreambleSyms = 8;
 
-    auto header = lora::rx::gr::decode_header_with_preamble_cfo_sto_os(ws, samples, cfg.sf, lora::rx::gr::CodeRate::CR45, kMinPreambleSyms, kExpectedSyncWord);
+    auto header = lora::rx::gr::decode_header_with_preamble_cfo_sto_os(ws,
+                                                                       samples,
+                                                                       cfg.sf,
+                                                                       lora::rx::gr::CodeRate::CR45,
+                                                                       kMinPreambleSyms,
+                                                                       kExpectedSyncWord,
+                                                                       static_cast<int>(cfg.os));
     if (header) {
         ret = HeaderResult(true, cfg.sf, cfg.cr_idx, cfg.ldro, header->has_crc, header->payload_len, 16, static_cast<uint32_t>(header->cr), ws.dbg_hdr_os, ws.dbg_hdr_phase, ws.dbg_hdr_det_start_raw, ws.dbg_hdr_start_decim, ws.dbg_hdr_preamble_start, ws.dbg_hdr_aligned_start, ws.dbg_hdr_header_start, ws.dbg_hdr_sync_start, ws.dbg_hdr_cfo);
     }

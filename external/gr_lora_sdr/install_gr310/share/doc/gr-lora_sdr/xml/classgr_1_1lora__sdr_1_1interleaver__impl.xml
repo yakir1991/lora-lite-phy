@@ -1,0 +1,395 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classgr_1_1lora__sdr_1_1interleaver__impl" kind="class" language="C++" prot="public">
+    <compoundname>gr::lora_sdr::interleaver_impl</compoundname>
+    <basecompoundref refid="classgr_1_1lora__sdr_1_1interleaver" prot="public" virt="non-virtual">gr::lora_sdr::interleaver</basecompoundref>
+    <includes refid="interleaver__impl_8h" local="no">interleaver_impl.h</includes>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1interleaver__impl_1a6945652529f45d51705db59c89974c9a" prot="private" static="no" mutable="no">
+        <type>uint8_t</type>
+        <definition>uint8_t gr::lora_sdr::interleaver_impl::m_cr</definition>
+        <argsstring></argsstring>
+        <name>m_cr</name>
+        <qualifiedname>gr::lora_sdr::interleaver_impl::m_cr</qualifiedname>
+        <briefdescription>
+<para>Transmission coding rate. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="13" column="17" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" bodystart="13" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1interleaver__impl_1a9c6741820d3d0d6b5e381a73602cf71d" prot="private" static="no" mutable="no">
+        <type>uint8_t</type>
+        <definition>uint8_t gr::lora_sdr::interleaver_impl::m_sf</definition>
+        <argsstring></argsstring>
+        <name>m_sf</name>
+        <qualifiedname>gr::lora_sdr::interleaver_impl::m_sf</qualifiedname>
+        <briefdescription>
+<para>Transmission spreading factor. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="14" column="17" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" bodystart="14" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1interleaver__impl_1a0ebde855ca3af4ff51d5b006f3121346" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t gr::lora_sdr::interleaver_impl::cw_cnt</definition>
+        <argsstring></argsstring>
+        <name>cw_cnt</name>
+        <qualifiedname>gr::lora_sdr::interleaver_impl::cw_cnt</qualifiedname>
+        <briefdescription>
+<para>count the number of codewords </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="16" column="18" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" bodystart="16" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1interleaver__impl_1a0c55011e558a16cbe00f0b8b312363d7" prot="private" static="no" mutable="no">
+        <type>int</type>
+        <definition>int gr::lora_sdr::interleaver_impl::m_frame_len</definition>
+        <argsstring></argsstring>
+        <name>m_frame_len</name>
+        <qualifiedname>gr::lora_sdr::interleaver_impl::m_frame_len</qualifiedname>
+        <briefdescription>
+<para>length of the frame in number of items </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="17" column="13" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" bodystart="17" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1interleaver__impl_1aeda4a8bd1156f7d05f08349506e03031" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::interleaver_impl::m_ldro</definition>
+        <argsstring></argsstring>
+        <name>m_ldro</name>
+        <qualifiedname>gr::lora_sdr::interleaver_impl::m_ldro</qualifiedname>
+        <briefdescription>
+<para>use the low datarate optimisation mode </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="18" column="14" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" bodystart="18" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1interleaver__impl_1a06f96b85f269e1ae4d0b019d5ee4b564" prot="private" static="no" mutable="no">
+        <type>int</type>
+        <definition>int gr::lora_sdr::interleaver_impl::m_bw</definition>
+        <argsstring></argsstring>
+        <name>m_bw</name>
+        <qualifiedname>gr::lora_sdr::interleaver_impl::m_bw</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="19" column="13" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" bodystart="19" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1interleaver__impl_1a9bd063c3075266098664b0592f667049" prot="private" static="no" mutable="no">
+        <type>uint8_t</type>
+        <definition>uint8_t gr::lora_sdr::interleaver_impl::m_ldro_mode</definition>
+        <argsstring></argsstring>
+        <name>m_ldro_mode</name>
+        <qualifiedname>gr::lora_sdr::interleaver_impl::m_ldro_mode</qualifiedname>
+        <briefdescription>
+<para>mode of the low datarate optimisation (0: off, 1: on, 2: auto) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="20" column="17" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" bodystart="20" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1interleaver__impl_1a3b075ac13e731d4d6099fcb1a5967e02" prot="private" static="no" mutable="no">
+        <type>tag_t</type>
+        <definition>tag_t gr::lora_sdr::interleaver_impl::m_config_tag</definition>
+        <argsstring></argsstring>
+        <name>m_config_tag</name>
+        <qualifiedname>gr::lora_sdr::interleaver_impl::m_config_tag</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="21" column="15" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" bodystart="21" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1interleaver__impl_1abe6e7ab443e5cc2a269d8584c0895dc7" prot="private" static="no" mutable="no">
+        <type>tag_t</type>
+        <definition>tag_t gr::lora_sdr::interleaver_impl::m_framelen_tag</definition>
+        <argsstring></argsstring>
+        <name>m_framelen_tag</name>
+        <qualifiedname>gr::lora_sdr::interleaver_impl::m_framelen_tag</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="22" column="15" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" bodystart="22" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1interleaver__impl_1a0e83679639fec61c56c5b50abd1d0dd4" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::interleaver_impl::m_has_config_tag</definition>
+        <argsstring></argsstring>
+        <name>m_has_config_tag</name>
+        <qualifiedname>gr::lora_sdr::interleaver_impl::m_has_config_tag</qualifiedname>
+        <briefdescription>
+<para>indicate that a configuration tag was received </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="23" column="14" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" bodystart="23" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1interleaver__impl_1ac16ba0423e9b4b34f3f325113b009c58" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>gr::lora_sdr::interleaver_impl::interleaver_impl</definition>
+        <argsstring>(uint8_t cr, uint8_t sf, uint8_t ldro_mode, int bw)</argsstring>
+        <name>interleaver_impl</name>
+        <qualifiedname>gr::lora_sdr::interleaver_impl::interleaver_impl</qualifiedname>
+        <param>
+          <type>uint8_t</type>
+          <declname>cr</declname>
+        </param>
+        <param>
+          <type>uint8_t</type>
+          <declname>sf</declname>
+        </param>
+        <param>
+          <type>uint8_t</type>
+          <declname>ldro_mode</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>bw</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="27" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1interleaver__impl_1aa7d8a1471e5f14a641475c1fd7fa1e84" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>gr::lora_sdr::interleaver_impl::~interleaver_impl</definition>
+        <argsstring>()</argsstring>
+        <name>~interleaver_impl</name>
+        <qualifiedname>gr::lora_sdr::interleaver_impl::~interleaver_impl</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="28" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1interleaver__impl_1af82f00f95915e0dbb0513cc13a08fb0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::interleaver_impl::set_cr</definition>
+        <argsstring>(uint8_t cr)</argsstring>
+        <name>set_cr</name>
+        <qualifiedname>gr::lora_sdr::interleaver_impl::set_cr</qualifiedname>
+        <reimplements refid="classgr_1_1lora__sdr_1_1interleaver_1a88b07bf44e8d6b3d9e4b7982aea7867c">set_cr</reimplements>
+        <param>
+          <type>uint8_t</type>
+          <declname>cr</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="30" column="12"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1interleaver__impl_1a94c4a991099309d5b24a896e97943c14" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>uint8_t</type>
+        <definition>uint8_t gr::lora_sdr::interleaver_impl::get_cr</definition>
+        <argsstring>()</argsstring>
+        <name>get_cr</name>
+        <qualifiedname>gr::lora_sdr::interleaver_impl::get_cr</qualifiedname>
+        <reimplements refid="classgr_1_1lora__sdr_1_1interleaver_1ad93ee91b86359d998a32123b00a9fb87">get_cr</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="31" column="15"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1interleaver__impl_1a9ca1a2381268e03e1d3a2da0041f3fc9" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::interleaver_impl::set_sf</definition>
+        <argsstring>(uint8_t sf)</argsstring>
+        <name>set_sf</name>
+        <qualifiedname>gr::lora_sdr::interleaver_impl::set_sf</qualifiedname>
+        <reimplements refid="classgr_1_1lora__sdr_1_1interleaver_1abb87d719e060161d129f4aa901b73015">set_sf</reimplements>
+        <param>
+          <type>uint8_t</type>
+          <declname>sf</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="32" column="12"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1interleaver__impl_1a8f36ad77b6a8c6f5c478aa7eead5e302" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::interleaver_impl::update_var</definition>
+        <argsstring>(int new_cr, int new_sf, int new_bw)</argsstring>
+        <name>update_var</name>
+        <qualifiedname>gr::lora_sdr::interleaver_impl::update_var</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>new_cr</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>new_sf</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>new_bw</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="33" column="12"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1interleaver__impl_1a0957f1e476d8926c265e325b17dc136f" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::interleaver_impl::forecast</definition>
+        <argsstring>(int noutput_items, gr_vector_int &amp;ninput_items_required)</argsstring>
+        <name>forecast</name>
+        <qualifiedname>gr::lora_sdr::interleaver_impl::forecast</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>noutput_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_int &amp;</type>
+          <declname>ninput_items_required</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="34" column="12"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1interleaver__impl_1adfe772e35ecb4e837e620a9f88245e06" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int gr::lora_sdr::interleaver_impl::general_work</definition>
+        <argsstring>(int noutput_items, gr_vector_int &amp;ninput_items, gr_vector_const_void_star &amp;input_items, gr_vector_void_star &amp;output_items)</argsstring>
+        <name>general_work</name>
+        <qualifiedname>gr::lora_sdr::interleaver_impl::general_work</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>noutput_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_int &amp;</type>
+          <declname>ninput_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_const_void_star &amp;</type>
+          <declname>input_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_void_star &amp;</type>
+          <declname>output_items</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="36" column="11"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="3">
+        <label>gr::block</label>
+      </node>
+      <node id="2">
+        <label>gr::lora_sdr::interleaver</label>
+        <link refid="classgr_1_1lora__sdr_1_1interleaver"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>gr::lora_sdr::interleaver_impl</label>
+        <link refid="classgr_1_1lora__sdr_1_1interleaver__impl"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="3">
+        <label>gr::block</label>
+      </node>
+      <node id="2">
+        <label>gr::lora_sdr::interleaver</label>
+        <link refid="classgr_1_1lora__sdr_1_1interleaver"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>gr::lora_sdr::interleaver_impl</label>
+        <link refid="classgr_1_1lora__sdr_1_1interleaver__impl"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" line="10" column="5" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/interleaver_impl.h" bodystart="11" bodyend="41"/>
+    <listofallmembers>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver__impl_1a0ebde855ca3af4ff51d5b006f3121346" prot="private" virt="non-virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>cw_cnt</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver__impl_1a0957f1e476d8926c265e325b17dc136f" prot="public" virt="non-virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>forecast</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver__impl_1adfe772e35ecb4e837e620a9f88245e06" prot="public" virt="non-virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>general_work</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver__impl_1a94c4a991099309d5b24a896e97943c14" prot="public" virt="virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>get_cr</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver__impl_1ac16ba0423e9b4b34f3f325113b009c58" prot="public" virt="non-virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>interleaver_impl</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver__impl_1a06f96b85f269e1ae4d0b019d5ee4b564" prot="private" virt="non-virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>m_bw</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver__impl_1a3b075ac13e731d4d6099fcb1a5967e02" prot="private" virt="non-virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>m_config_tag</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver__impl_1a6945652529f45d51705db59c89974c9a" prot="private" virt="non-virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>m_cr</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver__impl_1a0c55011e558a16cbe00f0b8b312363d7" prot="private" virt="non-virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>m_frame_len</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver__impl_1abe6e7ab443e5cc2a269d8584c0895dc7" prot="private" virt="non-virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>m_framelen_tag</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver__impl_1a0e83679639fec61c56c5b50abd1d0dd4" prot="private" virt="non-virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>m_has_config_tag</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver__impl_1aeda4a8bd1156f7d05f08349506e03031" prot="private" virt="non-virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>m_ldro</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver__impl_1a9bd063c3075266098664b0592f667049" prot="private" virt="non-virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>m_ldro_mode</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver__impl_1a9c6741820d3d0d6b5e381a73602cf71d" prot="private" virt="non-virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>m_sf</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver_1a51b69f4292691415d966095ec79b70c7" prot="public" virt="non-virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>make</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver__impl_1af82f00f95915e0dbb0513cc13a08fb0e" prot="public" virt="virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>set_cr</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver__impl_1a9ca1a2381268e03e1d3a2da0041f3fc9" prot="public" virt="virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>set_sf</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver_1a99559931467cce02ae7851e7df3429af" prot="public" virt="non-virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>sptr</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver__impl_1a8f36ad77b6a8c6f5c478aa7eead5e302" prot="public" virt="non-virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>update_var</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1interleaver__impl_1aa7d8a1471e5f14a641475c1fd7fa1e84" prot="public" virt="non-virtual"><scope>gr::lora_sdr::interleaver_impl</scope><name>~interleaver_impl</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

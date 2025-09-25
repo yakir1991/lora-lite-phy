@@ -1,0 +1,166 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classgr_1_1lora__sdr_1_1frame__sync" kind="class" language="C++" prot="public">
+    <compoundname>gr::lora_sdr::frame_sync</compoundname>
+    <basecompoundref prot="public" virt="virtual">gr::block</basecompoundref>
+    <basecompoundref prot="public" virt="virtual">gr::block</basecompoundref>
+    <derivedcompoundref refid="classgr_1_1lora__sdr_1_1frame__sync__impl" prot="public" virt="non-virtual">gr::lora_sdr::frame_sync_impl</derivedcompoundref>
+    <includes refid="frame__sync_8h" local="no">frame_sync.h</includes>
+    <sectiondef kind="public-type">
+      <memberdef kind="typedef" id="classgr_1_1lora__sdr_1_1frame__sync_1ab34bd6797f7c4fe38083d358fc2b7a37" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classgr_1_1lora__sdr_1_1frame__sync" kindref="compound">frame_sync</ref> &gt;</type>
+        <definition>typedef std::shared_ptr&lt;frame_sync&gt; gr::lora_sdr::frame_sync::sptr</definition>
+        <argsstring></argsstring>
+        <name>sptr</name>
+        <qualifiedname>gr::lora_sdr::frame_sync::sptr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/frame_sync.h" line="39" column="31" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/frame_sync.h" bodystart="39" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="classgr_1_1lora__sdr_1_1frame__sync_1ab34bd6797f7c4fe38083d358fc2b7a37" prot="public" static="no">
+        <type>std::shared_ptr&lt; <ref refid="classgr_1_1lora__sdr_1_1frame__sync" kindref="compound">frame_sync</ref> &gt;</type>
+        <definition>typedef std::shared_ptr&lt;frame_sync&gt; gr::lora_sdr::frame_sync::sptr</definition>
+        <argsstring></argsstring>
+        <name>sptr</name>
+        <qualifiedname>gr::lora_sdr::frame_sync::sptr</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/no_sfo_frame_sync.h" line="39" column="31" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/no_sfo_frame_sync.h" bodystart="39" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1frame__sync_1a7a98a3068bdf538506f09eb626996c5e" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type><ref refid="classgr_1_1lora__sdr_1_1frame__sync_1ab34bd6797f7c4fe38083d358fc2b7a37" kindref="member">sptr</ref></type>
+        <definition>static sptr gr::lora_sdr::frame_sync::make</definition>
+        <argsstring>(uint32_t center_freq, uint32_t bandwidth, uint8_t sf, bool impl_head, std::vector&lt; uint16_t &gt; sync_word, uint8_t os_factor, uint16_t preamble_len)</argsstring>
+        <name>make</name>
+        <qualifiedname>gr::lora_sdr::frame_sync::make</qualifiedname>
+        <param>
+          <type>uint32_t</type>
+          <declname>center_freq</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>bandwidth</declname>
+        </param>
+        <param>
+          <type>uint8_t</type>
+          <declname>sf</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>impl_head</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; uint16_t &gt;</type>
+          <declname>sync_word</declname>
+        </param>
+        <param>
+          <type>uint8_t</type>
+          <declname>os_factor</declname>
+        </param>
+        <param>
+          <type>uint16_t</type>
+          <declname>preamble_len</declname>
+        </param>
+        <briefdescription>
+<para>Return a shared_ptr to a new instance of <ref refid="classgr_1_1lora__sdr_1_1frame__sync" kindref="compound">lora_sdr::frame_sync</ref>. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>To avoid accidental use of raw pointers, <ref refid="classgr_1_1lora__sdr_1_1frame__sync" kindref="compound">lora_sdr::frame_sync</ref>&apos;s constructor is in a private implementation class. <ref refid="classgr_1_1lora__sdr_1_1frame__sync_1a7a98a3068bdf538506f09eb626996c5e" kindref="member">lora_sdr::frame_sync::make</ref> is the public interface for creating new instances. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/frame_sync.h" line="49" column="19"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1frame__sync_1af1ab5e3de1d9207614c01bdc849d4eff" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type><ref refid="classgr_1_1lora__sdr_1_1frame__sync_1ab34bd6797f7c4fe38083d358fc2b7a37" kindref="member">sptr</ref></type>
+        <definition>static sptr gr::lora_sdr::frame_sync::make</definition>
+        <argsstring>(float samp_rate, uint32_t bandwidth, uint8_t sf, bool impl_head, std::vector&lt; uint16_t &gt; sync_word)</argsstring>
+        <name>make</name>
+        <qualifiedname>gr::lora_sdr::frame_sync::make</qualifiedname>
+        <param>
+          <type>float</type>
+          <declname>samp_rate</declname>
+        </param>
+        <param>
+          <type>uint32_t</type>
+          <declname>bandwidth</declname>
+        </param>
+        <param>
+          <type>uint8_t</type>
+          <declname>sf</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>impl_head</declname>
+        </param>
+        <param>
+          <type>std::vector&lt; uint16_t &gt;</type>
+          <declname>sync_word</declname>
+        </param>
+        <briefdescription>
+<para>Return a shared_ptr to a new instance of <ref refid="classgr_1_1lora__sdr_1_1frame__sync" kindref="compound">lora_sdr::frame_sync</ref>. </para>
+        </briefdescription>
+        <detaileddescription>
+<para>To avoid accidental use of raw pointers, <ref refid="classgr_1_1lora__sdr_1_1frame__sync" kindref="compound">lora_sdr::frame_sync</ref>&apos;s constructor is in a private implementation class. <ref refid="classgr_1_1lora__sdr_1_1frame__sync_1a7a98a3068bdf538506f09eb626996c5e" kindref="member">lora_sdr::frame_sync::make</ref> is the public interface for creating new instances. </para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/no_sfo_frame_sync.h" line="49" column="19"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>&lt;+description of block+&gt; </para>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>gr::block</label>
+      </node>
+      <node id="1">
+        <label>gr::lora_sdr::frame_sync</label>
+        <link refid="classgr_1_1lora__sdr_1_1frame__sync"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>gr::lora_sdr::frame_sync_impl</label>
+        <link refid="classgr_1_1lora__sdr_1_1frame__sync__impl"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>gr::block</label>
+      </node>
+      <node id="1">
+        <label>gr::lora_sdr::frame_sync</label>
+        <link refid="classgr_1_1lora__sdr_1_1frame__sync"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/frame_sync.h" line="36" column="5" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/frame_sync.h" bodystart="37" bodyend="50"/>
+    <listofallmembers>
+      <member refid="classgr_1_1lora__sdr_1_1frame__sync_1a7a98a3068bdf538506f09eb626996c5e" prot="public" virt="non-virtual"><scope>gr::lora_sdr::frame_sync</scope><name>make</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1frame__sync_1af1ab5e3de1d9207614c01bdc849d4eff" prot="public" virt="non-virtual"><scope>gr::lora_sdr::frame_sync</scope><name>make</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1frame__sync_1ab34bd6797f7c4fe38083d358fc2b7a37" prot="public" virt="non-virtual"><scope>gr::lora_sdr::frame_sync</scope><name>sptr</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1frame__sync_1ab34bd6797f7c4fe38083d358fc2b7a37" prot="public" virt="non-virtual"><scope>gr::lora_sdr::frame_sync</scope><name>sptr</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

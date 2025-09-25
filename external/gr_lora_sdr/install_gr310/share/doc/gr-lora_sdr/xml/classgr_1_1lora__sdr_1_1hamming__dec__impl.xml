@@ -1,0 +1,180 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classgr_1_1lora__sdr_1_1hamming__dec__impl" kind="class" language="C++" prot="public">
+    <compoundname>gr::lora_sdr::hamming_dec_impl</compoundname>
+    <basecompoundref refid="classgr_1_1lora__sdr_1_1hamming__dec" prot="public" virt="non-virtual">gr::lora_sdr::hamming_dec</basecompoundref>
+    <includes refid="hamming__dec__impl_8h" local="no">hamming_dec_impl.h</includes>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1hamming__dec__impl_1a97b48238fbd0aa5162df2003ba908e1e" prot="private" static="no" mutable="no">
+        <type>uint8_t</type>
+        <definition>uint8_t gr::lora_sdr::hamming_dec_impl::m_cr</definition>
+        <argsstring></argsstring>
+        <name>m_cr</name>
+        <qualifiedname>gr::lora_sdr::hamming_dec_impl::m_cr</qualifiedname>
+        <briefdescription>
+<para>Transmission coding rate. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/hamming_dec_impl.h" line="12" column="17" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/hamming_dec_impl.h" bodystart="12" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1hamming__dec__impl_1aac6775251e61db5b28d48755bb00d054" prot="private" static="no" mutable="no">
+        <type>uint8_t</type>
+        <definition>uint8_t gr::lora_sdr::hamming_dec_impl::cr_app</definition>
+        <argsstring></argsstring>
+        <name>cr_app</name>
+        <qualifiedname>gr::lora_sdr::hamming_dec_impl::cr_app</qualifiedname>
+        <briefdescription>
+<para>Coding rate use for the block. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/hamming_dec_impl.h" line="13" column="17" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/hamming_dec_impl.h" bodystart="13" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1hamming__dec__impl_1a0fd7af839ca20a62e5a2d7d67446a17b" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::hamming_dec_impl::is_header</definition>
+        <argsstring></argsstring>
+        <name>is_header</name>
+        <qualifiedname>gr::lora_sdr::hamming_dec_impl::is_header</qualifiedname>
+        <briefdescription>
+<para>Indicate that it is the first block. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/hamming_dec_impl.h" line="14" column="14" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/hamming_dec_impl.h" bodystart="14" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1hamming__dec__impl_1a240187d7c375ea32da2214d7ad2370d9" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::hamming_dec_impl::m_soft_decoding</definition>
+        <argsstring></argsstring>
+        <name>m_soft_decoding</name>
+        <qualifiedname>gr::lora_sdr::hamming_dec_impl::m_soft_decoding</qualifiedname>
+        <briefdescription>
+<para>Hard/Soft decoding. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/hamming_dec_impl.h" line="15" column="14" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/hamming_dec_impl.h" bodystart="15" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1hamming__dec__impl_1ab5a1547bf81014f04ef9b83370e49002" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>gr::lora_sdr::hamming_dec_impl::hamming_dec_impl</definition>
+        <argsstring>(bool soft_decoding)</argsstring>
+        <name>hamming_dec_impl</name>
+        <qualifiedname>gr::lora_sdr::hamming_dec_impl::hamming_dec_impl</qualifiedname>
+        <param>
+          <type>bool</type>
+          <declname>soft_decoding</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/hamming_dec_impl.h" line="18" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1hamming__dec__impl_1a8d62d5eed7b60068397faeaad2a30922" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>gr::lora_sdr::hamming_dec_impl::~hamming_dec_impl</definition>
+        <argsstring>()</argsstring>
+        <name>~hamming_dec_impl</name>
+        <qualifiedname>gr::lora_sdr::hamming_dec_impl::~hamming_dec_impl</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/hamming_dec_impl.h" line="19" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1hamming__dec__impl_1ab152998bcda1cc40835d82fa1afed17a" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int gr::lora_sdr::hamming_dec_impl::work</definition>
+        <argsstring>(int noutput_items, gr_vector_const_void_star &amp;input_items, gr_vector_void_star &amp;output_items)</argsstring>
+        <name>work</name>
+        <qualifiedname>gr::lora_sdr::hamming_dec_impl::work</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>noutput_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_const_void_star &amp;</type>
+          <declname>input_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_void_star &amp;</type>
+          <declname>output_items</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/hamming_dec_impl.h" line="21" column="11"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>gr::lora_sdr::hamming_dec</label>
+        <link refid="classgr_1_1lora__sdr_1_1hamming__dec"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>gr::lora_sdr::hamming_dec_impl</label>
+        <link refid="classgr_1_1lora__sdr_1_1hamming__dec__impl"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>gr::sync_block</label>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>gr::lora_sdr::hamming_dec</label>
+        <link refid="classgr_1_1lora__sdr_1_1hamming__dec"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>gr::lora_sdr::hamming_dec_impl</label>
+        <link refid="classgr_1_1lora__sdr_1_1hamming__dec__impl"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>gr::sync_block</label>
+      </node>
+    </collaborationgraph>
+    <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/hamming_dec_impl.h" line="9" column="5" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/hamming_dec_impl.h" bodystart="10" bodyend="26"/>
+    <listofallmembers>
+      <member refid="classgr_1_1lora__sdr_1_1hamming__dec__impl_1aac6775251e61db5b28d48755bb00d054" prot="private" virt="non-virtual"><scope>gr::lora_sdr::hamming_dec_impl</scope><name>cr_app</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1hamming__dec__impl_1ab5a1547bf81014f04ef9b83370e49002" prot="public" virt="non-virtual"><scope>gr::lora_sdr::hamming_dec_impl</scope><name>hamming_dec_impl</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1hamming__dec__impl_1a0fd7af839ca20a62e5a2d7d67446a17b" prot="private" virt="non-virtual"><scope>gr::lora_sdr::hamming_dec_impl</scope><name>is_header</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1hamming__dec__impl_1a97b48238fbd0aa5162df2003ba908e1e" prot="private" virt="non-virtual"><scope>gr::lora_sdr::hamming_dec_impl</scope><name>m_cr</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1hamming__dec__impl_1a240187d7c375ea32da2214d7ad2370d9" prot="private" virt="non-virtual"><scope>gr::lora_sdr::hamming_dec_impl</scope><name>m_soft_decoding</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1hamming__dec_1a1390faabf697571c08d281134f0eaa20" prot="public" virt="non-virtual"><scope>gr::lora_sdr::hamming_dec_impl</scope><name>make</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1hamming__dec_1ac9fbc176c587407191606423b8390ed0" prot="public" virt="non-virtual"><scope>gr::lora_sdr::hamming_dec_impl</scope><name>sptr</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1hamming__dec__impl_1ab152998bcda1cc40835d82fa1afed17a" prot="public" virt="non-virtual"><scope>gr::lora_sdr::hamming_dec_impl</scope><name>work</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1hamming__dec__impl_1a8d62d5eed7b60068397faeaad2a30922" prot="public" virt="non-virtual"><scope>gr::lora_sdr::hamming_dec_impl</scope><name>~hamming_dec_impl</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

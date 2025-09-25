@@ -1,0 +1,599 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classgr_1_1lora__sdr_1_1fft__demod__impl" kind="class" language="C++" prot="public">
+    <compoundname>gr::lora_sdr::fft_demod_impl</compoundname>
+    <basecompoundref refid="classgr_1_1lora__sdr_1_1fft__demod" prot="public" virt="non-virtual">gr::lora_sdr::fft_demod</basecompoundref>
+    <includes refid="fft__demod__impl_8h" local="no">fft_demod_impl.h</includes>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1ac39e22a443bc819d2ff303df29f0334c" prot="private" static="no" mutable="no">
+        <type>uint8_t</type>
+        <definition>uint8_t gr::lora_sdr::fft_demod_impl::m_sf</definition>
+        <argsstring></argsstring>
+        <name>m_sf</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::m_sf</qualifiedname>
+        <briefdescription>
+<para>Spreading factor. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="24" column="15" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="24" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a5b3609e945147746d8259eec1e8a2ba3" prot="private" static="no" mutable="no">
+        <type>uint8_t</type>
+        <definition>uint8_t gr::lora_sdr::fft_demod_impl::m_cr</definition>
+        <argsstring></argsstring>
+        <name>m_cr</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::m_cr</qualifiedname>
+        <briefdescription>
+<para>Coding rate. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="25" column="15" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="25" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1ae32979c3b677b4c8eed1f99dad34a213" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::fft_demod_impl::m_soft_decoding</definition>
+        <argsstring></argsstring>
+        <name>m_soft_decoding</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::m_soft_decoding</qualifiedname>
+        <briefdescription>
+<para>Hard/Soft decoding. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="26" column="12" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="26" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1abdb17ed25f4afe325ce21439b94950c9" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::fft_demod_impl::max_log_approx</definition>
+        <argsstring></argsstring>
+        <name>max_log_approx</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::max_log_approx</qualifiedname>
+        <briefdescription>
+<para>use Max-log approximation in <ref refid="namespacegr_1_1lora__sdr_1af0424eaa24425f2bdd072201c4f42e35" kindref="member">LLR</ref> formula </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="27" column="12" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="27" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a8a11ba236809210563f7bcddd94caa2b" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::fft_demod_impl::m_new_frame</definition>
+        <argsstring></argsstring>
+        <name>m_new_frame</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::m_new_frame</qualifiedname>
+        <briefdescription>
+<para>To be notify when receive a new frame to estimate SNR. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="28" column="12" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="28" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1aa20cac9a453b4301882eedf4a64189e4" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::fft_demod_impl::m_ldro</definition>
+        <argsstring></argsstring>
+        <name>m_ldro</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::m_ldro</qualifiedname>
+        <briefdescription>
+<para>use low datarate optimisation </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="29" column="12" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="29" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a3d2af5185f0540daa792ca96b1f0d602" prot="private" static="no" mutable="no">
+        <type>unsigned int</type>
+        <definition>unsigned int gr::lora_sdr::fft_demod_impl::m_symb_numb</definition>
+        <argsstring></argsstring>
+        <name>m_symb_numb</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::m_symb_numb</qualifiedname>
+        <briefdescription>
+<para>number of symbols in the frame </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="30" column="20" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="30" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a4b96f9a5c26bce617e0a09e82f235c01" prot="private" static="no" mutable="no">
+        <type>unsigned int</type>
+        <definition>unsigned int gr::lora_sdr::fft_demod_impl::m_symb_cnt</definition>
+        <argsstring></argsstring>
+        <name>m_symb_cnt</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::m_symb_cnt</qualifiedname>
+        <briefdescription>
+<para>number of symbol already output in current frame </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="31" column="20" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="31" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1ac6508f8a7faa42bf4b156b63fe70d645" prot="private" static="no" mutable="no">
+        <type>double</type>
+        <definition>double gr::lora_sdr::fft_demod_impl::m_Ps_est</definition>
+        <argsstring></argsstring>
+        <name>m_Ps_est</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::m_Ps_est</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="33" column="14" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="33" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a19826913b7f831e79ff7e7517420e51e" prot="private" static="no" mutable="no">
+        <type>double</type>
+        <definition>double gr::lora_sdr::fft_demod_impl::m_Pn_est</definition>
+        <argsstring></argsstring>
+        <name>m_Pn_est</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::m_Pn_est</qualifiedname>
+        <initializer>= 0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="34" column="14" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="34" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a2f4330404757df5b7bfd7c9b97cf0ad0" prot="private" static="no" mutable="no">
+        <type>uint32_t</type>
+        <definition>uint32_t gr::lora_sdr::fft_demod_impl::m_samples_per_symbol</definition>
+        <argsstring></argsstring>
+        <name>m_samples_per_symbol</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::m_samples_per_symbol</qualifiedname>
+        <briefdescription>
+<para>Number of samples received per lora symbols. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="36" column="16" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="36" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a17e7d986e999f3f1c3341743def29a88" prot="private" static="no" mutable="no">
+        <type>int</type>
+        <definition>int gr::lora_sdr::fft_demod_impl::CFOint</definition>
+        <argsstring></argsstring>
+        <name>CFOint</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::CFOint</qualifiedname>
+        <briefdescription>
+<para>integer part of the CFO </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="37" column="11" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="37" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a798b1551cd0767ad388b3906d7d2dd05" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; gr_complex &gt;</type>
+        <definition>std::vector&lt;gr_complex&gt; gr::lora_sdr::fft_demod_impl::m_upchirp</definition>
+        <argsstring></argsstring>
+        <name>m_upchirp</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::m_upchirp</qualifiedname>
+        <briefdescription>
+<para>Reference upchirp. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="40" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="40" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1ad7807381ffdc3b388d97e38fd84f1f53" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; gr_complex &gt;</type>
+        <definition>std::vector&lt;gr_complex&gt; gr::lora_sdr::fft_demod_impl::m_downchirp</definition>
+        <argsstring></argsstring>
+        <name>m_downchirp</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::m_downchirp</qualifiedname>
+        <briefdescription>
+<para>Reference downchirp. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="41" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="41" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1afaa84d5826d3d465a87a5f98439b95cc" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; gr_complex &gt;</type>
+        <definition>std::vector&lt;gr_complex&gt; gr::lora_sdr::fft_demod_impl::m_dechirped</definition>
+        <argsstring></argsstring>
+        <name>m_dechirped</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::m_dechirped</qualifiedname>
+        <briefdescription>
+<para>Dechirped symbol. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="42" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="42" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a0ccca8d20fd9e33d02d624bd337a3cb3" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; gr_complex &gt;</type>
+        <definition>std::vector&lt;gr_complex&gt; gr::lora_sdr::fft_demod_impl::m_fft</definition>
+        <argsstring></argsstring>
+        <name>m_fft</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::m_fft</qualifiedname>
+        <briefdescription>
+<para>Result of the FFT. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="43" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="43" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1ac0a74836b837011c5ae1b528006f36b2" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; uint16_t &gt;</type>
+        <definition>std::vector&lt;uint16_t&gt; gr::lora_sdr::fft_demod_impl::output</definition>
+        <argsstring></argsstring>
+        <name>output</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::output</qualifiedname>
+        <briefdescription>
+<para>Stores the value to be outputted once a full bloc has been received. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="45" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="45" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a23e1767d0f9c1effe12bbde625e53ef1" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; std::vector&lt; <ref refid="namespacegr_1_1lora__sdr_1af0424eaa24425f2bdd072201c4f42e35" kindref="member">LLR</ref> &gt; &gt;</type>
+        <definition>std::vector&lt; std::vector&lt;LLR&gt; &gt; gr::lora_sdr::fft_demod_impl::LLRs_block</definition>
+        <argsstring></argsstring>
+        <name>LLRs_block</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::LLRs_block</qualifiedname>
+        <briefdescription>
+<para>Stores the LLRs to be outputted once a full bloc has been received. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="46" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="46" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a1e281d23cb498550e8c7aefce0da24c1" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::fft_demod_impl::is_header</definition>
+        <argsstring></argsstring>
+        <name>is_header</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::is_header</qualifiedname>
+        <briefdescription>
+<para>Indicate that the first block hasn&apos;t been fully received. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="47" column="12" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="47" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a683bd4db4b34cee2e7746d9e8659dcb6" prot="private" static="no" mutable="no">
+        <type>uint8_t</type>
+        <definition>uint8_t gr::lora_sdr::fft_demod_impl::block_size</definition>
+        <argsstring></argsstring>
+        <name>block_size</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::block_size</qualifiedname>
+        <briefdescription>
+<para>The number of lora symbol in one block. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="48" column="15" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="48" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="private-func">
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a5043820376408432a8fee33bfc51e851" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>uint16_t</type>
+        <definition>uint16_t gr::lora_sdr::fft_demod_impl::get_symbol_val</definition>
+        <argsstring>(const gr_complex *samples)</argsstring>
+        <name>get_symbol_val</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::get_symbol_val</qualifiedname>
+        <param>
+          <type>const gr_complex *</type>
+          <declname>samples</declname>
+        </param>
+        <briefdescription>
+<para>Recover the lora symbol value using argmax of the dechirped symbol FFT. </para>
+        </briefdescription>
+        <detaileddescription>
+<para><parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>samples</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>The pointer to the symbol beginning. </para>
+</parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="69" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a633f5451f905d95f5018a2bed3b83e02" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::fft_demod_impl::set_sf</definition>
+        <argsstring>(int sf)</argsstring>
+        <name>set_sf</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::set_sf</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>sf</declname>
+        </param>
+        <briefdescription>
+<para>Set spreading factor and init vector sizes accordingly. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="75" column="12"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1abb1939db8e031607ca3b6e6c24d20954" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::fft_demod_impl::new_frame_handler</definition>
+        <argsstring>(int cfo_int)</argsstring>
+        <name>new_frame_handler</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::new_frame_handler</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>cfo_int</declname>
+        </param>
+        <briefdescription>
+<para>Reset the block variables when a new lora packet needs to be decoded. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="80" column="12"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a4c45b9ff4b282d539cadfce78a61d6d2" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::fft_demod_impl::header_cr_handler</definition>
+        <argsstring>(pmt::pmt_t cr)</argsstring>
+        <name>header_cr_handler</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::header_cr_handler</qualifiedname>
+        <param>
+          <type>pmt::pmt_t</type>
+          <declname>cr</declname>
+        </param>
+        <briefdescription>
+<para>Handles the reception of the coding rate received by the <ref refid="classgr_1_1lora__sdr_1_1header__decoder" kindref="compound">header_decoder</ref> block. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="85" column="12"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a05ad900976ec68237418962c17bbdc7c" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>float *</type>
+        <definition>float * gr::lora_sdr::fft_demod_impl::compute_fft_mag</definition>
+        <argsstring>(const gr_complex *samples)</argsstring>
+        <name>compute_fft_mag</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::compute_fft_mag</qualifiedname>
+        <param>
+          <type>const gr_complex *</type>
+          <declname>samples</declname>
+        </param>
+        <briefdescription>
+<para>Compute the FFT and fill the class attributes. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="90" column="13"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1aad15144a2bad6ba6318527394efcafe4" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>std::vector&lt; <ref refid="namespacegr_1_1lora__sdr_1af0424eaa24425f2bdd072201c4f42e35" kindref="member">LLR</ref> &gt;</type>
+        <definition>std::vector&lt; LLR &gt; gr::lora_sdr::fft_demod_impl::get_LLRs</definition>
+        <argsstring>(const gr_complex *samples)</argsstring>
+        <name>get_LLRs</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::get_LLRs</qualifiedname>
+        <param>
+          <type>const gr_complex *</type>
+          <declname>samples</declname>
+        </param>
+        <briefdescription>
+<para>Compute the Log-Likelihood Ratios of the SF nbr of bits. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="95" column="19"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a577b2638b611f3a2217c8a3110fabcae" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>gr::lora_sdr::fft_demod_impl::fft_demod_impl</definition>
+        <argsstring>(bool soft_decoding, bool max_log_approx)</argsstring>
+        <name>fft_demod_impl</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::fft_demod_impl</qualifiedname>
+        <param>
+          <type>bool</type>
+          <declname>soft_decoding</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>max_log_approx</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="98" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a7419ee12d81e6d0fa4ddcccd91ec9cd8" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>gr::lora_sdr::fft_demod_impl::~fft_demod_impl</definition>
+        <argsstring>()</argsstring>
+        <name>~fft_demod_impl</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::~fft_demod_impl</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="99" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1a96287d39435951608c38f0056be4cd53" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::fft_demod_impl::forecast</definition>
+        <argsstring>(int noutput_items, gr_vector_int &amp;ninput_items_required)</argsstring>
+        <name>forecast</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::forecast</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>noutput_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_int &amp;</type>
+          <declname>ninput_items_required</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="102" column="12"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1fft__demod__impl_1ab06bde4706616dac75b7438b2e6b291e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int gr::lora_sdr::fft_demod_impl::general_work</definition>
+        <argsstring>(int noutput_items, gr_vector_int &amp;ninput_items, gr_vector_const_void_star &amp;input_items, gr_vector_void_star &amp;output_items)</argsstring>
+        <name>general_work</name>
+        <qualifiedname>gr::lora_sdr::fft_demod_impl::general_work</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>noutput_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_int &amp;</type>
+          <declname>ninput_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_const_void_star &amp;</type>
+          <declname>input_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_void_star &amp;</type>
+          <declname>output_items</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="104" column="11"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="3">
+        <label>gr::block</label>
+      </node>
+      <node id="2">
+        <label>gr::lora_sdr::fft_demod</label>
+        <link refid="classgr_1_1lora__sdr_1_1fft__demod"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>gr::lora_sdr::fft_demod_impl</label>
+        <link refid="classgr_1_1lora__sdr_1_1fft__demod__impl"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="3">
+        <label>gr::block</label>
+      </node>
+      <node id="2">
+        <label>gr::lora_sdr::fft_demod</label>
+        <link refid="classgr_1_1lora__sdr_1_1fft__demod"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>gr::lora_sdr::fft_demod_impl</label>
+        <link refid="classgr_1_1lora__sdr_1_1fft__demod__impl"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" line="21" column="5" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/fft_demod_impl.h" bodystart="22" bodyend="108"/>
+    <listofallmembers>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a683bd4db4b34cee2e7746d9e8659dcb6" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>block_size</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a17e7d986e999f3f1c3341743def29a88" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>CFOint</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a05ad900976ec68237418962c17bbdc7c" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>compute_fft_mag</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a577b2638b611f3a2217c8a3110fabcae" prot="public" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>fft_demod_impl</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a96287d39435951608c38f0056be4cd53" prot="public" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>forecast</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1ab06bde4706616dac75b7438b2e6b291e" prot="public" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>general_work</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1aad15144a2bad6ba6318527394efcafe4" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>get_LLRs</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a5043820376408432a8fee33bfc51e851" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>get_symbol_val</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a4c45b9ff4b282d539cadfce78a61d6d2" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>header_cr_handler</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a1e281d23cb498550e8c7aefce0da24c1" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>is_header</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a23e1767d0f9c1effe12bbde625e53ef1" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>LLRs_block</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a5b3609e945147746d8259eec1e8a2ba3" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>m_cr</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1afaa84d5826d3d465a87a5f98439b95cc" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>m_dechirped</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1ad7807381ffdc3b388d97e38fd84f1f53" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>m_downchirp</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a0ccca8d20fd9e33d02d624bd337a3cb3" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>m_fft</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1aa20cac9a453b4301882eedf4a64189e4" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>m_ldro</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a8a11ba236809210563f7bcddd94caa2b" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>m_new_frame</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a19826913b7f831e79ff7e7517420e51e" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>m_Pn_est</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1ac6508f8a7faa42bf4b156b63fe70d645" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>m_Ps_est</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a2f4330404757df5b7bfd7c9b97cf0ad0" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>m_samples_per_symbol</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1ac39e22a443bc819d2ff303df29f0334c" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>m_sf</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1ae32979c3b677b4c8eed1f99dad34a213" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>m_soft_decoding</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a4b96f9a5c26bce617e0a09e82f235c01" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>m_symb_cnt</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a3d2af5185f0540daa792ca96b1f0d602" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>m_symb_numb</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a798b1551cd0767ad388b3906d7d2dd05" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>m_upchirp</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod_1a280fdcf6e99e5f08269fccdf5f88ef23" prot="public" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>make</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1abdb17ed25f4afe325ce21439b94950c9" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>max_log_approx</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1abb1939db8e031607ca3b6e6c24d20954" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>new_frame_handler</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1ac0a74836b837011c5ae1b528006f36b2" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>output</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a633f5451f905d95f5018a2bed3b83e02" prot="private" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>set_sf</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod_1a69ca8050cd56e63b7e998408588d3bca" prot="public" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>sptr</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1fft__demod__impl_1a7419ee12d81e6d0fa4ddcccd91ec9cd8" prot="public" virt="non-virtual"><scope>gr::lora_sdr::fft_demod_impl</scope><name>~fft_demod_impl</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

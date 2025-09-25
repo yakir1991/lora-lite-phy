@@ -1,0 +1,152 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="utilities__pydoc_8h" kind="file" language="C++">
+    <compoundname>utilities_pydoc.h</compoundname>
+    <includes refid="build_2python_2lora__sdr_2bindings_2pydoc__macros_8h" local="yes">pydoc_macros.h</includes>
+    <incdepgraph>
+      <node id="2">
+        <label>pydoc_macros.h</label>
+        <link refid="build_2python_2lora__sdr_2bindings_2pydoc__macros_8h"/>
+      </node>
+      <node id="1">
+        <label>utilities_pydoc.h</label>
+        <link refid="utilities__pydoc_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+    </incdepgraph>
+    <sectiondef kind="define">
+      <memberdef kind="define" id="utilities__pydoc_8h_1a74021f021dcdfbb22891787b79c5529d" prot="public" static="no">
+        <name>D</name>
+        <param><defname>...</defname></param>
+        <initializer><ref refid="build_2python_2lora__sdr_2bindings_2pydoc__macros_8h_1a4e578031ec998eaeb933d5caa6a7d28a" kindref="member">DOC</ref>(gr, lora_sdr, __VA_ARGS__)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h" line="10" column="10" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h" bodystart="10" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="var">
+      <memberdef kind="variable" id="utilities__pydoc_8h_1a7b91da7c08f6272e5bf9e01987b100f8" prot="public" static="yes" mutable="no">
+        <type>const char *</type>
+        <definition>const char* __doc_gr_lora_sdr_mod</definition>
+        <argsstring></argsstring>
+        <name>__doc_gr_lora_sdr_mod</name>
+        <initializer>= R&quot;doc()doc&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h" line="17" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h" bodystart="17" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="utilities__pydoc_8h_1a93a2e19412154f02d0acf1a019eb5bf0" prot="public" static="yes" mutable="no">
+        <type>const char *</type>
+        <definition>const char* __doc_gr_lora_sdr_double_mod</definition>
+        <argsstring></argsstring>
+        <name>__doc_gr_lora_sdr_double_mod</name>
+        <initializer>= R&quot;doc()doc&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h" line="19" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h" bodystart="19" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="utilities__pydoc_8h_1aa6a53abab70067b6678986ad1ee23599" prot="public" static="yes" mutable="no">
+        <type>const char *</type>
+        <definition>const char* __doc_gr_lora_sdr_int2bool</definition>
+        <argsstring></argsstring>
+        <name>__doc_gr_lora_sdr_int2bool</name>
+        <initializer>= R&quot;doc()doc&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h" line="21" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h" bodystart="21" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="utilities__pydoc_8h_1a8faef72dccff0fa6f279a860fd3d7f6b" prot="public" static="yes" mutable="no">
+        <type>const char *</type>
+        <definition>const char* __doc_gr_lora_sdr_bool2int</definition>
+        <argsstring></argsstring>
+        <name>__doc_gr_lora_sdr_bool2int</name>
+        <initializer>= R&quot;doc()doc&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h" line="23" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h" bodystart="23" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="utilities__pydoc_8h_1ac96ebfac90eb76ad934641fa3b179289" prot="public" static="yes" mutable="no">
+        <type>const char *</type>
+        <definition>const char* __doc_gr_lora_sdr_build_upchirp</definition>
+        <argsstring></argsstring>
+        <name>__doc_gr_lora_sdr_build_upchirp</name>
+        <initializer>= R&quot;doc()doc&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h" line="25" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h" bodystart="25" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="utilities__pydoc_8h_1a0b44615ef4d8b61be4cbf6c33862d3ee" prot="public" static="yes" mutable="no">
+        <type>const char *</type>
+        <definition>const char* __doc_gr_lora_sdr_build_ref_chirps</definition>
+        <argsstring></argsstring>
+        <name>__doc_gr_lora_sdr_build_ref_chirps</name>
+        <initializer>= R&quot;doc()doc&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h" line="27" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h" bodystart="27" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="utilities__pydoc_8h_1aed089a11e9663554b916a618619acba1" prot="public" static="yes" mutable="no">
+        <type>const char *</type>
+        <definition>const char* __doc_gr_lora_sdr_most_frequent</definition>
+        <argsstring></argsstring>
+        <name>__doc_gr_lora_sdr_most_frequent</name>
+        <initializer>= R&quot;doc()doc&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h" line="29" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h" bodystart="29" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="utilities__pydoc_8h_1a7fe434bdf494fd8f8f9479e77778e700" prot="public" static="yes" mutable="no">
+        <type>const char *</type>
+        <definition>const char* __doc_gr_lora_sdr_random_string</definition>
+        <argsstring></argsstring>
+        <name>__doc_gr_lora_sdr_random_string</name>
+        <initializer>= R&quot;doc()doc&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h" line="31" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h" bodystart="31" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build/python/lora_sdr/bindings/utilities_pydoc.h"/>
+  </compounddef>
+</doxygen>
