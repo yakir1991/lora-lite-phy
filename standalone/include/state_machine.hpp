@@ -1,9 +1,11 @@
 #pragma once
 #include <complex>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <vector>
-#include <optional>
+
+#include "lora/workspace.hpp"
 
 namespace lora::standalone {
 
@@ -13,6 +15,7 @@ struct RxConfig {
     uint32_t fs{250000};
     uint32_t os{2}; // fs/bw
     uint32_t preamble_min{8};
+    uint8_t sync_word{0x34};
     bool debug_detection{false};
     bool capture_header_bits{false};
     bool capture_payload_blocks{false};
@@ -104,6 +107,7 @@ private:
     std::vector<std::complex<float>> up_;
     std::vector<std::complex<float>> down_;
     std::vector<FrameOut> ready_;
+    lora::Workspace workspace_;
 };
 
 } // namespace lora::standalone

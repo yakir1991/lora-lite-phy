@@ -28,8 +28,8 @@ std::optional<LocalHeader> decode_header_with_preamble_cfo_sto_os(
     CodeRate cr,
     size_t min_preamble_syms,
     uint8_t expected_sync_word,
+    int preferred_os,
     std::vector<uint32_t>* out_raw_bins = nullptr,
     std::vector<uint8_t>* out_nibbles = nullptr);
 
 } // namespace lora::rx::gr
-

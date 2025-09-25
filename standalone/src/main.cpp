@@ -1,6 +1,7 @@
 #include "state_machine.hpp"
 #include <cstdio>
 #include <cstdlib>
+#include <cstdint>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -11,25 +12,47 @@
 
 using namespace lora::standalone;
 
-static bool read_iq_f32(const char* path, std::vector<std::complex<float>>& out)
+enum class SampleFormat { F32, CS16 };
+
+static bool read_iq(const char* path, SampleFormat fmt, std::vector<std::complex<float>>& out)
 {
     std::ifstream f(path, std::ios::binary);
     if (!f) return false;
     f.seekg(0, std::ios::end);
     auto sz = f.tellg();
     f.seekg(0, std::ios::beg);
-    size_t count = static_cast<size_t>(sz) / (2*sizeof(float));
-    std::vector<float> buf(count*2);
-    f.read(reinterpret_cast<char*>(buf.data()), buf.size()*sizeof(float));
+    if (fmt == SampleFormat::F32) {
+        if (sz % (2 * sizeof(float)) != 0) return false;
+        size_t count = static_cast<size_t>(sz) / (2 * sizeof(float));
+        std::vector<float> buf(count * 2);
+        f.read(reinterpret_cast<char*>(buf.data()), buf.size() * sizeof(float));
+        if (!f) return false;
+        out.resize(count);
+        for (size_t i = 0; i < count; ++i) {
+            out[i] = {buf[2 * i + 0], buf[2 * i + 1]};
+        }
+        return true;
+    }
+
+    if (sz % (2 * sizeof(int16_t)) != 0) return false;
+    size_t count = static_cast<size_t>(sz) / (2 * sizeof(int16_t));
+    std::vector<int16_t> buf(count * 2);
+    f.read(reinterpret_cast<char*>(buf.data()), buf.size() * sizeof(int16_t));
+    if (!f) return false;
+    constexpr float scale = 1.0f / 32768.0f;
     out.resize(count);
-    for (size_t i = 0; i < count; ++i) out[i] = {buf[2*i+0], buf[2*i+1]};
+    for (size_t i = 0; i < count; ++i) {
+        float i_val = static_cast<float>(buf[2 * i + 0]) * scale;
+        float q_val = static_cast<float>(buf[2 * i + 1]) * scale;
+        out[i] = {i_val, q_val};
+    }
     return true;
 }
 
 static void print_usage(const char* prog)
 {
     std::fprintf(stderr,
-                 "Usage: %s [--json] [--debug-crc] [--dump-bits] [--debug-detect] <iq_f32_file> [sf=7] [bw=125000] [fs=250000]\n",
+                 "Usage: %s [--json] [--debug-crc] [--dump-bits] [--debug-detect] [--format f32|cs16] [--sync 0x34] <iq_file> [sf=7] [bw=125000] [fs=250000]\n",
                  prog);
 }
 
@@ -39,6 +62,8 @@ int main(int argc, char** argv)
     bool debug_crc = false;
     bool dump_bits = false;
     bool debug_detection = false;
+    SampleFormat sample_format = SampleFormat::F32;
+    unsigned long sync_word = 0x34ul;
     std::vector<std::string> positional;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
@@ -46,6 +71,39 @@ int main(int argc, char** argv)
         else if (arg == "--debug-crc") debug_crc = true;
         else if (arg == "--dump-bits") dump_bits = true;
         else if (arg == "--debug-detect") debug_detection = true;
+        else if (arg == "--format") {
+            if (i + 1 >= argc) {
+                std::fprintf(stderr, "Missing value for --format\n");
+                print_usage(argv[0]);
+                return 1;
+            }
+            std::string v = argv[++i];
+            if (v == "f32" || v == "float") {
+                sample_format = SampleFormat::F32;
+            } else if (v == "cs16" || v == "s16" || v == "iq16") {
+                sample_format = SampleFormat::CS16;
+            } else {
+                std::fprintf(stderr, "Unknown format: %s\n", v.c_str());
+                print_usage(argv[0]);
+                return 1;
+            }
+        }
+        else if (arg == "--sync") {
+            if (i + 1 >= argc) {
+                std::fprintf(stderr, "Missing value for --sync\n");
+                print_usage(argv[0]);
+                return 1;
+            }
+            std::string v = argv[++i];
+            char* end = nullptr;
+            unsigned long parsed = std::strtoul(v.c_str(), &end, 0);
+            if (end == v.c_str() || parsed > 0xFFul) {
+                std::fprintf(stderr, "Invalid sync word: %s\n", v.c_str());
+                print_usage(argv[0]);
+                return 1;
+            }
+            sync_word = parsed & 0xFFul;
+        }
         else if (arg == "--help" || arg == "-h") { print_usage(argv[0]); return 0; }
         else if (!arg.empty() && arg[0] == '-' && arg != "-") {
             std::fprintf(stderr, "Unknown option: %s\n", arg.c_str());
@@ -67,7 +125,7 @@ int main(int argc, char** argv)
     uint32_t os = (bw ? fs / bw : 1u);
 
     std::vector<std::complex<float>> iq;
-    if (!read_iq_f32(path.c_str(), iq)) {
+    if (!read_iq(path.c_str(), sample_format, iq)) {
         std::fprintf(stderr, "Failed to read %s\n", path.c_str());
         return 2;
     }
@@ -78,6 +136,7 @@ int main(int argc, char** argv)
     cfg.fs = fs;
     cfg.os = os;
     cfg.preamble_min = 8;
+    cfg.sync_word = static_cast<uint8_t>(sync_word);
     cfg.debug_detection = debug_detection;
     cfg.capture_header_bits = dump_bits;
     cfg.capture_payload_blocks = dump_bits || debug_crc;
@@ -122,6 +181,7 @@ int main(int argc, char** argv)
         fields.push_back("\"cr_idx\":" + std::to_string(res->cr_idx));
         fields.push_back("\"has_crc\":" + std::string(res->has_crc ? "true" : "false"));
         fields.push_back("\"header_crc_ok\":" + std::string(res->header_crc_ok ? "true" : "false"));
+        fields.push_back("\"sync_word\":" + std::to_string(cfg.sync_word));
         fields.push_back("\"payload_crc_ok\":" + std::string(res->payload_crc_ok ? "true" : "false"));
         fields.push_back("\"payload_crc_semtech_ok\":" + std::string(res->payload_crc_semtech_ok ? "true" : "false"));
         fields.push_back("\"payload_crc_gr_ok\":" + std::string(res->payload_crc_gr_ok ? "true" : "false"));

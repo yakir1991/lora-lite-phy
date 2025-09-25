@@ -635,7 +635,11 @@ namespace gr
 
                     // correct SFO in the preamble upchirps
 
-                    sfo_hat = float((m_cfo_int + m_cfo_frac) * m_bw) / m_center_freq;
+                    float center = static_cast<float>(m_center_freq);
+                    if (center == 0.0f) {
+                        center = static_cast<float>(m_bw);
+                    }
+                    sfo_hat = float((m_cfo_int + m_cfo_frac) * m_bw) / center;
                     double clk_off = sfo_hat / m_number_of_bins;
                     double fs = m_bw;
                     double fs_p = m_bw * (1 - clk_off);

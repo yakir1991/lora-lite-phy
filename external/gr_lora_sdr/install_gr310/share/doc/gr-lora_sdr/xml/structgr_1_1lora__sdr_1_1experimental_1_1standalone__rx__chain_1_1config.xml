@@ -1,0 +1,96 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="structgr_1_1lora__sdr_1_1experimental_1_1standalone__rx__chain_1_1config" kind="struct" language="C++" prot="public">
+    <compoundname>gr::lora_sdr::experimental::standalone_rx_chain::config</compoundname>
+    <includes refid="standalone__rx__chain_8h" local="no">standalone_rx_chain.h</includes>
+    <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structgr_1_1lora__sdr_1_1experimental_1_1standalone__rx__chain_1_1config_1a78be7820fced2ed0c758afc3a04eafc3" prot="public" static="no" mutable="no">
+        <type>size_t</type>
+        <definition>size_t gr::lora_sdr::experimental::standalone_rx_chain::config::fft_size</definition>
+        <argsstring></argsstring>
+        <name>fft_size</name>
+        <qualifiedname>gr::lora_sdr::experimental::standalone_rx_chain::config::fft_size</qualifiedname>
+        <initializer>= 0U</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="144" column="16" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" bodystart="144" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structgr_1_1lora__sdr_1_1experimental_1_1standalone__rx__chain_1_1config_1ac56ada2337b476c2e365f1889562739d" prot="public" static="no" mutable="no">
+        <type><ref refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ad85e8d7a08c152cb942d5ab8757babbc" kindref="member">window_block::window_type</ref></type>
+        <definition>window_block::window_type gr::lora_sdr::experimental::standalone_rx_chain::config::window</definition>
+        <argsstring></argsstring>
+        <name>window</name>
+        <qualifiedname>gr::lora_sdr::experimental::standalone_rx_chain::config::window</qualifiedname>
+        <initializer>= <ref refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ad85e8d7a08c152cb942d5ab8757babbcaaf398df97a49690cc6fb1593c0d5fc15" kindref="member">window_block::window_type::hann</ref></initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="145" column="35" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" bodystart="145" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structgr_1_1lora__sdr_1_1experimental_1_1standalone__rx__chain_1_1config_1a3c031a07e3d814cf9714744383db16a7" prot="public" static="no" mutable="no">
+        <type>float</type>
+        <definition>float gr::lora_sdr::experimental::standalone_rx_chain::config::peak_threshold</definition>
+        <argsstring></argsstring>
+        <name>peak_threshold</name>
+        <qualifiedname>gr::lora_sdr::experimental::standalone_rx_chain::config::peak_threshold</qualifiedname>
+        <initializer>= 0.0F</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="146" column="15" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" bodystart="146" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structgr_1_1lora__sdr_1_1experimental_1_1standalone__rx__chain_1_1config_1aac57a2289a79ad73be7bcbbd4133f389" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::experimental::standalone_rx_chain::config::relative_threshold</definition>
+        <argsstring></argsstring>
+        <name>relative_threshold</name>
+        <qualifiedname>gr::lora_sdr::experimental::standalone_rx_chain::config::relative_threshold</qualifiedname>
+        <initializer>= false</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="147" column="14" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" bodystart="147" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structgr_1_1lora__sdr_1_1experimental_1_1standalone__rx__chain_1_1config_1a701eb81fac2afb0ffef9a03a25f5bbe5" prot="public" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::experimental::standalone_rx_chain::config::normalize_magnitude</definition>
+        <argsstring></argsstring>
+        <name>normalize_magnitude</name>
+        <qualifiedname>gr::lora_sdr::experimental::standalone_rx_chain::config::normalize_magnitude</qualifiedname>
+        <initializer>= true</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="148" column="14" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" bodystart="148" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="143" column="5" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" bodystart="143" bodyend="149"/>
+    <listofallmembers>
+      <member refid="structgr_1_1lora__sdr_1_1experimental_1_1standalone__rx__chain_1_1config_1a78be7820fced2ed0c758afc3a04eafc3" prot="public" virt="non-virtual"><scope>gr::lora_sdr::experimental::standalone_rx_chain::config</scope><name>fft_size</name></member>
+      <member refid="structgr_1_1lora__sdr_1_1experimental_1_1standalone__rx__chain_1_1config_1a701eb81fac2afb0ffef9a03a25f5bbe5" prot="public" virt="non-virtual"><scope>gr::lora_sdr::experimental::standalone_rx_chain::config</scope><name>normalize_magnitude</name></member>
+      <member refid="structgr_1_1lora__sdr_1_1experimental_1_1standalone__rx__chain_1_1config_1a3c031a07e3d814cf9714744383db16a7" prot="public" virt="non-virtual"><scope>gr::lora_sdr::experimental::standalone_rx_chain::config</scope><name>peak_threshold</name></member>
+      <member refid="structgr_1_1lora__sdr_1_1experimental_1_1standalone__rx__chain_1_1config_1aac57a2289a79ad73be7bcbbd4133f389" prot="public" virt="non-virtual"><scope>gr::lora_sdr::experimental::standalone_rx_chain::config</scope><name>relative_threshold</name></member>
+      <member refid="structgr_1_1lora__sdr_1_1experimental_1_1standalone__rx__chain_1_1config_1ac56ada2337b476c2e365f1889562739d" prot="public" virt="non-virtual"><scope>gr::lora_sdr::experimental::standalone_rx_chain::config</scope><name>window</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

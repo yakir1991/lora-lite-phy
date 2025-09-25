@@ -1,0 +1,137 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="python_2lora__sdr_2bindings_2docstrings_2interleaver__pydoc__template_8h" kind="file" language="C++">
+    <compoundname>python/lora_sdr/bindings/docstrings/interleaver_pydoc_template.h</compoundname>
+    <includes local="yes">pydoc_macros.h</includes>
+    <incdepgraph>
+      <node id="1">
+        <label>interleaver_pydoc_template.h</label>
+        <link refid="python_2lora__sdr_2bindings_2docstrings_2interleaver__pydoc__template_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>pydoc_macros.h</label>
+      </node>
+    </incdepgraph>
+    <sectiondef kind="define">
+      <memberdef kind="define" id="python_2lora__sdr_2bindings_2docstrings_2interleaver__pydoc__template_8h_1a74021f021dcdfbb22891787b79c5529d" prot="public" static="no">
+        <name>D</name>
+        <param><defname>...</defname></param>
+        <initializer><ref refid="build_2python_2lora__sdr_2bindings_2pydoc__macros_8h_1a4e578031ec998eaeb933d5caa6a7d28a" kindref="member">DOC</ref>(gr, lora_sdr, __VA_ARGS__)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/python/lora_sdr/bindings/docstrings/interleaver_pydoc_template.h" line="10" column="10" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/python/lora_sdr/bindings/docstrings/interleaver_pydoc_template.h" bodystart="10" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="var">
+      <memberdef kind="variable" id="python_2lora__sdr_2bindings_2docstrings_2interleaver__pydoc__template_8h_1ae1b6270225b5dd5d81769fa624ead0dd" prot="public" static="yes" mutable="no">
+        <type>const char *</type>
+        <definition>const char* __doc_gr_lora_sdr_interleaver</definition>
+        <argsstring></argsstring>
+        <name>__doc_gr_lora_sdr_interleaver</name>
+        <initializer>= R&quot;doc()doc&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/python/lora_sdr/bindings/docstrings/interleaver_pydoc_template.h" line="17" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/python/lora_sdr/bindings/docstrings/interleaver_pydoc_template.h" bodystart="17" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="python_2lora__sdr_2bindings_2docstrings_2interleaver__pydoc__template_8h_1ab7c5f52d3415b965ec677fb966ca3f52" prot="public" static="yes" mutable="no">
+        <type>const char *</type>
+        <definition>const char* __doc_gr_lora_sdr_interleaver_interleaver_0</definition>
+        <argsstring></argsstring>
+        <name>__doc_gr_lora_sdr_interleaver_interleaver_0</name>
+        <initializer>= R&quot;doc()doc&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/python/lora_sdr/bindings/docstrings/interleaver_pydoc_template.h" line="19" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/python/lora_sdr/bindings/docstrings/interleaver_pydoc_template.h" bodystart="19" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="python_2lora__sdr_2bindings_2docstrings_2interleaver__pydoc__template_8h_1ab619e70475fed5c4191faf616aadded2" prot="public" static="yes" mutable="no">
+        <type>const char *</type>
+        <definition>const char* __doc_gr_lora_sdr_interleaver_interleaver_1</definition>
+        <argsstring></argsstring>
+        <name>__doc_gr_lora_sdr_interleaver_interleaver_1</name>
+        <initializer>= R&quot;doc()doc&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/python/lora_sdr/bindings/docstrings/interleaver_pydoc_template.h" line="21" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/python/lora_sdr/bindings/docstrings/interleaver_pydoc_template.h" bodystart="21" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="python_2lora__sdr_2bindings_2docstrings_2interleaver__pydoc__template_8h_1a4df94d589163d6e77080a7362fb16f13" prot="public" static="yes" mutable="no">
+        <type>const char *</type>
+        <definition>const char* __doc_gr_lora_sdr_interleaver_set_cr</definition>
+        <argsstring></argsstring>
+        <name>__doc_gr_lora_sdr_interleaver_set_cr</name>
+        <initializer>= R&quot;doc()doc&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/python/lora_sdr/bindings/docstrings/interleaver_pydoc_template.h" line="23" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/python/lora_sdr/bindings/docstrings/interleaver_pydoc_template.h" bodystart="23" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="python_2lora__sdr_2bindings_2docstrings_2interleaver__pydoc__template_8h_1ad92219d99adbe6605e59110510900d20" prot="public" static="yes" mutable="no">
+        <type>const char *</type>
+        <definition>const char* __doc_gr_lora_sdr_interleaver_get_cr</definition>
+        <argsstring></argsstring>
+        <name>__doc_gr_lora_sdr_interleaver_get_cr</name>
+        <initializer>= R&quot;doc()doc&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/python/lora_sdr/bindings/docstrings/interleaver_pydoc_template.h" line="25" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/python/lora_sdr/bindings/docstrings/interleaver_pydoc_template.h" bodystart="25" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="python_2lora__sdr_2bindings_2docstrings_2interleaver__pydoc__template_8h_1a76ecce2b57e8234a13194748ae884896" prot="public" static="yes" mutable="no">
+        <type>const char *</type>
+        <definition>const char* __doc_gr_lora_sdr_interleaver_set_sf</definition>
+        <argsstring></argsstring>
+        <name>__doc_gr_lora_sdr_interleaver_set_sf</name>
+        <initializer>= R&quot;doc()doc&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/python/lora_sdr/bindings/docstrings/interleaver_pydoc_template.h" line="27" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/python/lora_sdr/bindings/docstrings/interleaver_pydoc_template.h" bodystart="27" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="python_2lora__sdr_2bindings_2docstrings_2interleaver__pydoc__template_8h_1a9eef992fca433dba8a7a45eda88641a2" prot="public" static="yes" mutable="no">
+        <type>const char *</type>
+        <definition>const char* __doc_gr_lora_sdr_interleaver_make</definition>
+        <argsstring></argsstring>
+        <name>__doc_gr_lora_sdr_interleaver_make</name>
+        <initializer>= R&quot;doc()doc&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/python/lora_sdr/bindings/docstrings/interleaver_pydoc_template.h" line="29" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/python/lora_sdr/bindings/docstrings/interleaver_pydoc_template.h" bodystart="29" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/python/lora_sdr/bindings/docstrings/interleaver_pydoc_template.h"/>
+  </compounddef>
+</doxygen>

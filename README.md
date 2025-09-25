@@ -19,6 +19,7 @@ A lightweight, GNU Radio–independent LoRa receive chain written in modern C++ 
   - Preamble detection across OS candidates and phases
   - SFD detection via up/down classification
   - Header start location with small ±1 symbol search
+  - Debug logging under `--debug-detect` now dumps SFD scan ratios, symbol magnitudes, and every header offset/field candidate to help diagnose alignment issues
 
 - Header pipeline (explicit header)
   - Gray demap and LoRa-specific symbol shift handling
@@ -40,6 +41,7 @@ A lightweight, GNU Radio–independent LoRa receive chain written in modern C++ 
   - Reads interleaved float32 IQ (I then Q)
   - Prints header bins/bits and parsed header fields
   - Prints payload bytes (hex) and CRC status; debug switches emit JSON, whitening/CRC traces, and interleaver matrices
+  - Supports explicit sample formats via `--format f32|cs16` (default: `f32`); `cs16` scales signed 16-bit IQ to unit range for offline captures
 
 ## Key findings and decisions
 
@@ -86,6 +88,9 @@ cmake --build standalone/build -j
 
 # Run: iq_file (f32 interleaved IQ), sf, bw (Hz), fs (Hz)
 standalone/build/lora_rx vectors/test_short_payload.unknown 7 125000 250000
+
+# Example with 16-bit IQ capture
+standalone/build/lora_rx --format cs16 <iq_cs16_file> <sf> <bw> <fs>
 ```
 
 Debug aids:
@@ -94,12 +99,16 @@ Debug aids:
 - `--debug-crc` enables whitening/CRC traces and exposes Semtech vs gr-lora-sdr checksum comparisons.
 - `--dump-bits` captures header/payload interleaver matrices for external analysis.
 - `--debug-detect` logs preamble/SFD/CFO estimates to stderr.
+- `scripts/compare_with_gnuradio.py` runs the standalone decoder and, if a GNU Radio
+  environment is available (see `external/gr_lora_sdr/environment.yml`), replays the
+  capture through gr-lora_sdr to diff headers and payload bytes.
 
 ## Next steps
 
 1. Broaden payload validation beyond the SF7/CR2 reference
    - Resolve header-CRC failures on remaining vectors so the payload path can run end-to-end
    - Compare Semtech-vs-GR CRC outputs on additional coding rates once valid frames are available
+   - Align decoded payload bytes with the known plaintext for `sps_500k_bw_125k_sf_7_cr_2_ldro_false_crc_true_implheader_false_hello_stupid_world.unknown` (currently decodes to 54 bytes without the expected ASCII message)
 2. LDRO handling
    - Use reduced-rate (sf−2) where required on payload blocks when LDRO is active
 3. Optional soft decisions

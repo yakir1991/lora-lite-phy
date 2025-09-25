@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="dir_937d5f24136bf036df6101d32b1e8031" kind="dir">
+    <compoundname>bindings</compoundname>
+    <innerfile refid="build__gr310_2python_2lora__sdr_2bindings_2pydoc__macros_8h">build_gr310/python/lora_sdr/bindings/pydoc_macros.h</innerfile>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/build_gr310/python/lora_sdr/bindings/"/>
+  </compounddef>
+</doxygen>

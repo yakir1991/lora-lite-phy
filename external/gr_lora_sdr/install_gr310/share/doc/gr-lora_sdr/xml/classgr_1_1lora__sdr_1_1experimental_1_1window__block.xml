@@ -1,0 +1,284 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classgr_1_1lora__sdr_1_1experimental_1_1window__block" kind="class" language="C++" prot="public">
+    <compoundname>gr::lora_sdr::experimental::window_block</compoundname>
+    <includes refid="standalone__rx__chain_8h" local="no">standalone_rx_chain.h</includes>
+    <sectiondef kind="public-type">
+      <memberdef kind="enum" id="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ad85e8d7a08c152cb942d5ab8757babbc" prot="public" static="no" strong="yes">
+        <type></type>
+        <name>window_type</name>
+        <qualifiedname>gr::lora_sdr::experimental::window_block::window_type</qualifiedname>
+        <enumvalue id="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ad85e8d7a08c152cb942d5ab8757babbcadf13c3de3f933bf9881fbdba6e6ecf74" prot="public">
+          <name>rectangular</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ad85e8d7a08c152cb942d5ab8757babbcaaf398df97a49690cc6fb1593c0d5fc15" prot="public">
+          <name>hann</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ad85e8d7a08c152cb942d5ab8757babbca35704eb851adfac706587273674ddf21" prot="public">
+          <name>hamming</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ad85e8d7a08c152cb942d5ab8757babbca36d01a710acac3d960bfd395eaec1bb9" prot="public">
+          <name>blackmanharris</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="50" column="5" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" bodystart="50" bodyend="50"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1aab70d78954e24462ea2dbd79a928343a" prot="private" static="no" mutable="no">
+        <type>size_t</type>
+        <definition>size_t gr::lora_sdr::experimental::window_block::d_size</definition>
+        <argsstring></argsstring>
+        <name>d_size</name>
+        <qualifiedname>gr::lora_sdr::experimental::window_block::d_size</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="68" column="12" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" bodystart="68" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ad07691985f469e200fb137785b356551" prot="private" static="no" mutable="no">
+        <type><ref refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ad85e8d7a08c152cb942d5ab8757babbc" kindref="member">window_type</ref></type>
+        <definition>window_type gr::lora_sdr::experimental::window_block::d_type</definition>
+        <argsstring></argsstring>
+        <name>d_type</name>
+        <qualifiedname>gr::lora_sdr::experimental::window_block::d_type</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="69" column="17" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" bodystart="69" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1a66b8b72cfb60a4c6f30fe55dc6fd3168" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; float &gt;</type>
+        <definition>std::vector&lt;float&gt; gr::lora_sdr::experimental::window_block::d_coeffs</definition>
+        <argsstring></argsstring>
+        <name>d_coeffs</name>
+        <qualifiedname>gr::lora_sdr::experimental::window_block::d_coeffs</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="70" column="17" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" bodystart="70" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1a5c9a38c89fcae33a1dd95f26ebf41d6c" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>gr::lora_sdr::experimental::window_block::window_block</definition>
+        <argsstring>()</argsstring>
+        <name>window_block</name>
+        <qualifiedname>gr::lora_sdr::experimental::window_block::window_block</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="52" column="5"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1a35e6c49af3fe10395f21a0007b522a44" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>gr::lora_sdr::experimental::window_block::window_block</definition>
+        <argsstring>(size_t size, window_type type=window_type::hann)</argsstring>
+        <name>window_block</name>
+        <qualifiedname>gr::lora_sdr::experimental::window_block::window_block</qualifiedname>
+        <param>
+          <type>size_t</type>
+          <declname>size</declname>
+        </param>
+        <param>
+          <type><ref refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ad85e8d7a08c152cb942d5ab8757babbc" kindref="member">window_type</ref></type>
+          <declname>type</declname>
+          <defval><ref refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ad85e8d7a08c152cb942d5ab8757babbcaaf398df97a49690cc6fb1593c0d5fc15" kindref="member">window_type::hann</ref></defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="53" column="5"/>
+        <references refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ad85e8d7a08c152cb942d5ab8757babbcaaf398df97a49690cc6fb1593c0d5fc15" compoundref="standalone__rx__chain_8h" startline="50">hann</references>
+        <references refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1af795785869ac8c7cfee8569cf991f824">size</references>
+        <references refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ab02156c5fbdfc902861cce0d2d4bf7a7">type</references>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1af795785869ac8c7cfee8569cf991f824" prot="public" static="no" const="yes" explicit="no" inline="no" noexcept="yes" virt="non-virtual">
+        <type>size_t</type>
+        <definition>size_t gr::lora_sdr::experimental::window_block::size</definition>
+        <argsstring>() const noexcept</argsstring>
+        <name>size</name>
+        <qualifiedname>gr::lora_sdr::experimental::window_block::size</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="55" column="12"/>
+        <referencedby refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ae7a952a31e524638064fc31144c1762e">set_size</referencedby>
+        <referencedby refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1a35e6c49af3fe10395f21a0007b522a44">window_block</referencedby>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ab02156c5fbdfc902861cce0d2d4bf7a7" prot="public" static="no" const="yes" explicit="no" inline="no" noexcept="yes" virt="non-virtual">
+        <type><ref refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ad85e8d7a08c152cb942d5ab8757babbc" kindref="member">window_type</ref></type>
+        <definition>window_type gr::lora_sdr::experimental::window_block::type</definition>
+        <argsstring>() const noexcept</argsstring>
+        <name>type</name>
+        <qualifiedname>gr::lora_sdr::experimental::window_block::type</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="56" column="17"/>
+        <references refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ab02156c5fbdfc902861cce0d2d4bf7a7">type</references>
+        <referencedby refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1a31770ddedb0dc391ca118ad8c90592c7">set_type</referencedby>
+        <referencedby refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ab02156c5fbdfc902861cce0d2d4bf7a7">type</referencedby>
+        <referencedby refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1a35e6c49af3fe10395f21a0007b522a44">window_block</referencedby>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ae7a952a31e524638064fc31144c1762e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::experimental::window_block::set_size</definition>
+        <argsstring>(size_t size)</argsstring>
+        <name>set_size</name>
+        <qualifiedname>gr::lora_sdr::experimental::window_block::set_size</qualifiedname>
+        <param>
+          <type>size_t</type>
+          <declname>size</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="58" column="10"/>
+        <references refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ae7a952a31e524638064fc31144c1762e">set_size</references>
+        <references refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1af795785869ac8c7cfee8569cf991f824">size</references>
+        <referencedby refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ae7a952a31e524638064fc31144c1762e">set_size</referencedby>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1a31770ddedb0dc391ca118ad8c90592c7" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::experimental::window_block::set_type</definition>
+        <argsstring>(window_type type)</argsstring>
+        <name>set_type</name>
+        <qualifiedname>gr::lora_sdr::experimental::window_block::set_type</qualifiedname>
+        <param>
+          <type><ref refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ad85e8d7a08c152cb942d5ab8757babbc" kindref="member">window_type</ref></type>
+          <declname>type</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="59" column="10"/>
+        <references refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1a31770ddedb0dc391ca118ad8c90592c7">set_type</references>
+        <references refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ab02156c5fbdfc902861cce0d2d4bf7a7">type</references>
+        <referencedby refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1a31770ddedb0dc391ca118ad8c90592c7">set_type</referencedby>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1a2301e104b3486d8c53e313af6ab72dea" prot="public" static="no" const="yes" explicit="no" inline="no" noexcept="yes" virt="non-virtual">
+        <type>const std::vector&lt; float &gt; &amp;</type>
+        <definition>const std::vector&lt; float &gt; &amp; gr::lora_sdr::experimental::window_block::coefficients</definition>
+        <argsstring>() const noexcept</argsstring>
+        <name>coefficients</name>
+        <qualifiedname>gr::lora_sdr::experimental::window_block::coefficients</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="61" column="23"/>
+        <references refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1a2301e104b3486d8c53e313af6ab72dea">coefficients</references>
+        <referencedby refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1a2301e104b3486d8c53e313af6ab72dea">coefficients</referencedby>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1af9877147a032c15fe2bb17e7066894c0" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type><ref refid="namespacegr_1_1lora__sdr_1_1experimental_1ab6c66d6554e8a07cc6526ec320ca87dc" kindref="member">complex_vector</ref></type>
+        <definition>complex_vector gr::lora_sdr::experimental::window_block::process</definition>
+        <argsstring>(const complex_vector &amp;input) const</argsstring>
+        <name>process</name>
+        <qualifiedname>gr::lora_sdr::experimental::window_block::process</qualifiedname>
+        <param>
+          <type>const <ref refid="namespacegr_1_1lora__sdr_1_1experimental_1ab6c66d6554e8a07cc6526ec320ca87dc" kindref="member">complex_vector</ref> &amp;</type>
+          <declname>input</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="63" column="20"/>
+        <references refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1af9877147a032c15fe2bb17e7066894c0">process</references>
+        <referencedby refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1af9877147a032c15fe2bb17e7066894c0">process</referencedby>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="private-func">
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1aef55f3ad85130cd3ea71756079577151" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::experimental::window_block::compute_coefficients</definition>
+        <argsstring>()</argsstring>
+        <name>compute_coefficients</name>
+        <qualifiedname>gr::lora_sdr::experimental::window_block::compute_coefficients</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="66" column="10"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+<para>Applies a configurable window to complex samples. </para>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" line="47" column="1" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/standalone_rx_chain.h" bodystart="48" bodyend="71"/>
+    <listofallmembers>
+      <member refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1a2301e104b3486d8c53e313af6ab72dea" prot="public" virt="non-virtual"><scope>gr::lora_sdr::experimental::window_block</scope><name>coefficients</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1aef55f3ad85130cd3ea71756079577151" prot="private" virt="non-virtual"><scope>gr::lora_sdr::experimental::window_block</scope><name>compute_coefficients</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1a66b8b72cfb60a4c6f30fe55dc6fd3168" prot="private" virt="non-virtual"><scope>gr::lora_sdr::experimental::window_block</scope><name>d_coeffs</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1aab70d78954e24462ea2dbd79a928343a" prot="private" virt="non-virtual"><scope>gr::lora_sdr::experimental::window_block</scope><name>d_size</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ad07691985f469e200fb137785b356551" prot="private" virt="non-virtual"><scope>gr::lora_sdr::experimental::window_block</scope><name>d_type</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1af9877147a032c15fe2bb17e7066894c0" prot="public" virt="non-virtual"><scope>gr::lora_sdr::experimental::window_block</scope><name>process</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ae7a952a31e524638064fc31144c1762e" prot="public" virt="non-virtual"><scope>gr::lora_sdr::experimental::window_block</scope><name>set_size</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1a31770ddedb0dc391ca118ad8c90592c7" prot="public" virt="non-virtual"><scope>gr::lora_sdr::experimental::window_block</scope><name>set_type</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1af795785869ac8c7cfee8569cf991f824" prot="public" virt="non-virtual"><scope>gr::lora_sdr::experimental::window_block</scope><name>size</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ab02156c5fbdfc902861cce0d2d4bf7a7" prot="public" virt="non-virtual"><scope>gr::lora_sdr::experimental::window_block</scope><name>type</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1a5c9a38c89fcae33a1dd95f26ebf41d6c" prot="public" virt="non-virtual"><scope>gr::lora_sdr::experimental::window_block</scope><name>window_block</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1a35e6c49af3fe10395f21a0007b522a44" prot="public" virt="non-virtual"><scope>gr::lora_sdr::experimental::window_block</scope><name>window_block</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1ad85e8d7a08c152cb942d5ab8757babbc" prot="public" virt="non-virtual"><scope>gr::lora_sdr::experimental::window_block</scope><name>window_type</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

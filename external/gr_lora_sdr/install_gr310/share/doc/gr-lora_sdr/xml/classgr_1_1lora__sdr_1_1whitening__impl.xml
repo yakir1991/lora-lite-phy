@@ -1,0 +1,312 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classgr_1_1lora__sdr_1_1whitening__impl" kind="class" language="C++" prot="public">
+    <compoundname>gr::lora_sdr::whitening_impl</compoundname>
+    <basecompoundref refid="classgr_1_1lora__sdr_1_1whitening" prot="public" virt="non-virtual">gr::lora_sdr::whitening</basecompoundref>
+    <includes refid="whitening__impl_8h" local="no">whitening_impl.h</includes>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1whitening__impl_1adb25744fa3a18cc3b741ac73c48b251d" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::whitening_impl::m_is_hex</definition>
+        <argsstring></argsstring>
+        <name>m_is_hex</name>
+        <qualifiedname>gr::lora_sdr::whitening_impl::m_is_hex</qualifiedname>
+        <briefdescription>
+<para>indicate that the payload is given by a string of hex values </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" line="16" column="12" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" bodystart="16" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1whitening__impl_1a81d92cad78d1baecef9739232ba2ed8d" prot="private" static="no" mutable="no">
+        <type>char</type>
+        <definition>char gr::lora_sdr::whitening_impl::m_separator</definition>
+        <argsstring></argsstring>
+        <name>m_separator</name>
+        <qualifiedname>gr::lora_sdr::whitening_impl::m_separator</qualifiedname>
+        <briefdescription>
+<para>the separator for file inputs </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" line="17" column="12" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" bodystart="17" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1whitening__impl_1a9e037f323dc42d3cc0707d59bdd49c21" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; uint8_t &gt;</type>
+        <definition>std::vector&lt;uint8_t&gt; gr::lora_sdr::whitening_impl::m_payload</definition>
+        <argsstring></argsstring>
+        <name>m_payload</name>
+        <qualifiedname>gr::lora_sdr::whitening_impl::m_payload</qualifiedname>
+        <briefdescription>
+<para>store the payload bytes </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" line="18" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" bodystart="18" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1whitening__impl_1a549e42fbdd1c1d338f4bd2b22d4662a0" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; std::string &gt;</type>
+        <definition>std::vector&lt;std::string&gt; gr::lora_sdr::whitening_impl::payload_str</definition>
+        <argsstring></argsstring>
+        <name>payload_str</name>
+        <qualifiedname>gr::lora_sdr::whitening_impl::payload_str</qualifiedname>
+        <briefdescription>
+<para>payload as a string </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" line="19" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" bodystart="19" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1whitening__impl_1a91a15e145e0c7c11e1f82ae336a8e6fb" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::whitening_impl::m_file_source</definition>
+        <argsstring></argsstring>
+        <name>m_file_source</name>
+        <qualifiedname>gr::lora_sdr::whitening_impl::m_file_source</qualifiedname>
+        <briefdescription>
+<para>indicate that the payload are provided by a file through an input stream </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" line="20" column="12" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" bodystart="20" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1whitening__impl_1a09aa48f255b4aacf7984c3254e6f5515" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::whitening_impl::m_use_length_tag</definition>
+        <argsstring></argsstring>
+        <name>m_use_length_tag</name>
+        <qualifiedname>gr::lora_sdr::whitening_impl::m_use_length_tag</qualifiedname>
+        <briefdescription>
+<para>whether to use the length tag to separate frames or the separator character </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" line="21" column="12" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" bodystart="21" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1whitening__impl_1aca9bc8f724a7be4db588005c468b0099" prot="private" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string gr::lora_sdr::whitening_impl::m_length_tag_name</definition>
+        <argsstring></argsstring>
+        <name>m_length_tag_name</name>
+        <qualifiedname>gr::lora_sdr::whitening_impl::m_length_tag_name</qualifiedname>
+        <briefdescription>
+<para>name/key of the length tag </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" line="22" column="19" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" bodystart="22" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1whitening__impl_1ae877dfc6c06788a05c2cf8a3315da1a9" prot="private" static="no" mutable="no">
+        <type>int</type>
+        <definition>int gr::lora_sdr::whitening_impl::m_input_byte_cnt</definition>
+        <argsstring></argsstring>
+        <name>m_input_byte_cnt</name>
+        <qualifiedname>gr::lora_sdr::whitening_impl::m_input_byte_cnt</qualifiedname>
+        <briefdescription>
+<para>number of bytes from the input already processed </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" line="23" column="11" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" bodystart="23" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1whitening__impl_1a398c1055b16fcb9af79396bbe9f2af7e" prot="private" static="no" mutable="no">
+        <type>uint64_t</type>
+        <definition>uint64_t gr::lora_sdr::whitening_impl::m_tag_offset</definition>
+        <argsstring></argsstring>
+        <name>m_tag_offset</name>
+        <qualifiedname>gr::lora_sdr::whitening_impl::m_tag_offset</qualifiedname>
+        <briefdescription>
+<para>offset of the length tag </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" line="24" column="16" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" bodystart="24" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="private-func">
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1whitening__impl_1ad40d4e990c8f746e5fa57b16cf373466" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::whitening_impl::msg_handler</definition>
+        <argsstring>(pmt::pmt_t message)</argsstring>
+        <name>msg_handler</name>
+        <qualifiedname>gr::lora_sdr::whitening_impl::msg_handler</qualifiedname>
+        <param>
+          <type>pmt::pmt_t</type>
+          <declname>message</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" line="26" column="12"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1whitening__impl_1aa38e1dffc133ef597099a1c3092c9059" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::whitening_impl::frame_info_handler</definition>
+        <argsstring>(pmt::pmt_t frame_info)</argsstring>
+        <name>frame_info_handler</name>
+        <qualifiedname>gr::lora_sdr::whitening_impl::frame_info_handler</qualifiedname>
+        <param>
+          <type>pmt::pmt_t</type>
+          <declname>frame_info</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" line="27" column="12"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1whitening__impl_1a0cfd93fe4653d4566834816a5117827c" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>gr::lora_sdr::whitening_impl::whitening_impl</definition>
+        <argsstring>(bool is_hex, bool use_length_tag, char separator, std::string length_tag_name)</argsstring>
+        <name>whitening_impl</name>
+        <qualifiedname>gr::lora_sdr::whitening_impl::whitening_impl</qualifiedname>
+        <param>
+          <type>bool</type>
+          <declname>is_hex</declname>
+        </param>
+        <param>
+          <type>bool</type>
+          <declname>use_length_tag</declname>
+        </param>
+        <param>
+          <type>char</type>
+          <declname>separator</declname>
+        </param>
+        <param>
+          <type>std::string</type>
+          <declname>length_tag_name</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" line="31" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1whitening__impl_1aacb2f2b2b5c5c7253a0f4b6c976f1ee1" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>gr::lora_sdr::whitening_impl::~whitening_impl</definition>
+        <argsstring>()</argsstring>
+        <name>~whitening_impl</name>
+        <qualifiedname>gr::lora_sdr::whitening_impl::~whitening_impl</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" line="32" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1whitening__impl_1aac72e7729195be616478ff45b9b46f56" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int gr::lora_sdr::whitening_impl::work</definition>
+        <argsstring>(int noutput_items, gr_vector_const_void_star &amp;input_items, gr_vector_void_star &amp;output_items)</argsstring>
+        <name>work</name>
+        <qualifiedname>gr::lora_sdr::whitening_impl::work</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>noutput_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_const_void_star &amp;</type>
+          <declname>input_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_void_star &amp;</type>
+          <declname>output_items</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" line="35" column="11"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>gr::lora_sdr::whitening</label>
+        <link refid="classgr_1_1lora__sdr_1_1whitening"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>gr::lora_sdr::whitening_impl</label>
+        <link refid="classgr_1_1lora__sdr_1_1whitening__impl"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>gr::sync_interpolator</label>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>gr::lora_sdr::whitening</label>
+        <link refid="classgr_1_1lora__sdr_1_1whitening"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>gr::lora_sdr::whitening_impl</label>
+        <link refid="classgr_1_1lora__sdr_1_1whitening__impl"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>gr::sync_interpolator</label>
+      </node>
+    </collaborationgraph>
+    <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" line="13" column="5" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/whitening_impl.h" bodystart="14" bodyend="39"/>
+    <listofallmembers>
+      <member refid="classgr_1_1lora__sdr_1_1whitening__impl_1aa38e1dffc133ef597099a1c3092c9059" prot="private" virt="non-virtual"><scope>gr::lora_sdr::whitening_impl</scope><name>frame_info_handler</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1whitening__impl_1a91a15e145e0c7c11e1f82ae336a8e6fb" prot="private" virt="non-virtual"><scope>gr::lora_sdr::whitening_impl</scope><name>m_file_source</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1whitening__impl_1ae877dfc6c06788a05c2cf8a3315da1a9" prot="private" virt="non-virtual"><scope>gr::lora_sdr::whitening_impl</scope><name>m_input_byte_cnt</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1whitening__impl_1adb25744fa3a18cc3b741ac73c48b251d" prot="private" virt="non-virtual"><scope>gr::lora_sdr::whitening_impl</scope><name>m_is_hex</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1whitening__impl_1aca9bc8f724a7be4db588005c468b0099" prot="private" virt="non-virtual"><scope>gr::lora_sdr::whitening_impl</scope><name>m_length_tag_name</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1whitening__impl_1a9e037f323dc42d3cc0707d59bdd49c21" prot="private" virt="non-virtual"><scope>gr::lora_sdr::whitening_impl</scope><name>m_payload</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1whitening__impl_1a81d92cad78d1baecef9739232ba2ed8d" prot="private" virt="non-virtual"><scope>gr::lora_sdr::whitening_impl</scope><name>m_separator</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1whitening__impl_1a398c1055b16fcb9af79396bbe9f2af7e" prot="private" virt="non-virtual"><scope>gr::lora_sdr::whitening_impl</scope><name>m_tag_offset</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1whitening__impl_1a09aa48f255b4aacf7984c3254e6f5515" prot="private" virt="non-virtual"><scope>gr::lora_sdr::whitening_impl</scope><name>m_use_length_tag</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1whitening_1a6b756756e243e1b1f674bdf54335fda0" prot="public" virt="non-virtual"><scope>gr::lora_sdr::whitening_impl</scope><name>make</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1whitening__impl_1ad40d4e990c8f746e5fa57b16cf373466" prot="private" virt="non-virtual"><scope>gr::lora_sdr::whitening_impl</scope><name>msg_handler</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1whitening__impl_1a549e42fbdd1c1d338f4bd2b22d4662a0" prot="private" virt="non-virtual"><scope>gr::lora_sdr::whitening_impl</scope><name>payload_str</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1whitening_1a2f5cf18ad68ffed0b25e30f9aaff5d48" prot="public" virt="non-virtual"><scope>gr::lora_sdr::whitening_impl</scope><name>sptr</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1whitening__impl_1a0cfd93fe4653d4566834816a5117827c" prot="public" virt="non-virtual"><scope>gr::lora_sdr::whitening_impl</scope><name>whitening_impl</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1whitening__impl_1aac72e7729195be616478ff45b9b46f56" prot="public" virt="non-virtual"><scope>gr::lora_sdr::whitening_impl</scope><name>work</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1whitening__impl_1aacb2f2b2b5c5c7253a0f4b6c976f1ee1" prot="public" virt="non-virtual"><scope>gr::lora_sdr::whitening_impl</scope><name>~whitening_impl</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

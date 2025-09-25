@@ -1,0 +1,170 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classgr_1_1lora__sdr_1_1gray__demap__impl" kind="class" language="C++" prot="public">
+    <compoundname>gr::lora_sdr::gray_demap_impl</compoundname>
+    <basecompoundref refid="classgr_1_1lora__sdr_1_1gray__demap" prot="public" virt="non-virtual">gr::lora_sdr::gray_demap</basecompoundref>
+    <includes refid="gray__demap__impl_8h" local="no">gray_demap_impl.h</includes>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1gray__demap__impl_1a145e45a25af1ba46b7accd089b353c32" prot="private" static="no" mutable="no">
+        <type>uint8_t</type>
+        <definition>uint8_t gr::lora_sdr::gray_demap_impl::m_sf</definition>
+        <argsstring></argsstring>
+        <name>m_sf</name>
+        <qualifiedname>gr::lora_sdr::gray_demap_impl::m_sf</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/gray_demap_impl.h" line="13" column="15" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/gray_demap_impl.h" bodystart="13" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1gray__demap__impl_1ae2222610340097f813fdf3bd1b7aba3e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>gr::lora_sdr::gray_demap_impl::gray_demap_impl</definition>
+        <argsstring>(uint8_t sf)</argsstring>
+        <name>gray_demap_impl</name>
+        <qualifiedname>gr::lora_sdr::gray_demap_impl::gray_demap_impl</qualifiedname>
+        <param>
+          <type>uint8_t</type>
+          <declname>sf</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/gray_demap_impl.h" line="16" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1gray__demap__impl_1a3d0de0b892889a51fc2dde9e1a0d17a0" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>gr::lora_sdr::gray_demap_impl::~gray_demap_impl</definition>
+        <argsstring>()</argsstring>
+        <name>~gray_demap_impl</name>
+        <qualifiedname>gr::lora_sdr::gray_demap_impl::~gray_demap_impl</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/gray_demap_impl.h" line="17" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1gray__demap__impl_1ad3566667aa5986a54d8dee3916f2d794" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::gray_demap_impl::set_sf</definition>
+        <argsstring>(uint8_t sf)</argsstring>
+        <name>set_sf</name>
+        <qualifiedname>gr::lora_sdr::gray_demap_impl::set_sf</qualifiedname>
+        <reimplements refid="classgr_1_1lora__sdr_1_1gray__demap_1aabef8e6823cfd5e1a9f133d8e361d462">set_sf</reimplements>
+        <param>
+          <type>uint8_t</type>
+          <declname>sf</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/gray_demap_impl.h" line="18" column="12"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1gray__demap__impl_1a7566836f71b032cb4136e8d9d4b3385a" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::gray_demap_impl::frame_info_handler</definition>
+        <argsstring>(pmt::pmt_t frame_info)</argsstring>
+        <name>frame_info_handler</name>
+        <qualifiedname>gr::lora_sdr::gray_demap_impl::frame_info_handler</qualifiedname>
+        <param>
+          <type>pmt::pmt_t</type>
+          <declname>frame_info</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/gray_demap_impl.h" line="19" column="12"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1gray__demap__impl_1a56c5dc947772a69f496d12f6281cb7b9" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int gr::lora_sdr::gray_demap_impl::work</definition>
+        <argsstring>(int noutput_items, gr_vector_const_void_star &amp;input_items, gr_vector_void_star &amp;output_items)</argsstring>
+        <name>work</name>
+        <qualifiedname>gr::lora_sdr::gray_demap_impl::work</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>noutput_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_const_void_star &amp;</type>
+          <declname>input_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_void_star &amp;</type>
+          <declname>output_items</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/gray_demap_impl.h" line="21" column="11"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>gr::lora_sdr::gray_demap</label>
+        <link refid="classgr_1_1lora__sdr_1_1gray__demap"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>gr::lora_sdr::gray_demap_impl</label>
+        <link refid="classgr_1_1lora__sdr_1_1gray__demap__impl"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>gr::sync_block</label>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>gr::lora_sdr::gray_demap</label>
+        <link refid="classgr_1_1lora__sdr_1_1gray__demap"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>gr::lora_sdr::gray_demap_impl</label>
+        <link refid="classgr_1_1lora__sdr_1_1gray__demap__impl"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>gr::sync_block</label>
+      </node>
+    </collaborationgraph>
+    <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/gray_demap_impl.h" line="10" column="5" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/gray_demap_impl.h" bodystart="11" bodyend="26"/>
+    <listofallmembers>
+      <member refid="classgr_1_1lora__sdr_1_1gray__demap__impl_1a7566836f71b032cb4136e8d9d4b3385a" prot="public" virt="non-virtual"><scope>gr::lora_sdr::gray_demap_impl</scope><name>frame_info_handler</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1gray__demap__impl_1ae2222610340097f813fdf3bd1b7aba3e" prot="public" virt="non-virtual"><scope>gr::lora_sdr::gray_demap_impl</scope><name>gray_demap_impl</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1gray__demap__impl_1a145e45a25af1ba46b7accd089b353c32" prot="private" virt="non-virtual"><scope>gr::lora_sdr::gray_demap_impl</scope><name>m_sf</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1gray__demap_1a4d668f4c1dafa04a4d341bd2c8f8e964" prot="public" virt="non-virtual"><scope>gr::lora_sdr::gray_demap_impl</scope><name>make</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1gray__demap__impl_1ad3566667aa5986a54d8dee3916f2d794" prot="public" virt="virtual"><scope>gr::lora_sdr::gray_demap_impl</scope><name>set_sf</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1gray__demap_1a940f4c9a2ab00ec814c57fcb69c274f2" prot="public" virt="non-virtual"><scope>gr::lora_sdr::gray_demap_impl</scope><name>sptr</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1gray__demap__impl_1a56c5dc947772a69f496d12f6281cb7b9" prot="public" virt="non-virtual"><scope>gr::lora_sdr::gray_demap_impl</scope><name>work</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1gray__demap__impl_1a3d0de0b892889a51fc2dde9e1a0d17a0" prot="public" virt="non-virtual"><scope>gr::lora_sdr::gray_demap_impl</scope><name>~gray_demap_impl</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,255 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="classgr_1_1lora__sdr_1_1deinterleaver__impl" kind="class" language="C++" prot="public">
+    <compoundname>gr::lora_sdr::deinterleaver_impl</compoundname>
+    <basecompoundref refid="classgr_1_1lora__sdr_1_1deinterleaver" prot="public" virt="non-virtual">gr::lora_sdr::deinterleaver</basecompoundref>
+    <includes refid="deinterleaver__impl_8h" local="no">deinterleaver_impl.h</includes>
+    <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1deinterleaver__impl_1a4317ded1b980b934dcd8da9e90b29cfe" prot="private" static="no" mutable="no">
+        <type>uint8_t</type>
+        <definition>uint8_t gr::lora_sdr::deinterleaver_impl::m_sf</definition>
+        <argsstring></argsstring>
+        <name>m_sf</name>
+        <qualifiedname>gr::lora_sdr::deinterleaver_impl::m_sf</qualifiedname>
+        <briefdescription>
+<para>Transmission Spreading factor. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" line="13" column="15" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" bodystart="13" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1deinterleaver__impl_1a6385b2a7a625f058ea1dbd1fe3cd9448" prot="private" static="no" mutable="no">
+        <type>uint8_t</type>
+        <definition>uint8_t gr::lora_sdr::deinterleaver_impl::m_cr</definition>
+        <argsstring></argsstring>
+        <name>m_cr</name>
+        <qualifiedname>gr::lora_sdr::deinterleaver_impl::m_cr</qualifiedname>
+        <briefdescription>
+<para>Transmission Coding rate. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" line="14" column="15" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" bodystart="14" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1deinterleaver__impl_1a5311d0dc3c782b33735b98cd387c769a" prot="private" static="no" mutable="no">
+        <type>uint8_t</type>
+        <definition>uint8_t gr::lora_sdr::deinterleaver_impl::sf_app</definition>
+        <argsstring></argsstring>
+        <name>sf_app</name>
+        <qualifiedname>gr::lora_sdr::deinterleaver_impl::sf_app</qualifiedname>
+        <briefdescription>
+<para>Spreading factor to use to deinterleave. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" line="15" column="15" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" bodystart="15" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1deinterleaver__impl_1a2ee14c8c25c0343be3ec8d56408805f8" prot="private" static="no" mutable="no">
+        <type>uint8_t</type>
+        <definition>uint8_t gr::lora_sdr::deinterleaver_impl::cw_len</definition>
+        <argsstring></argsstring>
+        <name>cw_len</name>
+        <qualifiedname>gr::lora_sdr::deinterleaver_impl::cw_len</qualifiedname>
+        <briefdescription>
+<para>Length of a codeword. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" line="16" column="15" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" bodystart="16" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1deinterleaver__impl_1aa97de2d049c1a00936d67de3d7189d2f" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::deinterleaver_impl::m_is_header</definition>
+        <argsstring></argsstring>
+        <name>m_is_header</name>
+        <qualifiedname>gr::lora_sdr::deinterleaver_impl::m_is_header</qualifiedname>
+        <briefdescription>
+<para>Indicate that we need to deinterleave the first block with the default header parameters (cr=4/8, reduced rate) </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" line="17" column="12" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" bodystart="17" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1deinterleaver__impl_1aef242029028b0d7d1653a1962518eeff" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::deinterleaver_impl::m_soft_decoding</definition>
+        <argsstring></argsstring>
+        <name>m_soft_decoding</name>
+        <qualifiedname>gr::lora_sdr::deinterleaver_impl::m_soft_decoding</qualifiedname>
+        <briefdescription>
+<para>Hard/Soft decoding. </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" line="18" column="12" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" bodystart="18" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classgr_1_1lora__sdr_1_1deinterleaver__impl_1acb12b51081ff7eba6178dc2b756b9c14" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool gr::lora_sdr::deinterleaver_impl::m_ldro</definition>
+        <argsstring></argsstring>
+        <name>m_ldro</name>
+        <qualifiedname>gr::lora_sdr::deinterleaver_impl::m_ldro</qualifiedname>
+        <briefdescription>
+<para>use low datarate optimization mode </para>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" line="19" column="12" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" bodystart="19" bodyend="-1"/>
+      </memberdef>
+    </sectiondef>
+    <sectiondef kind="public-func">
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1deinterleaver__impl_1af0bf22d9b27153066bc1ace9f081cbce" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>gr::lora_sdr::deinterleaver_impl::deinterleaver_impl</definition>
+        <argsstring>(bool soft_decoding)</argsstring>
+        <name>deinterleaver_impl</name>
+        <qualifiedname>gr::lora_sdr::deinterleaver_impl::deinterleaver_impl</qualifiedname>
+        <param>
+          <type>bool</type>
+          <declname>soft_decoding</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" line="22" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1deinterleaver__impl_1a85f84b3a6fd8a4b65ed297bdf61dd4e6" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>gr::lora_sdr::deinterleaver_impl::~deinterleaver_impl</definition>
+        <argsstring>()</argsstring>
+        <name>~deinterleaver_impl</name>
+        <qualifiedname>gr::lora_sdr::deinterleaver_impl::~deinterleaver_impl</qualifiedname>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" line="23" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1deinterleaver__impl_1aad7a0ec6b032c177866cb8e1cdbeab0d" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void gr::lora_sdr::deinterleaver_impl::forecast</definition>
+        <argsstring>(int noutput_items, gr_vector_int &amp;ninput_items_required)</argsstring>
+        <name>forecast</name>
+        <qualifiedname>gr::lora_sdr::deinterleaver_impl::forecast</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>noutput_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_int &amp;</type>
+          <declname>ninput_items_required</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" line="25" column="12"/>
+      </memberdef>
+      <memberdef kind="function" id="classgr_1_1lora__sdr_1_1deinterleaver__impl_1a988e93f02184e00c2669fc13426f7edc" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int gr::lora_sdr::deinterleaver_impl::general_work</definition>
+        <argsstring>(int noutput_items, gr_vector_int &amp;ninput_items, gr_vector_const_void_star &amp;input_items, gr_vector_void_star &amp;output_items)</argsstring>
+        <name>general_work</name>
+        <qualifiedname>gr::lora_sdr::deinterleaver_impl::general_work</qualifiedname>
+        <param>
+          <type>int</type>
+          <declname>noutput_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_int &amp;</type>
+          <declname>ninput_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_const_void_star &amp;</type>
+          <declname>input_items</declname>
+        </param>
+        <param>
+          <type>gr_vector_void_star &amp;</type>
+          <declname>output_items</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" line="27" column="11"/>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="3">
+        <label>gr::block</label>
+      </node>
+      <node id="2">
+        <label>gr::lora_sdr::deinterleaver</label>
+        <link refid="classgr_1_1lora__sdr_1_1deinterleaver"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>gr::lora_sdr::deinterleaver_impl</label>
+        <link refid="classgr_1_1lora__sdr_1_1deinterleaver__impl"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="3">
+        <label>gr::block</label>
+      </node>
+      <node id="2">
+        <label>gr::lora_sdr::deinterleaver</label>
+        <link refid="classgr_1_1lora__sdr_1_1deinterleaver"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>gr::lora_sdr::deinterleaver_impl</label>
+        <link refid="classgr_1_1lora__sdr_1_1deinterleaver__impl"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" line="10" column="5" bodyfile="/home/yakirqaq/projects/lora-lite-phy/external/gr_lora_sdr/lib/deinterleaver_impl.h" bodystart="11" bodyend="32"/>
+    <listofallmembers>
+      <member refid="classgr_1_1lora__sdr_1_1deinterleaver__impl_1a2ee14c8c25c0343be3ec8d56408805f8" prot="private" virt="non-virtual"><scope>gr::lora_sdr::deinterleaver_impl</scope><name>cw_len</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1deinterleaver__impl_1af0bf22d9b27153066bc1ace9f081cbce" prot="public" virt="non-virtual"><scope>gr::lora_sdr::deinterleaver_impl</scope><name>deinterleaver_impl</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1deinterleaver__impl_1aad7a0ec6b032c177866cb8e1cdbeab0d" prot="public" virt="non-virtual"><scope>gr::lora_sdr::deinterleaver_impl</scope><name>forecast</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1deinterleaver__impl_1a988e93f02184e00c2669fc13426f7edc" prot="public" virt="non-virtual"><scope>gr::lora_sdr::deinterleaver_impl</scope><name>general_work</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1deinterleaver__impl_1a6385b2a7a625f058ea1dbd1fe3cd9448" prot="private" virt="non-virtual"><scope>gr::lora_sdr::deinterleaver_impl</scope><name>m_cr</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1deinterleaver__impl_1aa97de2d049c1a00936d67de3d7189d2f" prot="private" virt="non-virtual"><scope>gr::lora_sdr::deinterleaver_impl</scope><name>m_is_header</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1deinterleaver__impl_1acb12b51081ff7eba6178dc2b756b9c14" prot="private" virt="non-virtual"><scope>gr::lora_sdr::deinterleaver_impl</scope><name>m_ldro</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1deinterleaver__impl_1a4317ded1b980b934dcd8da9e90b29cfe" prot="private" virt="non-virtual"><scope>gr::lora_sdr::deinterleaver_impl</scope><name>m_sf</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1deinterleaver__impl_1aef242029028b0d7d1653a1962518eeff" prot="private" virt="non-virtual"><scope>gr::lora_sdr::deinterleaver_impl</scope><name>m_soft_decoding</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1deinterleaver_1a77bb229abb3f52b0318b3eb0450e1f2e" prot="public" virt="non-virtual"><scope>gr::lora_sdr::deinterleaver_impl</scope><name>make</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1deinterleaver__impl_1a5311d0dc3c782b33735b98cd387c769a" prot="private" virt="non-virtual"><scope>gr::lora_sdr::deinterleaver_impl</scope><name>sf_app</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1deinterleaver_1ac1a2cc1fdaf7657eb356348df0b1fbbb" prot="public" virt="non-virtual"><scope>gr::lora_sdr::deinterleaver_impl</scope><name>sptr</name></member>
+      <member refid="classgr_1_1lora__sdr_1_1deinterleaver__impl_1a85f84b3a6fd8a4b65ed297bdf61dd4e6" prot="public" virt="non-virtual"><scope>gr::lora_sdr::deinterleaver_impl</scope><name>~deinterleaver_impl</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>
