@@ -1,4 +1,0 @@
-var dir_902d6fe55786be073ae6681293cdb979 =
-[
-    [ "lora_sdr", "dir_28d57f343626c82aa23e836d15179560.html", "dir_28d57f343626c82aa23e836d15179560" ]
-];
