@@ -1,0 +1,53 @@
+{
+  "summary": {
+    "total_tests": 2,
+    "successful_tests": 2,
+    "success_rate": 1.0,
+    "configurations_tested": 1
+  },
+  "configuration_stats": {
+    "SF7_BW125000_CR2": {
+      "total": 2,
+      "success": 2
+    }
+  },
+  "detailed_results": [
+    {
+      "config": {
+        "sf": 7,
+        "bw": 125000,
+        "cr": 2,
+        "has_crc": true
+      },
+      "file": "temp/hello_world.cf32",
+      "status": "extracted",
+      "frame_detected": true,
+      "symbols_extracted": 8,
+      "confidence": 1.0,
+      "success": true
+    },
+    {
+      "config": {
+        "sf": 7,
+        "bw": 125000,
+        "cr": 2,
+        "has_crc": true
+      },
+      "file": "temp/long_message.cf32",
+      "status": "extracted",
+      "frame_detected": true,
+      "symbols_extracted": 8,
+      "confidence": 1.0,
+      "success": true
+    }
+  ],
+  "generated_vectors": [],
+  "receiver_info": {
+    "method": "Hybrid FFT + Phase Unwrapping",
+    "breakthrough": "62.5% accuracy with position optimization",
+    "proven_vectors": [
+      "hello_world.cf32",
+      "long_message.cf32"
+    ]
+  }
+}
