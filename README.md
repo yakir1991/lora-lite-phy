@@ -48,26 +48,26 @@ make
 
 ### Basic Usage
 ```bash
-# Process single LoRa vector
-python complete_lora_receiver.py input.cf32
+# Single file decode (unified CLI)
+python -m scripts.lora_cli decode input.cf32
 
-# Batch process multiple files
-python scripts/batch_lora_decoder.py vectors/ --output-dir results/
+# Batch process files/directories
+python -m scripts.lora_cli batch vectors/ --output-dir results/
 
-# Run test suite
-python scripts/lora_test_suite.py --quick-test
+# Run quick test suite
+python -m scripts.lora_cli test --quick-test
 ```
 
 ### Advanced Configuration
 ```bash
-# Specify LoRa parameters
-python complete_lora_receiver.py --sf 8 --bw 250000 --cr 2 input.cf32
+# Specify LoRa parameters for single file
+python -m scripts.lora_cli decode input.cf32 --sf 8 --bw 250000 --cr 2
 
-# Auto-detect parameters from filename
-python scripts/batch_lora_decoder.py gnuradio_sf7_cr2_crc1.bin
+# Auto-detect parameters from filename in batch
+python -m scripts.lora_cli batch vectors/gnuradio_sf7_cr45_crc.bin
 
 # Comprehensive testing
-python scripts/lora_test_suite.py --test-vectors-dir vectors/
+python -m scripts.lora_cli test --test-vectors-dir vectors/
 ```
 
 ## 📁 Project Structure (Organized)
@@ -75,6 +75,7 @@ python scripts/lora_test_suite.py --test-vectors-dir vectors/
 ```
 lora-lite-phy/
 ├── complete_lora_receiver.py    # 🚀 Main receiver system (PRODUCTION)
+├── scripts/lora_cli.py          # 🧰 Unified CLI for decode/batch/test/demo
 ├── CMakeLists.txt              # C++ build configuration  
 ├── README.md                   # Project documentation
 ├── requirements.txt            # Python dependencies
@@ -207,3 +208,23 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **🎯 Status: Production Ready | 🏆 Achievement: Outstanding Success | 🚀 Future: Unlimited Potential**
+
+## 🔁 Legacy script mapping (for reference)
+
+The following legacy root-level scripts have been unified under the new `lora_cli.py` or moved to organized folders. Prefer the CLI equivalents below:
+
+- `batch_lora_decoder.py` → `python lora_cli.py batch ...` (canonical: `scripts/batch_lora_decoder.py`)
+- `lora_test_suite.py` → `python lora_cli.py test [--quick-test|--test-vectors-dir ...]` (canonical: `scripts/lora_test_suite.py`)
+- `final_system_demo.py` → `python lora_cli.py demo --mode final` (canonical: `scripts/final_system_demo.py`)
+- `celebration_demo.py` → `python lora_cli.py demo --mode celebration` (canonical: `scripts/celebration_demo.py`)
+- `advanced_demod_analysis.py` → `python lora_cli.py analyze symbols` (canonical: `analysis/advanced_demod_analysis.py`)
+- `integrated_receiver.py` → `python lora_cli.py analyze integrated` (canonical: `analysis/integrated_receiver.py`)
+- `position_optimization.py`, `hybrid_phase_approach.py`, `beyond_five_eighths.py`, `ultra_deep_analysis.py`, `ultimate_project_summary.py` → run from `analysis/` or via `lora_cli.py analyze ...`
+
+Recently archived wrappers (deprecated; prefer `lora_cli.py`):
+- `analyze_frame_structure.py` → `legacy/analyze_frame_structure.py`
+- `debug_sync_detailed.py` → `legacy/debug_sync_detailed.py`
+- `test_chirp_detect.py` → `legacy/test_chirp_detect.py`
+- `test_with_correct_sync.py` → `legacy/test_with_correct_sync.py`
+
+Additional development scripts have been archived under `legacy/` for historical record (e.g., `debug_*`, `simple_*`, `hybrid_demod.py`, `manual_symbol_extract.py`, etc.).
