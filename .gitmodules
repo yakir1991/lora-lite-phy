@@ -1,0 +1,3 @@
+[submodule "external/sdr_lora"]
+	path = external/sdr_lora
+	url = https://github.com/fabio-busacca/sdr-lora
