@@ -1,0 +1,12 @@
+{
+  "sf": 10,
+  "bw": 125000,
+  "cr": 3,
+  "crc": false,
+  "impl_header": false,
+  "ldro_mode": 2,
+  "samp_rate": 500000,
+  "payload_len": 19,
+  "payload_hex": "5354524553535f544553545f5041594c4f4144",
+  "filename": "tx_sf10_bw125000_cr3_crc0_impl0_ldro2_pay19.cf32"
+}
