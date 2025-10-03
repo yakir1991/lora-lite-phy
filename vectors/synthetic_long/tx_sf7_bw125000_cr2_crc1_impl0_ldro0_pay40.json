@@ -1,0 +1,13 @@
+{
+  "filename": "tx_sf7_bw125000_cr2_crc1_impl0_ldro0_pay40.cf32",
+  "sf": 7,
+  "bw": 125000,
+  "samp_rate": 500000,
+  "cr": 2,
+  "crc": true,
+  "impl_header": false,
+  "ldro_mode": 0,
+  "payload_len": 40,
+  "payload_hex": "4c4f52415f4c4f4e475f5041594c4f41445f44454d4f5f4c4f52415f4c4f4e475f5041594c4f4144",
+  "sync_word": 18
+}
