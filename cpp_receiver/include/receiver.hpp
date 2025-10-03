@@ -24,6 +24,9 @@ struct DecodeResult {
     bool header_ok = false;
     bool payload_crc_ok = false;
     std::vector<unsigned char> payload;
+    std::vector<int> raw_payload_symbols;
+    std::ptrdiff_t p_ofs_est = 0;
+    int header_payload_length = 0;
 };
 
 class Receiver {

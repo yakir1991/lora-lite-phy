@@ -34,10 +34,18 @@ target_link_libraries(run_stage_tests PRIVATE lora_cpp_receiver)
 
 target_compile_definitions(run_stage_tests PRIVATE LORA_CPP_RECEIVER_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 
+add_executable(decode_cli
+    tools/decode_cli.cpp
+)
+
+target_link_libraries(decode_cli PRIVATE lora_cpp_receiver)
+
 if (MSVC)
     target_compile_options(lora_cpp_receiver PRIVATE /W4 /permissive-)
     target_compile_options(run_stage_tests PRIVATE /W4 /permissive-)
+    target_compile_options(decode_cli PRIVATE /W4 /permissive-)
 else()
     target_compile_options(lora_cpp_receiver PRIVATE -Wall -Wextra -Wpedantic)
     target_compile_options(run_stage_tests PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(decode_cli PRIVATE -Wall -Wextra -Wpedantic)
 endif()

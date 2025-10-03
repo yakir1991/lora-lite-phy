@@ -11,11 +11,20 @@ This directory hosts the fresh C++ implementation that mirrors the proven Python
 - **Header Decoder** (`HeaderDecoder`): demodulates the eight explicit-header symbols using the frame-sync alignment, applies the LoRa Gray/interleave/Hamming pipeline, and recovers `length=18`, `CR=2`, `CRC=on` with raw header bins `[90, 122, 122, 126, 18, 110, 22, 78]`, identical to the Python implementation.
 - **Payload Decoder** (`PayloadDecoder`): demods all payload symbols, replicates LoRa interleaver/Hamming/whitening, validates the CRC16, and outputs the exact `"hello stupid world"` bytes observed in the Python receiver.
 - **Receiver façade** (`Receiver`): simple orchestrator that runs frame sync → header → payload stages and emits the decoded bytes/flags, making it easy to integrate with CLIs or future pipelines.
+- **CLI (`decode_cli`)**: command-line decoder that wraps the façade and prints sync/header/CRC status plus payload hex for any `.cf32` file.
 - **Stage tests** (`run_stage_tests`): CMake target that covers loader, frame sync, header decode, payload decode, and sync analysis against the reference vector so regressions are caught immediately.
+
+## Tools & scripts
+
+- `cpp_receiver/build/decode_cli`: C++ parity checker (`--sf/--bw/--fs/--ldro` options, `--debug` for extra diagnostics).
+- `external/gr_lora_sdr/scripts/export_tx_reference_vector.py`: GNU Radio exporter used to generate golden vectors (SF/CR/LDRO sweeps, explicit/implicit headers, CRC toggles).
+- Python reference: `external/sdr_lora/lora.decode` (kept as the oracle for comparison) plus helper scripts in `scripts/` (`sdr_lora_cli.py`, `compare_py_vs_cpp.py`, etc.).
+- Golden vectors: new batch in `golden_vectors/new_batch/` (SF7–8, CR1–2, LDRO0/1/2, payload `HELLO_STUPID_WORLD`).
 
 ## Next steps
 
-1. **CLI harness:** add a small executable/CLI that calls the `Receiver` façade so it can be used in tooling, regression tests, or compared directly with the Python decoder.
-2. **Performance and robustness:** broaden test coverage (different CR/SF/LDRO combos) and micro-optimise the matched filters/FFTs once correctness is locked.
+1. **Expand vector coverage:** generate and validate frames across SF9–12, CR3–4, implicit headers, CRC-off cases, and alternate sync words/sample rates.
+2. **Automated parity suite:** plug the new vectors into regression tests (Python + C++ CLI) so every configuration is exercised automatically.
+3. **Performance & profiling:** once coverage is complete, profile the hot loops (FFT, dewhitening, CRC) and optimise as needed.
 
 Each milestone will add dedicated tests that compare numerical outputs against Python dumps produced from `external/sdr_lora` to guarantee parity as we progress toward a fully native C++ decoder.
