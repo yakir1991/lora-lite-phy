@@ -214,16 +214,22 @@ std::array<int, 16> PayloadDecoder::crc16_bits(const std::vector<int> &bits, std
 
 int PayloadDecoder::compute_payload_symbol_count(const HeaderDecodeResult &header, bool ldro_enabled) const {
     const int sf = sf_;
-    const int de = (sf > 10 || ldro_enabled) ? 1 : 0;
-    const int ppm = sf - 2 * de;
-    const int n_bits_blk = ppm * 4;
-    const int n_bits_hdr = static_cast<int>(header.payload_header_bits.size());
-    const int n_bits_total = 8 * header.payload_length + (header.has_crc ? 16 : 0);
-    const int numerator = std::max(0, n_bits_total - n_bits_hdr);
-    const int n_blk_tot = (numerator + n_bits_blk - 1) / n_bits_blk;
+    const bool force_ldro = ldro_enabled;
+    const int de = (force_ldro || sf >= 11) ? 1 : 0;
     const int cr = std::clamp(header.cr, 1, 4);
-    const int n_sym_blk = 4 + cr;
-    return n_blk_tot * n_sym_blk;
+    const int crc = header.has_crc ? 1 : 0;
+    const int ih = 0; // explicit header path
+    const int payload_len = std::max(header.payload_length, 0);
+
+    const int denom = std::max(1, 4 * (sf - 2 * de));
+    int numerator = 8 * payload_len - 4 * sf + 28 + 16 * crc - 20 * ih;
+    if (numerator < 0) {
+        numerator = 0;
+    }
+    const int ceil_term = (numerator + denom - 1) / denom;
+    const int sym_per_block = 4 + cr;
+    const int symbols = sym_per_block * std::max(ceil_term, 0);
+    return symbols;
 }
 
 std::optional<PayloadDecodeResult> PayloadDecoder::decode(const std::vector<Sample> &samples,
@@ -231,6 +237,9 @@ std::optional<PayloadDecodeResult> PayloadDecoder::decode(const std::vector<Samp
                                                           const HeaderDecodeResult &header,
                                                           bool ldro_enabled) const {
     if (!header.fcs_ok || header.payload_length <= 0) {
+#ifndef NDEBUG
+        std::fprintf(stderr, "[decode] header invalid\n");
+#endif
         return std::nullopt;
     }
     const int cr = std::clamp(header.cr, 1, 4);
@@ -241,6 +250,9 @@ std::optional<PayloadDecodeResult> PayloadDecoder::decode(const std::vector<Samp
 
     const int n_payload_syms = compute_payload_symbol_count(header, ldro_enabled);
     if (n_payload_syms <= 0) {
+#ifndef NDEBUG
+        std::fprintf(stderr, "[decode] n_payload_syms<=0\n");
+#endif
         return std::nullopt;
     }
 
@@ -255,6 +267,10 @@ std::optional<PayloadDecodeResult> PayloadDecoder::decode(const std::vector<Samp
         for (std::size_t n = 0; n < N; ++n) {
             const std::ptrdiff_t idx_signed = sync.p_ofs_est + ofs + static_cast<std::ptrdiff_t>(n);
             if (idx_signed < 0 || static_cast<std::size_t>(idx_signed) >= samples.size()) {
+#ifndef NDEBUG
+                std::fprintf(stderr, "[decode] sample idx out of range (idx=%lld size=%zu)\n",
+                           static_cast<long long>(idx_signed), samples.size());
+#endif
                 return std::nullopt;
             }
             const double angle = -2.0 * std::numbers::pi * sync.cfo_hz * Ts * static_cast<double>(ofs + static_cast<std::ptrdiff_t>(n));
@@ -268,6 +284,9 @@ std::optional<PayloadDecodeResult> PayloadDecoder::decode(const std::vector<Samp
             dec.push_back(temp[i]);
         }
         if (dec.size() != K) {
+#ifndef NDEBUG
+            std::fprintf(stderr, "[decode] dec size mismatch %zu vs %zu\n", dec.size(), K);
+#endif
             return std::nullopt;
         }
 
@@ -333,6 +352,9 @@ std::optional<PayloadDecodeResult> PayloadDecoder::decode(const std::vector<Samp
         for (int row = 0; row < ppm; ++row) {
             for (int col = 0; col < 4; ++col) {
                 if (payload_ofs >= payload_bits.size()) {
+#ifndef NDEBUG
+                    std::fprintf(stderr, "[decode] payload_ofs overflow (%zu >= %zu)\n", payload_ofs, payload_bits.size());
+#endif
                     return std::nullopt;
                 }
                 payload_bits[payload_ofs++] = C[row][col];
@@ -342,13 +364,18 @@ std::optional<PayloadDecodeResult> PayloadDecoder::decode(const std::vector<Samp
 
     payload_bits = dewhiten_bits(payload_bits);
 
-    const std::size_t total_bits = payload_bits.size();
+    std::size_t total_bits = payload_bits.size();
     if (total_bits % 8 != 0) {
-        return std::nullopt;
+        const std::size_t padded = ((total_bits + 7u) / 8u) * 8u;
+        payload_bits.resize(padded, 0);
+        total_bits = padded;
     }
     const std::size_t total_bytes = total_bits / 8;
     const std::size_t payload_length = static_cast<std::size_t>(header.payload_length);
     if (total_bytes < payload_length) {
+#ifndef NDEBUG
+        std::fprintf(stderr, "[decode] total_bytes < payload_length (%zu < %zu)\n", total_bytes, payload_length);
+#endif
         return std::nullopt;
     }
 

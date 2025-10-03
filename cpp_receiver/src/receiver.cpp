@@ -22,12 +22,14 @@ DecodeResult Receiver::decode_samples(const std::vector<IqLoader::Sample> &sampl
     if (!result.frame_synced) {
         return result;
     }
+    result.p_ofs_est = sync->p_ofs_est;
 
     const auto header = header_decoder_.decode(samples, *sync);
     result.header_ok = header.has_value() && header->fcs_ok;
     if (!result.header_ok || !header.has_value()) {
         return result;
     }
+    result.header_payload_length = header->payload_length;
 
     const auto payload = payload_decoder_.decode(samples, *sync, *header, params_.ldro_enabled);
     if (!payload.has_value()) {
@@ -36,6 +38,7 @@ DecodeResult Receiver::decode_samples(const std::vector<IqLoader::Sample> &sampl
 
     result.payload_crc_ok = payload->crc_ok;
     result.payload = payload->bytes;
+    result.raw_payload_symbols = payload->raw_symbols;
     result.success = result.payload_crc_ok;
     return result;
 }
