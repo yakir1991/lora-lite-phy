@@ -1,0 +1,20 @@
+{
+  "source": "/home/aquay/lora-lite-phy/golden_vectors_demo_batch/tx_sf7_bw125000_cr1_crc1_impl0_ldro0_pay11.cf32",
+  "base_meta": {},
+  "impairments": {
+    "snr_db": 0.5,
+    "cfo_frac": 0.002,
+    "clk_ppm": 25.0,
+    "time_offset": 15000,
+    "iq_gain_db": 0.8,
+    "iq_phase_deg": 3.0,
+    "dc": "(0.01+0.01j)",
+    "taps": [
+      "(0.9+0j)",
+      "(0.3-0.1j)",
+      "(0.2+0.05j)"
+    ]
+  },
+  "output": "/home/aquay/lora-lite-phy/vectors/hard/synth_hard_1.cf32",
+  "samples": 35738
+}

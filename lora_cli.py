@@ -2,18 +2,18 @@
 """
 Deprecated entry point.
 
-Use the unified CLI module instead:
-  python -m scripts.lora_cli [subcommand] [options]
+Use the sdr_lora-first CLI instead:
+    python -m scripts.sdr_lora_cli [subcommand] [options]
 
-This thin wrapper forwards execution to scripts.lora_cli for backward compatibility.
+This thin wrapper forwards execution to scripts.sdr_lora_cli for backward compatibility.
 """
 import sys
 
 try:
-    from scripts.lora_cli import main as _main  # type: ignore
+    from scripts.sdr_lora_cli import main as _main  # type: ignore
 except Exception as e:  # pragma: no cover
     sys.stderr.write(
-        "[DEPRECATED] Please run 'python -m scripts.lora_cli ...' (failed to import: %s)\n" % (e,)
+        "[DEPRECATED] Please run 'python -m scripts.sdr_lora_cli ...' (failed to import: %s)\n" % (e,)
     )
     raise SystemExit(2)
 

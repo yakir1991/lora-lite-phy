@@ -1,0 +1,48 @@
+#include "receiver.hpp"
+
+#include <stdexcept>
+
+namespace lora {
+
+Receiver::Receiver(const DecodeParams &params)
+    : params_(params),
+      frame_sync_(params.sf, params.bandwidth_hz, params.sample_rate_hz),
+      header_decoder_(params.sf, params.bandwidth_hz, params.sample_rate_hz),
+      payload_decoder_(params.sf, params.bandwidth_hz, params.sample_rate_hz) {
+    if (params.sf < 5 || params.sf > 12) {
+        throw std::invalid_argument("Spreading factor out of supported range (5-12)");
+    }
+}
+
+DecodeResult Receiver::decode_samples(const std::vector<IqLoader::Sample> &samples) const {
+    DecodeResult result;
+
+    const auto sync = frame_sync_.synchronize(samples);
+    result.frame_synced = sync.has_value();
+    if (!result.frame_synced) {
+        return result;
+    }
+
+    const auto header = header_decoder_.decode(samples, *sync);
+    result.header_ok = header.has_value() && header->fcs_ok;
+    if (!result.header_ok || !header.has_value()) {
+        return result;
+    }
+
+    const auto payload = payload_decoder_.decode(samples, *sync, *header, params_.ldro_enabled);
+    if (!payload.has_value()) {
+        return result;
+    }
+
+    result.payload_crc_ok = payload->crc_ok;
+    result.payload = payload->bytes;
+    result.success = result.payload_crc_ok;
+    return result;
+}
+
+DecodeResult Receiver::decode_file(const std::filesystem::path &path) const {
+    auto samples = IqLoader::load_cf32(path);
+    return decode_samples(samples);
+}
+
+} // namespace lora
