@@ -1,0 +1,14 @@
+{
+  "sf": 8,
+  "bw": 125000,
+  "cr": 2,
+  "crc": true,
+  "impl_header": true,
+  "ldro_mode": 0,
+  "samp_rate": 500000,
+  "payload_len": 15,
+  "payload_hex": "5093d428ca59740f02c1faebdee2a4",
+  "filename": "tx_sf8_bw125000_cr2_crc1_impl1_ldro0_pay15.cf32",
+  "generator": "random_gnuradio",
+  "random_seed": 2025
+}

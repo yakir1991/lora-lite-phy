@@ -15,7 +15,7 @@ We have successfully built a complete LoRa receiver system that rivals GR LoRa S
    ✅ JSON output compatible with analysis tools
    ✅ Command-line interface with full configuration
 
-🏭 BATCH PROCESSOR (batch_lora_decoder.py):
+🏭 BATCH PROCESSOR (`python -m scripts.lora_cli batch`):
    ✅ Process multiple files or entire directories
    ✅ Auto-detect LoRa parameters from filenames
    ✅ GR LoRa SDR compatible interface and output
@@ -95,7 +95,7 @@ We have successfully built a complete LoRa receiver system that rivals GR LoRa S
 
 📁 FILE STRUCTURE:
    complete_lora_receiver.py  - Main receiver system
-   batch_lora_decoder.py      - Batch processor (GR compatible)
+   scripts/sdr_lora_batch_decode.py - Batch processor (call via lora_cli)
    lora_test_suite.py         - Automated test suite
    position_optimization.py   - Our breakthrough method
    ultimate_project_summary.py - Development documentation
@@ -111,7 +111,7 @@ python complete_lora_receiver.py input.cf32
 python complete_lora_receiver.py --sf 8 --bw 250000 --cr 1 input.cf32
 
 # Batch process directory (GR compatible)
-python batch_lora_decoder.py vectors/ --output-dir results/
+python -m scripts.lora_cli batch --roots vectors --out results/sdr_lora_batch.json
 
 # Run comprehensive test suite
 python lora_test_suite.py --quick-test

@@ -1,122 +1,47 @@
-🗂️ PROJECT ORGANIZATION COMPLETE!
-=====================================
+# Project Organization
 
-✅ **Project successfully reorganized with professional structure**
+This page summarizes the streamlined layout of the repository. Directories under `external/` remain untouched so upstream code stays pristine.
 
-## 📁 New Directory Structure
+## Top-Level Highlights
 
-```
-lora-lite-phy/                 # Root project directory
-├── complete_lora_receiver.py  # 🚀 MAIN SYSTEM (Production ready)
-├── README.md                  # Updated project documentation
-├── CMakeLists.txt            # C++ build system
-├── .gitignore                # Git ignore patterns
-│
-├── scripts/                   # 🛠️  Production Scripts (4 files)
-│   ├── lora_test_suite.py    # Automated testing
-│   ├── batch_lora_decoder.py # Batch processing
-│   ├── final_system_demo.py  # System demonstration
-│   ├── celebration_demo.py   # Success summary
-│   └── README.md             # Scripts documentation
-│
-├── analysis/                  # 🔬 Core Analysis Methods (7 files)
-│   ├── position_optimization.py     # ⭐ BREAKTHROUGH method
-│   ├── ultimate_project_summary.py  # Complete journey
-│   ├── ultra_deep_analysis.py      # Deep analysis
-│   ├── beyond_five_eighths.py      # Advanced optimization
-│   ├── hybrid_phase_approach.py    # Hybrid methods
-│   ├── integrated_receiver.py      # Full integration
-│   ├── advanced_demod_analysis.py  # Demodulation research
-│   └── README.md                   # Analysis documentation
-│
-├── docs/                      # 📚 Project Documentation (4 files)
-│   ├── COMPLETE_SYSTEM_DOCUMENTATION.md # Full technical specs
-│   ├── FINAL_SUCCESS.md               # Achievement summary
-│   ├── VALIDATION_SUCCESS.md          # Multi-vector validation
-│   ├── lorawebinar-lora-1.pdf        # Reference docs
-│   └── README.md                     # Documentation index
-│
-├── legacy/                    # 📦 Historical Development (30+ files)
-│   ├── [All old development files]   # Preserved for reference
-│   └── README.md                     # Legacy documentation
-│
-├── src/                       # C++ source code
-├── include/                   # C++ headers
-├── build_standalone/          # C++ build output
-├── vectors/                   # Test vectors
-├── temp/                      # Working files
-├── results/                   # Processing results  
-├── tests/                     # Unit tests
-└── external/                  # Dependencies (gr-lora-sdr)
-```
+- `complete_lora_receiver.py` – production Python entry point.
+- `lora_cli.py` – backward compatible shim that forwards to `scripts.lora_cli`.
+- `lora_decode_utils.py` – whitening/CRC helpers shared by receivers.
 
-## ✅ Organization Benefits
+## Directories by Purpose
 
-### 🎯 **Production Ready**
-- Main receiver system at root level for easy access
-- Production scripts organized in `scripts/` directory
-- Clear separation of tools and core system
+| Directory | Purpose |
+|-----------|---------|
+| `analysis/` | Research utilities and deep-dive experiments used during algorithm development. |
+| `benchmarks/` | Batch and performance experiments. |
+| `cpp_receiver/` | Modern C++ pipeline, including `decode_cli` and unit tests. |
+| `debug/` | Ad-hoc debugging helpers kept out of the production path. |
+| `docs/` | Documentation set (`GNU_RADIO_COMPAT.md`, validation reports, etc.). |
+| `include/`, `src/` | Shared headers and supplementary C++ source files. |
+| `legacy_receivers/` | Archived Python receiver variants retained for historical reference. |
+| `receiver/` | Modular Python receiver package used by the production CLI. |
+| `results/` | Generated artefacts; long-running reports live in `results/archive/`. |
+| `scripts/` | Supported CLIs (`lora_cli.py`, `sdr_lora_cli.py`, `sdr_lora_batch_decode.py`, `sdr_lora_offline_decode.py`, `lora_test_suite.py`). |
+| `tests/` | Automated tests (Python and C++). Manual experiments live in `tests/manual/`. |
+| `tools/` | Helper utilities such as vector generation and comparison scripts. |
+| `vectors/`, `golden_vectors*/` | Captured and synthetic LoRa IQ vectors. |
+| `external/` | Vendored dependencies (`gr-lora-sdr`); do not modify. |
 
-### 📚 **Professional Documentation** 
-- All documentation consolidated in `docs/`
-- Each directory has README explaining contents
-- Clear project structure documented
+## Recommended Entry Points
 
-### 🔬 **Research Preservation**
-- Core breakthrough methods in `analysis/`
-- Historical development preserved in `legacy/`
-- Complete development journey maintained
-
-### 🧹 **Clean Structure**
-- Removed unused files and duplicates
-- Organized by purpose and usage
-- Added .gitignore for clean repository
-
-## 🚀 Updated Usage Commands
-
-### Production Usage
 ```bash
-# Main receiver system (no path change needed)
-python complete_lora_receiver.py input.cf32
+# Decode a single capture
+python -m scripts.lora_cli decode vectors/example.cf32 --sf 7 --bw 125000 --fs 500000
 
-# Batch processing 
-python scripts/batch_lora_decoder.py vectors/ --output-dir results/
+# Batch-run the GNU Radio reference
+python -m scripts.lora_cli batch --roots vectors --fast
 
-# Test suite
-python scripts/lora_test_suite.py --quick-test
-
-# System demo
-python scripts/final_system_demo.py
+# Execute the focused regression suite
+python -m scripts.lora_cli test --quick-test
 ```
 
-### Analysis & Research  
-```bash
-# Breakthrough method
-python analysis/position_optimization.py
+## Notes
 
-# Complete project summary
-python analysis/ultimate_project_summary.py
-
-# Deep analysis
-python analysis/ultra_deep_analysis.py
-```
-
-## 📊 File Count Summary
-
-- **Production Scripts**: 4 files (ready for use)
-- **Core Analysis**: 7 files (breakthrough methods)  
-- **Documentation**: 4 files (complete specs)
-- **Legacy Development**: 30+ files (historical reference)
-- **Core System**: 1 file (main receiver)
-
-## 🎉 Project Status
-
-✅ **Organization Complete**: Professional structure achieved
-✅ **Functionality Verified**: All systems working correctly  
-✅ **Documentation Updated**: READMEs and paths corrected
-✅ **Clean Repository**: Unnecessary files removed
-✅ **Production Ready**: Clear usage patterns established
-
-**The LoRa receiver project is now professionally organized and ready for production use, further development, or educational purposes!**
-
-🏆 **Outstanding project organization achieved alongside technical excellence!**
+- Development-time artefacts (build directories, binaries, caches) are intentionally excluded from the repository.
+- Deprecated demos and celebratory scripts have been removed; the universal CLI now exposes only the supported workflows.
+- For GNU Radio parity details see `docs/GNU_RADIO_COMPAT.md`.
