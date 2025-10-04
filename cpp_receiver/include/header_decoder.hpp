@@ -15,6 +15,7 @@ struct HeaderDecodeResult {
     int payload_length = -1;
     bool has_crc = false;
     int cr = -1;
+    bool implicit_header = false;
     std::vector<int> payload_header_bits; // residual bits feeding into payload decoding (may be empty)
 };
 

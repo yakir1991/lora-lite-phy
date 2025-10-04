@@ -1,6 +1,7 @@
 #include "header_decoder.hpp"
 
 #include "chirp_generator.hpp"
+#include "hamming.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -129,8 +130,12 @@ std::optional<HeaderDecodeResult> HeaderDecoder::decode(const std::vector<Sample
 
         std::vector<CDouble> dec;
         dec.reserve(K);
-        for (std::size_t i = 0; i <= N - os_factor_; i += os_factor_) {
-            dec.push_back(temp[i]);
+        for (std::size_t chip = 0; chip < K; ++chip) {
+            std::size_t idx = 1 + chip * os_factor_;
+            if (idx >= N - 1) {
+                idx = N - 2;
+            }
+            dec.push_back(temp[idx]);
         }
         if (dec.size() != K) {
             return std::nullopt;
@@ -150,6 +155,10 @@ std::optional<HeaderDecodeResult> HeaderDecoder::decode(const std::vector<Sample
     const int n_sym_hdr = 8;
     const int CR_hdr = 4;
     const int cw_cols = 4 + CR_hdr;
+
+    if (ppm < 5) {
+        return std::nullopt;
+    }
 
     const auto degray = lora_degray_table(ppm);
     std::vector<int> bits_est(ppm * n_sym_hdr, 0);
@@ -185,6 +194,9 @@ std::optional<HeaderDecodeResult> HeaderDecoder::decode(const std::vector<Sample
     std::vector<std::vector<int>> C_flip = C;
     for (int row = 0; row < ppm; ++row) {
         C_flip[row] = C[ppm - 1 - row];
+        if (!hamming::decode_codeword(C_flip[row], CR_hdr)) {
+            return std::nullopt;
+        }
     }
 
 
@@ -219,6 +231,7 @@ std::optional<HeaderDecodeResult> HeaderDecoder::decode(const std::vector<Sample
     const int chk_calc = compute_header_crc(n0, n1, n2) & 0x1F;
 
     HeaderDecodeResult result;
+    result.implicit_header = false;
     result.raw_symbols = raw_symbols;
     result.fcs_ok = (chk_rx == chk_calc);
     if (result.fcs_ok) {
