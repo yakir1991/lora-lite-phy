@@ -1,0 +1,14 @@
+{
+  "filename": "tx_sf7_bw125000_cr3_crc1_impl0_ldro0_criminal.cf32",
+  "sf": 7,
+  "bw": 125000,
+  "samp_rate": 500000,
+  "cr": 3,
+  "crc": true,
+  "impl_header": false,
+  "ldro_mode": 0,
+  "payload_len": 21,
+  "payload_hex": "01012a15414e4e4945415245594f554f4b41593f3f",
+  "payload_text": "ANNIEAREYOUOKAY??",
+  "sync_word": 18
+}

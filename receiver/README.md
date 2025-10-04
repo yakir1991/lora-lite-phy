@@ -17,4 +17,4 @@ Usage examples:
 
 Notes:
 - The top-level script `complete_lora_receiver.py` remains as a thin wrapper for backward compatibility.
-- For 100% parity with GNU Radio, use the scripts and test suites under `scripts/` and `test_gnu_radio_compat.py` as documented in README_GNU_RADIO_COMPAT.md.
+- For 100% parity with GNU Radio, use the scripts and test suites under `scripts/` and `tests/test_gnu_radio_compat.py` as documented in `docs/GNU_RADIO_COMPAT.md`.
