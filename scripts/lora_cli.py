@@ -5,8 +5,6 @@ Universal CLI for LoRa Lite PHY (relocated under scripts/)
 Subcommands:
   - decode: Decode a single IQ file with the GNU Radio Python reference
   - batch:  Batch process files/directories (wraps scripts.sdr_lora_batch_decode)
-  - test:   Run the receiver test suite (wraps scripts.lora_test_suite)
-  - analyze: Handy analysis helpers from analysis/* modules
 
 Run via:
   python -m scripts.lora_cli --help
@@ -18,8 +16,11 @@ from pathlib import Path
 
 # Ensure project root is importable (for analysis modules etc.)
 ROOT = Path(__file__).resolve().parent.parent
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+PYTHON_MODULES = ROOT / "python_modules"
+for candidate in (ROOT, PYTHON_MODULES):
+    candidate_str = str(candidate)
+    if candidate_str not in sys.path:
+        sys.path.insert(0, candidate_str)
 
 
 def cmd_decode(args: argparse.Namespace) -> int:
@@ -63,48 +64,6 @@ def cmd_batch(args: argparse.Namespace) -> int:
         sys.argv = old
 
 
-def cmd_test(args: argparse.Namespace) -> int:
-    from .lora_test_suite import main as tests_main
-    argv = ['lora_test_suite.py']
-    if args.quick_test:
-        argv += ['--quick-test']
-    if args.test_vectors_dir:
-        argv += ['--test-vectors-dir', args.test_vectors_dir]
-    if args.output_report:
-        argv += ['--output-report', args.output_report]
-    old = sys.argv
-    try:
-        sys.argv = argv
-        return tests_main()
-    finally:
-        sys.argv = old
-
-
-def cmd_analyze(args: argparse.Namespace) -> int:
-    if args.which == 'symbols':
-        from analysis.advanced_demod_analysis import deep_symbol_analysis, test_advanced_fft_methods
-        deep_symbol_analysis()
-        score, method = test_advanced_fft_methods()
-        print(f"Best method: {method} score={score}/8")
-        return 0
-    if args.which == 'integrated':
-        from analysis.integrated_receiver import (
-            run_full_cpp_analysis,
-            extract_sync_parameters,
-            calculate_precise_symbol_position,
-            test_advanced_demodulation,
-        )
-        cpp_results = run_full_cpp_analysis()
-        sync = extract_sync_parameters(cpp_results)
-        positions = calculate_precise_symbol_position(sync)
-        if positions:
-            best = test_advanced_demodulation(positions, sync)
-            print(f"Best result: {best}")
-        return 0
-    print("Unknown analysis mode")
-    return 1
-
-
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description='LoRa Lite PHY - Universal CLI')
     sub = p.add_subparsers(dest='command', required=True)
@@ -126,18 +85,6 @@ def build_parser() -> argparse.ArgumentParser:
     pb.add_argument('--out', default='results/sdr_lora_batch.json', help='Where to write the JSON report')
     pb.add_argument('--fast', action='store_true', help='Enable fast mode (limited sweep)')
     pb.set_defaults(func=cmd_batch)
-
-    # test
-    pt = sub.add_parser('test', help='Run the receiver test suite')
-    pt.add_argument('--quick-test', action='store_true')
-    pt.add_argument('--test-vectors-dir', default='vectors')
-    pt.add_argument('--output-report', default='test_report.json')
-    pt.set_defaults(func=cmd_test)
-
-    # analyze
-    pa = sub.add_parser('analyze', help='Run analysis helpers')
-    pa.add_argument('--which', choices=['symbols', 'integrated'], default='symbols')
-    pa.set_defaults(func=cmd_analyze)
 
     return p
 

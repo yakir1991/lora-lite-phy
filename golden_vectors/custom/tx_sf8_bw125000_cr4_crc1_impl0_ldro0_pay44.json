@@ -1,0 +1,14 @@
+{
+  "sf": 8,
+  "bw": 125000,
+  "cr": 4,
+  "crc": true,
+  "impl_header": false,
+  "ldro_mode": 0,
+  "samp_rate": 125000,
+  "payload_len": 44,
+  "payload_hex": "4469642049206d616e61676520746f20696d706c656d656e74206120726563656976657220696e20432b2b3f",
+  "filename": "tx_sf8_bw125000_cr4_crc1_impl0_ldro0_pay44.cf32",
+  "generator": "custom_gnuradio",
+  "message": "Did I manage to implement a receiver in C++?"
+}

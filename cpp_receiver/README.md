@@ -1,6 +1,6 @@
 # LoRa C++ Receiver (Reboot)
 
-This directory hosts the fresh C++ implementation that mirrors the proven Python `external/sdr_lora` pipeline. The rebuild proceeds stage-by-stage, validating each component against the Python reference before adding the next element.
+This directory hosts an independent C++ LoRa receiver that draws from the proven Python `external/sdr_lora` pipeline and the GNU Radio implementation. Every stage is validated against both reference receivers before it moves forward.
 
 ## Current status
 
@@ -23,8 +23,8 @@ This directory hosts the fresh C++ implementation that mirrors the proven Python
 
 ## Next steps
 
-1. **Expand vector coverage:** generate and validate frames across SF9–12, CR3–4, implicit headers, CRC-off cases, and alternate sync words/sample rates.
-2. **Automated parity suite:** plug the new vectors into regression tests (Python + C++ CLI) so every configuration is exercised automatically.
-3. **Performance & profiling:** once coverage is complete, profile the hot loops (FFT, dewhitening, CRC) and optimise as needed.
+1. **Solidify low-SF support:** fix the SF5/6 header and payload paths (currently crash-prone) and add regression vectors to lock behaviour.
+2. **Centralise shared DSP utilities:** extract the duplicated Gray de-mapping, DFT helpers, and timing constants into reusable components shared by all stages.
+3. **Broaden automated regressions:** wire the extended golden-vector batches into the C++ stage tests and Python/GNU Radio parity suite so every configuration runs in CI.
 
-Each milestone will add dedicated tests that compare numerical outputs against Python dumps produced from `external/sdr_lora` to guarantee parity as we progress toward a fully native C++ decoder.
+With the expanded vector library and existing parity harness in place, these milestones focus on robustness and maintainability as we converge on a production-grade native receiver.

@@ -118,7 +118,7 @@ def main():
         "golden_vectors_demo_batch",
         "vectors"
     ], help="Folders to scan for .cf32 + .json pairs")
-    ap.add_argument("--out", default="stage_dump/sdr_lora_batch.json", help="Where to write the full JSON report")
+    ap.add_argument("--out", default="results/sdr_lora_batch.json", help="Where to write the full JSON report")
     ap.add_argument("--fast", action="store_true", help="Enable fast mode: limited sweep and no heavy fallbacks")
     args = ap.parse_args()
 

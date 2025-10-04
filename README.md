@@ -1,11 +1,16 @@
 # LoRa Lite PHY
 
-LoRa Lite PHY bundles two receivers that share the same vector corpus and test harnesses:
+LoRa Lite PHY centres on a clean-room C++ LoRa receiver that is validated against
+the upstream GNU Radio implementation vendored under `external/sdr_lora`.
 
-- **Python reference receiver** – wraps GNU Radio's `gr-lora-sdr` implementation (`scripts/sdr_lora_cli.py`) and is used for day-to-day decoding, batch comparisons, and automated tests.
-- **C++ receiver** – a clean-room reimplementation that mirrors the Python pipeline stage by stage (`cpp_receiver/`). It ships with a standalone CLI (`decode_cli`) and unit tests so that new optimisations can be validated against the Python reference.
+- **C++ receiver (`cpp_receiver/`)** – standalone implementation with unit tests
+  and a `decode_cli` binary for manual runs. This is the codebase you extend.
+- **GNU Radio reference (`external/sdr_lora`)** – kept untouched and exercised
+  through lightweight Python wrappers in `scripts/` for parity checks and batch
+  decoding.
 
-The project keeps the original GNU Radio scripts under `external/` untouched; everything else lives in this repository so it is easy to integrate with CI, testing, and tooling.
+The GNU Radio sources remain pristine so they can be updated from upstream while
+the in-tree C++ receiver evolves independently.
 
 ## Quick Start
 
@@ -15,10 +20,10 @@ git clone https://github.com/yakir1991/lora-lite-phy.git
 cd lora-lite-phy
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r config/requirements.txt
 ```
 
-### Decode a capture (Python/GNU Radio reference)
+### Decode a capture (GNU Radio reference)
 ```bash
 python -m scripts.lora_cli decode vectors/gnuradio_sf7_cr45_crc.bin --verbose
 ```
@@ -31,10 +36,9 @@ python -m scripts.lora_cli batch --roots vectors golden_vectors --out results/sd
 ```
 The batch report lists which captures matched the GNU Radio output and stores the full JSON summary under `results/`.
 
-### Test suites
+### Tests
 ```bash
-pytest -q tests/test_gnu_radio_compat.py          # Python vs GNU Radio parity
-python scripts/lora_test_suite.py --quick-test    # Smoke tests across curated vectors
+pytest -q tests/test_gnu_radio_compat.py          # GNU Radio vs C++ parity
 ```
 
 ### Build and run the C++ receiver (optional)
@@ -50,39 +54,39 @@ The CLI prints sync/header status and the decoded payload in hex. Additional dia
 | Location | Contents |
 |----------|----------|
 | `golden_vectors*/*` | Canonical IQ captures plus JSON sidecars used in regression tests. |
-| `results/receiver_comparison.json` | Latest comparison table between Python, C++, and GNU Radio outputs. |
+| `results/receiver_comparison.json` | Latest comparison table between the C++ receiver and the GNU Radio reference. |
 | `docs/GNU_RADIO_COMPAT.md` | Summary of the parity workflow and reporting tools. |
-| `docs/COMPLETE_SYSTEM_DOCUMENTATION.md` | Detailed design notes for the receiver pipeline. |
+| `docs/PROJECT_ORGANIZATION.md` | Directory-level overview of the repository structure. |
 
 ## Project layout
 
 ```
 lora-lite-phy/
-├── analysis/              # Research scripts (position optimisation, hybrid demodulation, etc.)
-├── benchmarks/            # Performance studies and batch experiments
+├── config/                # requirements.txt, pytest.ini
+├── python_modules/        # Shared helpers (e.g., lora_decode_utils.py)
 ├── cpp_receiver/          # C++ implementation + decode_cli
-├── debug/                 # Local debugging helpers (manual experiments)
 ├── docs/                  # Project documentation, validation reports, compatibility notes
-├── legacy_receivers/      # Archived Python receiver variants retained for reference
-├── receiver/              # Modular Python receiver package (used by scripts/sdr_lora_cli)
 ├── results/               # Batch reports and truth tables (`archive/` holds historical JSON)
-├── scripts/               # CLI entry points (lora_cli, sdr_lora_cli, batch decode, test suite)
-├── tests/                 # Automated tests (unit + integration)
+├── scripts/               # CLI entry points (lora_cli, sdr_lora_cli, batch decode)
+├── tests/                 # Automated tests (GNU Radio vs C++ parity)
 ├── tools/                 # Vector generation / comparison helpers
 ├── vectors/               # Captured & synthetic LoRa IQ files used in testing
+├── golden_vectors*/       # Published reference suites
+├── golden_vectors_demo*/  # Demo vector sets used in documentation
 └── external/              # Vendored gr-lora-sdr; left untouched
 ```
 
 ## Housekeeping files
 
-- `requirements.txt` – Python dependencies for the tooling.
-- `pytest.ini` – Pytest configuration used by the suite.
-- `lora_cli.py` – backward-compat entry point kept for historical scripts (delegates to `scripts/lora_cli`).
-- `complete_lora_receiver.py` – wrapper that loads the modular Python receiver package.
-- `.gitignore`, `.gitmodules` – Git metadata.
+- `config/requirements.txt` – Python dependencies for the tooling.
+- `config/pytest.ini` – Pytest configuration used by the suite.
+- `.gitignore`, `.gitmodules` – Git metadata left at the repository root.
 
 ## Notes
 
 - `external/` mirrors upstream projects and must not be modified; changes go in the top-level code.
 - When adding new IQ captures, include the matching `.json` sidecar so the batch tools can infer parameters automatically.
-- The Python CLI is the canonical reference; the C++ implementation should always be validated against it before committing major changes.
+- Use `python -m scripts.lora_cli` to invoke the GNU Radio reference decoder when
+  ground truth is required during development.
+- Validate C++ changes against the GNU Radio reference before committing major
+  updates.
