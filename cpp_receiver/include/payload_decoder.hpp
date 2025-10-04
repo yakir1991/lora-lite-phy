@@ -38,7 +38,7 @@ private:
 
     std::vector<std::complex<double>> downchirp_;
 
-    [[nodiscard]] std::size_t payload_symbol_offset_samples() const;
+    [[nodiscard]] std::size_t payload_symbol_offset_samples(bool implicit_header) const;
     [[nodiscard]] std::vector<int> lora_degray_table(int bits) const;
     [[nodiscard]] int compute_payload_symbol_count(const HeaderDecodeResult &header, bool ldro_enabled) const;
     [[nodiscard]] std::vector<int> num_to_bits(unsigned value, int bit_count) const;

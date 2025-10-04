@@ -38,10 +38,14 @@ SyncWordDetector::SyncWordDetector(int sf, int bandwidth_hz, int sample_rate_hz,
 
 std::size_t SyncWordDetector::demod_symbol(const std::vector<Sample> &samples,
                                            std::size_t sym_index,
-                                           std::size_t preamble_offset,
+                                           std::ptrdiff_t preamble_offset,
                                            FFTScratch &scratch,
                                            double &magnitude) const {
-    const std::size_t start = preamble_offset + sym_index * sps_;
+    const std::ptrdiff_t start_signed = preamble_offset + static_cast<std::ptrdiff_t>(sym_index * sps_);
+    if (start_signed < 0) {
+        throw std::out_of_range("SyncWordDetector: negative start index");
+    }
+    const std::size_t start = static_cast<std::size_t>(start_signed);
     scratch.input.assign(sps_, std::complex<double>{});
 
     for (std::size_t i = 0; i < sps_; ++i) {
@@ -78,14 +82,18 @@ std::size_t SyncWordDetector::demod_symbol(const std::vector<Sample> &samples,
 }
 
 std::optional<SyncWordDetection> SyncWordDetector::analyze(const std::vector<Sample> &samples,
-                                                           std::size_t preamble_offset) const {
-    const std::size_t needed = preamble_offset + (kPreambleSymCount + kSyncSymCount) * sps_;
+                                                           std::ptrdiff_t preamble_offset) const {
+    if (preamble_offset < 0) {
+        return std::nullopt;
+    }
+
+    const std::size_t needed = static_cast<std::size_t>(preamble_offset) + (kPreambleSymCount + kSyncSymCount) * sps_;
     if (samples.size() < needed) {
         return std::nullopt;
     }
 
     SyncWordDetection detection;
-    detection.preamble_offset = preamble_offset;
+    detection.preamble_offset = static_cast<std::size_t>(preamble_offset);
     detection.symbol_bins.reserve(kPreambleSymCount + kSyncSymCount);
     detection.magnitudes.reserve(kPreambleSymCount + kSyncSymCount);
 

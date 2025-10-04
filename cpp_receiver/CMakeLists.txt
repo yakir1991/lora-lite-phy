@@ -9,6 +9,7 @@ add_library(lora_cpp_receiver STATIC
     src/chirp_generator.cpp
     src/frame_sync.cpp
     src/header_decoder.cpp
+    src/hamming.cpp
     src/iq_loader.cpp
     src/preamble_detector.cpp
     src/payload_decoder.cpp

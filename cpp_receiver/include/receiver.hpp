@@ -3,6 +3,7 @@
 #include "frame_sync.hpp"
 #include "header_decoder.hpp"
 #include "iq_loader.hpp"
+#include "sync_word_detector.hpp"
 #include "payload_decoder.hpp"
 
 #include <filesystem>
@@ -16,6 +17,11 @@ struct DecodeParams {
     int bandwidth_hz = 125000;
     int sample_rate_hz = 500000;
     bool ldro_enabled = false;
+    unsigned sync_word = 0x12;
+    bool implicit_header = false;
+    int implicit_payload_length = 0;
+    bool implicit_has_crc = true;
+    int implicit_cr = 1;
 };
 
 struct DecodeResult {
@@ -41,6 +47,7 @@ private:
     FrameSynchronizer frame_sync_;
     HeaderDecoder header_decoder_;
     PayloadDecoder payload_decoder_;
+    SyncWordDetector sync_detector_;
 };
 
 } // namespace lora
