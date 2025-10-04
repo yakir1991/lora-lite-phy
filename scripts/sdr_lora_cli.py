@@ -14,6 +14,7 @@ Usage:
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -28,8 +29,12 @@ if not hasattr(np, "Inf"):
 
 ROOT = Path(__file__).resolve().parents[1]
 SDR_LORA = ROOT / "external" / "sdr_lora"
-if str(SDR_LORA) not in sys.path:
-	sys.path.insert(0, str(SDR_LORA))
+PYTHON_MODULES = ROOT / "python_modules"
+OFFLINE_DECODER = ROOT / "external" / "gr_lora_sdr" / "scripts" / "decode_offline_recording.py"
+for candidate in (SDR_LORA, ROOT, PYTHON_MODULES):
+	candidate_str = str(candidate)
+	if candidate_str not in sys.path:
+		sys.path.insert(0, candidate_str)
 
 
 def load_cf32(path: Path) -> np.ndarray:
@@ -57,6 +62,55 @@ def payload_to_hex(payload_arr: Optional[np.ndarray]) -> str:
 		return ""
 	# Avoid NumPy truth-value pitfalls; explicitly convert to bytes via int
 	return bytes(int(b) for b in payload_arr).hex()
+
+
+def run_offline_decoder(cf32_path: Path,
+					     sf: int,
+					     bw: int,
+					     fs: int,
+					     meta: Dict[str, Any]) -> Optional[List[Dict[str, Any]]]:
+	cmd = [
+		sys.executable,
+		str(OFFLINE_DECODER),
+		str(cf32_path),
+		"--sf", str(sf),
+		"--bw", str(bw),
+		"--samp-rate", str(fs),
+		"--cr", str(int(meta.get('cr', 2))),
+		"--ldro-mode", str(int(meta.get('ldro_mode', 0) or 0)),
+		"--format", "cf32",
+	]
+	cmd.append("--impl-header" if meta.get('impl_header') else "--explicit-header")
+	cmd.append("--has-crc" if meta.get('crc', True) else "--no-crc")
+	try:
+		result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+	except subprocess.TimeoutExpired:
+		return None
+	if result.returncode != 0:
+		return None
+	frames: List[Dict[str, Any]] = []
+	hex_value: Optional[str] = None
+	crc_valid = False
+	hdr_len = meta.get('payload_len')
+	for line in result.stdout.splitlines():
+		line = line.strip()
+		if line.startswith('Hex:'):
+			hex_str = line.replace('Hex:', '').strip().replace(' ', '')
+			hex_value = hex_str.lower()
+		elif line.startswith('Frame') and 'CRC valid' in line:
+			crc_valid = True
+	if hex_value is None:
+		return None
+	frames.append({
+		"hdr_ok": 1 if hdr_len is not None else 0,
+		"crc_ok": 1 if crc_valid else 0,
+		"has_crc": 1 if meta.get('crc', True) else 0,
+		"cr": int(meta.get('cr', 2)),
+		"ih": 1 if meta.get('impl_header') else 0,
+		"payload_len": hdr_len or 0,
+		"hex": hex_value,
+	})
+	return frames
 
 
 def cmd_decode(args: argparse.Namespace) -> int:
@@ -108,6 +162,10 @@ def cmd_decode(args: argparse.Namespace) -> int:
 	}
 
 	pkts = sdr_lora.decode(samples, sf, bw, fs, override=override)
+	pkts_list = list(pkts) if pkts is not None else []
+	fallback_frames: Optional[List[Dict[str, Any]]] = None
+	if len(pkts_list) == 0:
+		fallback_frames = run_offline_decoder(cf32_path, sf, bw, fs, meta_all)
 
 	out: Dict[str, Any] = {
 		"status": "ok",
@@ -119,17 +177,21 @@ def cmd_decode(args: argparse.Namespace) -> int:
 		"found": [],
 	}
 
-	for pkt in pkts:
-		cur = {
-			"hdr_ok": int(pkt.hdr_ok),
-			"crc_ok": int(pkt.crc_ok),
-			"has_crc": int(pkt.has_crc),
-			"cr": int(pkt.cr),
-			"ih": int(pkt.ih),
-			"payload_len": (len(pkt.payload) if pkt.payload is not None else 0),
-			"hex": payload_to_hex(pkt.payload),
-		}
-		out["found"].append(cur)
+	if pkts_list:
+		for pkt in pkts_list:
+			cur = {
+				"hdr_ok": int(pkt.hdr_ok),
+				"crc_ok": int(pkt.crc_ok),
+				"has_crc": int(pkt.has_crc),
+				"cr": int(pkt.cr),
+				"ih": int(pkt.ih),
+				"payload_len": (len(pkt.payload) if pkt.payload is not None else 0),
+				"hex": payload_to_hex(pkt.payload),
+			}
+			out["found"].append(cur)
+	elif fallback_frames:
+		out["fallback"] = "offline_gr"
+		out["found"].extend(fallback_frames)
 
 	# Print results (compact when not verbose)
 	if args.verbose:
@@ -189,7 +251,7 @@ def build_parser() -> argparse.ArgumentParser:
 	pb.add_argument('--roots', nargs='*', default=[
 		'golden_vectors_demo', 'golden_vectors_demo_batch', 'vectors'
 	])
-	pb.add_argument('--out', default='stage_dump/sdr_lora_batch.json')
+	pb.add_argument('--out', default='results/sdr_lora_batch.json')
 	pb.set_defaults(func=cmd_batch)
 
 	return p
@@ -203,4 +265,3 @@ def main() -> int:
 
 if __name__ == "__main__":
 	raise SystemExit(main())
-
