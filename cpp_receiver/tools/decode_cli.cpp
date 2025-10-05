@@ -1,4 +1,6 @@
 #include "receiver.hpp"
+#include "frame_sync.hpp"
+#include "sync_word_detector.hpp"
 
 #include <cstdlib>
 #include <filesystem>
@@ -20,6 +22,7 @@ struct ParsedArgs {
     int coding_rate = 1;
     bool has_crc = true;
     unsigned sync_word = 0x12u;
+    bool skip_sync_word_check = false;
 };
 
 void print_usage(const char *prog) {
@@ -35,6 +38,7 @@ void print_usage(const char *prog) {
               << "  --cr <int>              Coding rate (1-4) for implicit header\n"
               << "  --no-crc                Disable payload CRC when implicit header (default: enabled)\n"
               << "  --has-crc               Explicitly enable payload CRC\n"
+              << "  --skip-syncword         Do not enforce sync-word check (use with caution)\n"
               << "  --debug                 Print extra diagnostics\n";
 }
 
@@ -63,6 +67,8 @@ ParsedArgs parse_args(int argc, char **argv) {
             args.has_crc = false;
         } else if (cur == "--has-crc") {
             args.has_crc = true;
+        } else if (cur == "--skip-syncword") {
+            args.skip_sync_word_check = true;
         } else if (cur == "--debug") {
             args.debug = true;
         } else if (cur == "--help" || cur == "-h") {
@@ -91,6 +97,7 @@ int main(int argc, char **argv) {
         params.sample_rate_hz = parsed.sample_rate_hz;
         params.ldro_enabled = parsed.ldro_enabled;
         params.sync_word = parsed.sync_word;
+        params.skip_sync_word_check = parsed.skip_sync_word_check;
         params.implicit_header = parsed.implicit_header;
         params.implicit_payload_length = parsed.payload_length;
         params.implicit_has_crc = parsed.has_crc;
@@ -140,6 +147,32 @@ int main(int argc, char **argv) {
             }
             std::cout << '\n';
             std::cout.copyfmt(old_state);
+        }
+        if (parsed.debug) {
+            try {
+                lora::FrameSynchronizer fs(parsed.sf, parsed.bandwidth_hz, parsed.sample_rate_hz);
+                auto sync = fs.synchronize(samples);
+                if (sync.has_value()) {
+                    lora::SyncWordDetector swd(parsed.sf, parsed.bandwidth_hz, parsed.sample_rate_hz, parsed.sync_word);
+                    auto det = swd.analyze(samples, sync->preamble_offset, sync->cfo_hz);
+                    if (det.has_value()) {
+                        std::cout << "sync_dbg preamble_ok=" << int(det->preamble_ok)
+                                  << " sync_ok=" << int(det->sync_ok)
+                                  << " bins=";
+                        for (size_t i = 0; i < det->symbol_bins.size(); ++i) {
+                            std::cout << det->symbol_bins[i];
+                            if (i + 1 < det->symbol_bins.size()) std::cout << ',';
+                        }
+                        std::cout << '\n';
+                    } else {
+                        std::cout << "sync_dbg analyze=none\n";
+                    }
+                } else {
+                    std::cout << "sync_dbg fsync=none\n";
+                }
+            } catch (...) {
+                std::cout << "sync_dbg error\n";
+            }
         }
         return result.success ? 0 : 1;
     } catch (const std::exception &ex) {

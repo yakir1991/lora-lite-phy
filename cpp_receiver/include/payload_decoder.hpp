@@ -29,6 +29,11 @@ public:
         const HeaderDecodeResult &header,
         bool ldro_enabled) const;
 
+    struct WhiteningMode {
+        enum Type { TABLE, PN9, PN9_MSB } type;
+        int seed;
+    };
+
 private:
     int sf_ = 7;
     int bandwidth_hz_ = 125000;
@@ -45,6 +50,14 @@ private:
     [[nodiscard]] unsigned byte_from_bits(const std::vector<int> &bits, std::size_t offset) const;
     [[nodiscard]] std::vector<int> dewhiten_bits(const std::vector<int> &bits) const;
     [[nodiscard]] std::array<int, 16> crc16_bits(const std::vector<int> &bits, std::size_t bit_count) const;
+
+    
+    [[nodiscard]] std::optional<std::vector<unsigned char>> try_decode_with_params(
+        const std::vector<int> &data_bits,
+        const HeaderDecodeResult &header,
+        const WhiteningMode &wmode,
+        int bit_slide,
+        int start_byte) const;
 };
 
 } // namespace lora

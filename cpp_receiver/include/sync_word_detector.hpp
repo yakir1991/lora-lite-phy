@@ -22,7 +22,8 @@ public:
     SyncWordDetector(int sf, int bandwidth_hz, int sample_rate_hz, unsigned sync_word);
 
     [[nodiscard]] std::optional<SyncWordDetection> analyze(const std::vector<Sample> &samples,
-                                                           std::ptrdiff_t preamble_offset) const;
+                                                           std::ptrdiff_t preamble_offset,
+                                                           double cfo_hz = 0.0) const;
 
     [[nodiscard]] std::size_t samples_per_symbol() const { return sps_; }
 
@@ -35,6 +36,7 @@ private:
     [[nodiscard]] std::size_t demod_symbol(const std::vector<Sample> &samples,
                                            std::size_t sym_index,
                                            std::ptrdiff_t preamble_offset,
+                                           double cfo_hz,
                                            FFTScratch &scratch,
                                            double &magnitude) const;
 
