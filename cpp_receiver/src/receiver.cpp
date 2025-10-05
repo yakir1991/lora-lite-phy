@@ -25,9 +25,11 @@ DecodeResult Receiver::decode_samples(const std::vector<IqLoader::Sample> &sampl
     }
     result.p_ofs_est = sync->p_ofs_est;
 
-    const auto sync_word = sync_detector_.analyze(samples, sync->preamble_offset);
-    if (!sync_word.has_value() || !sync_word->sync_ok) {
-        return result;
+    if (!params_.skip_sync_word_check) {
+        const auto sync_word = sync_detector_.analyze(samples, sync->preamble_offset, sync->cfo_hz);
+        if (!sync_word.has_value() || !sync_word->sync_ok) {
+            return result;
+        }
     }
 
     std::optional<HeaderDecodeResult> header;

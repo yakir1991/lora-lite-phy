@@ -1,0 +1,2211 @@
+LoRa(WAN) Webinar
+
+LoRa – Modulation/Encoding
+Author: Harald Eigner (TU Wien)
+These slides give an overview on the LoRa modulation and encoding. While the first slides are
+intended for general audience, the second part will explain modulation/encoding on a very
+detailed level, targeting advanced audience which want to generate/receive signals with their own
+hardware, like software defined radios.
+
+Contents
+• Spread Spectrum Basics
+• LoRa Chirped Spread Spectrum
+• LoRa Frame Format
+• LoRa Encoding Scheme
+• Airtime
+
+2
+
+Contents
+• Spread Spectrum Basics
+• LoRa Chirped Spread Spectrum
+• LoRa Frame Format
+• LoRa Encoding Scheme
+• Airtime
+
+3
+
+Spread Spectrum Basics
+• Information is spread over frequency, high bandwidth
+• Trade-off between data rate, bandwidth, and power
+
+amplitude
+
+with
+
+𝐶𝐶 = 𝐵𝐵𝐵𝐵 log 2 1 +
+𝑏𝑏𝑏𝑏𝑏𝑏𝑏𝑏
+
+• 𝐶𝐶 … Channel Capacity
+𝑠𝑠
+• 𝐵𝐵𝐵𝐵 … Bandwidth 𝐻𝐻𝑧𝑧
+𝑆𝑆
+•
+… Signal to Noise ratio 1
+𝑁𝑁
+
+spectrum of signal
+spectrum of spreaded signal
+
+𝑆𝑆
+𝑁𝑁
+
+f
+
+c
+
+frequency
+
+4
+
+Direct Sequence Spread Spectrum
+Tbit
+1
+
+data
+
+• Data signal is expanded by multiplying with
+pseudo random sequence – spreading code
+• Information is spread over frequency
+
+time
+
+0
+Tchip
+
+spreading code
+
+DSSS signal
+
+1
+0
+
+0
+
+1
+0
+
+1
+
+1
+
+1
+0
+
+1
+
+0
+
+0
+
+1
+
+1
+0
+
+time
+
+0
+
+time
+
+1
+𝑇𝑇𝑏𝑏𝑏𝑏𝑏𝑏
+1
+𝑅𝑅𝑐𝑐𝑐𝑐𝑐𝑐𝑐 =
+𝑇𝑇𝑐𝑐𝑐𝑐𝑐𝑐𝑐
+𝑅𝑅𝑏𝑏𝑏𝑏𝑏𝑏 =
+
+5
+
+Contents
+• Spread Spectrum Basics
+• LoRa Chirped Spread Spectrum
+• LoRa Frame Format
+• LoRa Encoding Scheme
+• Airtime
+
+6
+
+LoRa Chirped Spread Spectrum Modulation
+• LoRa Chirp: signal with linearly increasing frequency
+• Chirp length is determined by the spreading factor SF
+• Information is spread over time
+
+7
+
+LoRa Chirped Spread Spectrum Modulation
+• Parameters defining the chirp:
+• Spreading factor
+• Bandwidth
+• Code Rate
+• Chirp length
+
+𝑆𝑆𝑆𝑆 = 7 … 12
+𝐵𝐵𝑊𝑊 = 125, 250, 500 𝑘𝑘𝑘𝑘𝑘𝑘
+𝐶𝐶𝐶𝐶 = 4⁄5 , 4⁄6 , 4⁄7 , 4⁄8
+2𝑆𝑆𝑆𝑆
+𝑇𝑇𝑆𝑆 =
+𝐵𝐵𝐵𝐵
+
+LoRa chirps with 𝑆𝑆𝑆𝑆 = 7 … 12
+
+8
+
+LoRa Chirped Spread Spectrum Modulation
+• Data encoded in cyclically shifted frequency ramp
+with disabled low data rate mode
+
+𝑆𝑆𝑆𝑆
+𝑁𝑁 = �
+𝑆𝑆𝑆𝑆 − 2
+
+• Symbol alphabet size
+• Symbol alphabet
+
+with enabled low data rate mode
+
+𝑎𝑎 ∈ 0, … , 𝑀𝑀 − 1
+f
+
+chirp
+
+BW
+2
+
+t
+a
+- Ts
+2
+
+Ts
+2
+
+- BW
+2
+
+Ts +t
+2 a
+
+time
+
+raw upchirp
+chirp associated to symbol
+
+9
+
+LoRa Chirped Spread Spectrum Modulation
+• Bit Error Ratio over Signal to Noise Ratio
+
+• SNR = -22 dB for BER = 10−4 with 𝑆𝑆𝑆𝑆 = 12
+
+LDR … Low data rate mode
+10
+
+LoRa Chirped Spread Spectrum Modulation
+• Receiver Sensitivity: Receiving power at which a certain maximum BER is achieved
+• Example:
+•
+•
+•
+•
+
+𝐵𝐵𝑊𝑊 = 125 𝑘𝑘𝑘𝑘𝑘𝑘
+Noise Figure 𝑁𝑁𝐹𝐹 = 6 𝑑𝑑𝑑𝑑
+𝑆𝑆𝐹𝐹 = 12
+𝑆𝑆𝑆𝑆𝑅𝑅 = −22 𝑑𝑑𝑑𝑑 for 𝐵𝐵𝐵𝐵𝐵𝐵 = 10−4
+
+𝑆𝑆 = −174 + 10 log10 𝐵𝐵𝐵𝐵 + 𝑁𝑁𝑁𝑁 + 𝑆𝑆𝑆𝑆𝑆𝑆
+𝑆𝑆 = −174 + 10 log10 125 � 103 + 6 − 22 = −𝟏𝟏𝟏𝟏𝟏𝟏 𝒅𝒅𝒅𝒅𝒅𝒅
+
+• Link Budget:
+• Antenna transmit power 𝑃𝑃 = +15 𝑑𝑑𝑑𝑑𝑑𝑑
+
+𝐿𝐿𝐿𝐿𝐿𝐿𝐿𝐿 𝐵𝐵𝐵𝐵𝐵𝐵𝐵𝐵𝐵𝐵𝐵𝐵 = 𝑃𝑃 − 𝑆𝑆 = 15 𝑑𝑑𝑑𝑑𝑑𝑑 − −139 𝑑𝑑𝑑𝑑𝑑𝑑
+𝐿𝐿𝐿𝐿𝐿𝐿𝐿𝐿 𝐵𝐵𝐵𝐵𝐵𝐵𝐵𝐵𝐵𝐵𝐵𝐵 = 𝟏𝟏𝟏𝟏𝟏𝟏 𝒅𝒅𝒅𝒅
+
+11
+
+Contents
+• Spread Spectrum Basics
+• LoRa Chirped Spread Spectrum
+• LoRa Frame Format
+• LoRa Encoding Scheme
+• Airtime
+
+12
+
+LoRa Frame Format
+• Preamble
+• Optional header
+• Payload
+• Cyclic redundancy check CRC
+
+optional
+
+Preamble
+
+Header
+
+optional
+
+Payload
+
+CRC
+
+13
+
+Preamble
+• 𝑛𝑛𝑝𝑝𝑝𝑝𝑝𝑝𝑝𝑝𝑝𝑝𝑝𝑝𝑝𝑝𝑝𝑝 raw upchirps 𝑐𝑐1 , 𝑐𝑐2 , … 𝑐𝑐𝑁𝑁𝑝𝑝𝑝𝑝𝑝𝑝 for
+synchronization at receiver
+
+• Syncword: two upchirps cs1, cs2, defining
+the mode of the communication. Public
+or private mode
+
+• Frame Delimiter FD: 2.25 downchirps 𝑑𝑑2 ,
+𝑑𝑑2 , and 𝑑𝑑3 ′ to end the preamble
+• 𝑑𝑑3 ′ describes the chirp with length
+
+𝑇𝑇𝑆𝑆
+4
+
+14
+
+Header
+• Information included in Header:
+•
+•
+•
+•
+
+Payload length
+Code Rate
+Presence of a payload-CRC
+Header-CRC
+
+2 Bytes
+3 Bit
+1 Bit
+2 Bytes
+
+• Has a length of 8 symbols and is always encoded with highest code rate of 𝐶𝐶𝐶𝐶 = 4⁄8
+• 8 symbols include information of 56 … 96 bit ,depending on spreading factor
+
+• Unused space in the first 8 symbols is filled with payload data
+Header
+
+Payload Length
+
+Code Rate
+
+CRCpayload
+Presence
+
+CRCheader
+
+15
+
+Payload
+• Payload length 0 … 255 𝐵𝐵𝐵𝐵𝐵𝐵𝐵𝐵
+
+• MAC header: defines message type (data exchange, join request, …)
+• MAC Payload: either generic or LoRaWAN payload
+• Every code rate possible
+• Message Integrity Code MIC: Computed with the network session key
+• Optional Cyclic Redundancy Check CRC: length 2 Bytes
+
+Payload
+
+MAC header
+
+MAC payload
+
+CRC
+
+MIC
+
+CRC
+
+16
+
+Contents
+• Spread Spectrum Basics
+• LoRa Chirped Spread Spectrum
+• LoRa Frame Format
+• LoRa Encoding Scheme
+• Airtime
+
+17
+
+LoRa Encoding
+• Several encoding steps to increase resilience against interference
+• Different treatment for header and payload
+• Example with 𝑆𝑆𝑆𝑆 = 8, 𝐶𝐶𝐶𝐶 = 4/5, 𝐿𝐿𝑝𝑝 = 2𝐵𝐵𝐵𝐵𝐵𝐵𝐵𝐵, and payload 𝑝𝑝 =
+
+h
+
+header
+
+Encoding
+CR = 4/8
+
+L =SF-2
+h
+
+0x 00
+0x 00
+
+he
+Interleaving
+
+payload
+Encoding
+
+Whitening
+L
+p
+
+L
+p'
+
+ai
+
+pe
+
+pw
+
+p
+
+Interleaving
+L
+p'
+
+a
+GrayMapping
+
+N
+Payload
+
+N
+Payload
+
+18
+
+Whitening
+• Removes DC-bias in data; only payload gets
+whitened
+• XOR with whitening sequence w
+• 𝑝𝑝𝑤𝑤 = 𝑝𝑝 ⊕ 𝑤𝑤
+
+payload
+pw
+
+p
+Whitening
+L
+p
+
+L
+p'
+
+• Whitening sequence from linear feedback
+shift register with polynomial:
+• 𝑤𝑤 𝑥𝑥 = 𝑥𝑥 4 ⊕ 𝑥𝑥 3 ⊕ 𝑥𝑥 2 ⊕ 1
+
+0x 𝐹𝐹𝐹𝐹
+0x 𝐹𝐹𝐹𝐹
+𝑤𝑤 =
+first bytes of the whitening sequence
+0x 𝐹𝐹𝐹𝐹
+…
+
+x7
+
+x6
+
+x5
+
+x4
+
+x2
+
+x3
+
+8
+8
+
+x1
+
+x0
+
+whitening sequence w(x)
+data
+
+19
+
+Whitening Example
+• Payload
+• Whitening sequence
+
+• Whitened payload
+
+0x 00
+0x 00
+0x 𝐹𝐹𝐹𝐹
+𝑤𝑤 =
+0x 𝐹𝐹𝐹𝐹
+𝑝𝑝 =
+
+𝑝𝑝𝑤𝑤 = 𝑝𝑝 ⊕ 𝑤𝑤 =
+
+payload
+pw
+
+p
+Whitening
+L
+p
+
+L
+p'
+
+0x 𝐹𝐹𝐹𝐹
+0x 𝐹𝐹𝐹𝐹
+
+20
+
+Whitening Matlab Implementation
+function p = compute_whitening(p)
+%COMPUTE_WHITENING performs a whitening of the databytes p
+%
+The function performs a whitenig of the databits p. The whitening
+%
+sequence is computed with a LFSR with the polynomial:
+%
+w(x) = x^4 xor x^3 xor x^2 xor 1 and a starting value of 0x FF
+register = double(0xFF); % starting value of 0x FF
+%perform whitening
+for idx = 1 : length(p)
+p(idx) = bitxor(p(idx), register);
+feedback = mod(sum(dec2binvec(bitand(register, double(0xB8)))), 2);
+register = bitand(register * 2, double(0xFF)) + feedback;
+end
+
+21
+
+Encoding
+• Four different code-rates
+•
+•
+•
+•
+
+𝐶𝐶𝐶𝐶 = 4/5
+𝐶𝐶𝐶𝐶 = 4/6
+𝐶𝐶𝐶𝐶 = 4/7
+𝐶𝐶𝐶𝐶 = 4/8
+
+parity check
+shortened (4,7) Hamming code
+(4,7) Hamming code
+extended (4,7) Hamming code
+
+• Header is always encoded with 𝐶𝐶𝐶𝐶 = 4/8 and low
+data rate mode -> length 𝐿𝐿ℎ = 𝑆𝑆𝑆𝑆 − 2 nibbles of 4 Bit
+
+header
+
+h
+
+Encoding
+CR = 4/8
+
+L =SF-2
+h
+
+he
+
+pe
+
+pw
+Encoding
+L
+p'
+
+L
+p'
+
+• Remaining space is filled with payload data
+
+• Small payload may fit completely in header symbols
+• Data 𝑝𝑝𝑤𝑤 transformed from Bytes to Nibbles of 4 Bit
+
+22
+
+Encoding
+• Parity bits:
+
+CR = 4/8
+CR = 4/7
+CR = 4/6
+CR = 4/5
+
+p3
+
+• Parity bit calculation:
+
+p2
+
+p1
+
+p0
+
+d3
+
+d2
+
+d1
+
+d0
+
+p2
+
+p1
+
+p0
+
+d3
+
+d2
+
+d1
+
+d0
+
+p1
+
+p0
+
+d3
+
+d2
+
+d1
+
+d0
+
+p4
+
+d3
+
+d2
+
+d1
+
+d0
+
+23
+
+Encoding
+• Error correction capabilities:
+
+Error Detection
+code rate
+
+bit error
+
+1
+
+2
+
+Error Correction
+3
+
+4
+
+code rate
+
+bit error
+
+4/5
+
+4/5
+
+4/6
+
+4/6
+
+4/7
+
+4/7
+
+4/8
+
+4/8
+
+1
+
+2
+
+3
+
+4
+
+24
+
+Encoding Example
+• Header
+
+𝐿𝐿ℎ = 𝑆𝑆𝑆𝑆 – 2 = 6
+
+0x 0
+0 0
+0 0
+0x 2
+0 0
+0x 2
+ℎ=
+=
+0x 0
+0 0
+0x 𝐸𝐸
+1 1
+0x 𝐹𝐹
+1 1
+
+• Payload
+
+0x 𝐹𝐹
+1 1
+0x 𝐹𝐹
+1 1
+=
+𝑝𝑝𝑤𝑤 =
+0x 𝐸𝐸
+0 1
+0x 𝐹𝐹
+1 1
+
+0
+1
+1
+0
+1
+1
+
+0
+0
+0
+0
+0
+1
+
+1 1
+1 1
+1 1
+1 1
+
+h
+
+header
+
+Encoding
+CR = 4/8
+
+L =SF-2
+h
+
+𝐿𝐿𝑝𝑝 = 2
+
+pe
+
+pw
+
+𝐶𝐶𝐶𝐶𝐶𝐶 disabled
+𝐶𝐶𝐶𝐶 = 4/5
+Header CRC
+
+he
+
+Encoding
+L
+p'
+
+L
+p'
+
+Remaining space is filled with
+Payload data
+
+1 1
+𝑝𝑝𝑤𝑤 ′ = 0 1
+1 1
+
+1 1
+1 1
+1 1
+25
+
+Encoding Example cont.
+header
+
+• Header 𝐶𝐶𝐶𝐶 = 4/8
+
+0
+0
+0
+ℎ𝑒𝑒 =
+0
+0
+1
+
+0
+1
+1
+0
+0
+1
+
+0
+1
+1
+0
+1
+1
+
+• Payload 𝐶𝐶𝐶𝐶 = 4/5
+
+0
+1
+1
+0
+0
+1
+
+0
+0
+0
+0
+1
+1
+
+0
+0
+0
+0
+1
+1
+
+0
+1
+1
+0
+1
+1
+
+Encoding
+CR = 4/8
+
+L =SF-2
+h
+
+header bits
+
+parity bits
+
+h
+
+0
+0
+0
+0
+0
+1
+
+he
+
+pe
+
+pw
+Encoding
+L
+p'
+
+L
+p'
+
+parity bits payload bits
+
+0 1
+𝑝𝑝𝑒𝑒 = 1 0
+0 1
+
+1 1
+1 1
+1 1
+
+1
+1
+1
+
+26
+
+Encoding Matlab Implementation
+
+function codewords = encoder(B, CR)
+%ENCODE Data encoding
+%
+This function encodes the input data from
+%
+matrix B with code rate:
+%
+CR = 1 ... code rate 4/5
+%
+CR = 2 ... code rate 4/6
+%
+CR = 3 ... code rate 4/7
+%
+CR = 4 ... code rate 4/8
+len = size(B, 1);
+N = CR;
+k = 4;
+codewords = zeros(len, k);
+P = zeros(k, N - k);
+I = logical(eye(k));
+
+%Create generator matrix G
+if CR > 5
+for idx = 1 : 4
+P(idx, 1) = xor(xor(I(idx, 1), I(idx, 2)), I(idx, 3));
+P(idx, 2) = xor(xor(I(idx, 2), I(idx, 3)), I(idx, 4));
+P(idx, 3) = xor(xor(I(idx, 1), I(idx, 2)), I(idx, 4));
+P(idx, 4) = xor(xor(I(idx, 1), I(idx, 3)), I(idx, 4));
+end
+%Create generator matrix for CR = 1 ... 3
+G=[I P(1 : 4, 1 : (CR - 4))]; elseif CR == 5
+for idx = 1:4
+P(idx, 1) = xor(xor(I(idx, 1), I(idx, 2)), xor(I(idx, 3), I(idx, 4)));
+end
+G=[I P];
+%Create generator matrix for CR = 4
+end
+%Generation of codewords
+for idx1 = 1 : len
+for idx2 = 1 : N
+%multiplication data with generator matrix c = u * G
+codewords(idx1, idx2 )= mod(sum(B(idx1, :).*G(:, idx2)'), 2);
+end
+end
+end
+
+27
+
+Interleaver
+he
+
+• Diagonal interleaver
+
+Interleaving
+
+• Multiple bit errors caused by one symbol are
+highly correlated
+
+b1,4
+
+b1,3 b1,2
+
+b1,1
+
+b2,5
+
+b2,4
+
+b2,3 b2,2
+
+b2,1
+
+b3,5
+
+b3,4
+
+b3,3 b3,2
+
+b3,1
+
+b4,5
+
+b4,4
+
+b4,3 b4,2
+
+b5,5
+
+b5,4
+
+b6,5
+b7,5
+
+Interleaving
+L
+p'
+
+b6,5
+
+b5,5
+
+b4,5
+
+b3,5
+
+b2,5 b1,5
+
+b1,4 b7,4
+
+b6,4
+
+b5,4
+
+b4,4
+
+b3,4
+
+b2,4
+
+b4,1
+
+b2,3 b1,3 b7,3
+
+b6,3
+
+b5,3
+
+b4,3
+
+b3,3
+
+b5,3 b5,2
+
+b5,1
+
+b3,2
+
+b2,2 b1,2 b7,2
+
+b6,2
+
+b5,2
+
+b4,2
+
+b6,4
+
+b6,3 b6,2
+
+b6,1
+
+b4,1
+
+b3,1
+
+b2,1 b1,1 b7,1
+
+b6,1
+
+b5,1
+
+b7,4
+
+b7,3 b7,2
+
+b7,1
+
+codeword length
+
+b7,5
+
+interleaving
+
+symbol alphabet size N
+
+Interleaving example with 𝑆𝑆𝑆𝑆 = 7 and 𝐶𝐶𝐶𝐶 = 4/5
+
+codeword length
+
+symbol alphabet size N
+
+• Spreads multiple bit errors over multiple
+codewords -> decorrelation
+
+b1,5
+
+ai
+
+pe
+
+N
+Payload
+
+symbol alphabet size:
+disabled low data rate mode
+𝑆𝑆𝑆𝑆
+N=�
+𝑆𝑆𝑆𝑆 − 2 enabled low data rate mode
+codeword length:
+• 5 bit
+for 𝐶𝐶𝐶𝐶 = 4⁄5
+• 6 bit
+for 𝐶𝐶𝐶𝐶 = 4⁄6
+• 7 bit
+for 𝐶𝐶𝐶𝐶 = 4⁄7
+• 8 bit
+for 𝐶𝐶𝐶𝐶 = 4⁄8
+
+28
+
+Interleaver Matlab Implementation
+function B_int = interleave(B)
+%INTERLEAVE interleaves the binary codeblock B
+%
+This function performs the diagonal interleaving of the codeblock B. It transoforms
+%
+the binary matrix B of size symbol alphabet times codeword length (N x CR + 4) to the binary
+%
+matrix B_int of size codeword length times symbol alphabet size (CR + 4 x N)
+c = size(B, 1);
+s = size(B, 2);
+bin_interleaved1 = zeros(c, s);
+B_int = zeros(c, s);
+%perform interleaving
+for idx1 = 1 : c
+for idx2 = 1 : s
+bin_interleaved1(idx1, idx2) = B(c - (idx1 - 1), idx2);
+end
+end
+for idx1 = 1 : c
+for idx2 = 1 : s
+B_int(idx1, idx2)=bin_interleaved1(1 + mod(idx1 - idx2, c), idx2);
+end
+end
+B_int = fliplr(B_int.');
+end
+29
+
+Interleaver Example
+he
+
+• Header
+
+6 bit
+
+8 bit
+0
+1
+1
+0
+1
+1
+
+0
+1
+1
+0
+0
+1
+
+0
+0
+0
+0
+1
+1
+
+• Payload CR
+
+0
+0
+0
+0
+1
+1
+
+0
+1
+1
+0
+1
+1
+
+0
+0
+0
+0
+0
+1
+
+5 bit
+1
+1
+1
+0
+0
+0
+0
+0
+
+1
+1
+1
+0
+0
+0
+0
+0
+
+1
+1
+1
+0
+0
+0
+0
+0
+
+0
+1
+0
+0
+1
+0
+0
+1
+
+0
+1
+1
+0
+1
+1
+0
+0
+
+0
+0
+1
+1
+0
+1
+1
+0
+
+0
+1
+0
+1
+1
+0
+1
+0
+
+0
+1
+0
+0
+0
+1
+0
+0
+
+ai
+
+pe
+Interleaving
+L
+p'
+
+N
+Payload
+
+8 bit
+0 0 0 0
+1 0 0 0
+𝑝𝑝𝑖𝑖 = 1 1 0 0
+1 1 1 0
+0 1 1 1
+
+0 0 1
+0 0 1
+0 0 0
+0 0 0
+0 0 0
+
+0
+0
+1
+0
+0
+
+5 bit
+
+1
+0
+1
+0
+0
+0
+0
+0
+
+8 bit
+
+0
+1
+0
+0
+𝑝𝑝𝑒𝑒 =
+0
+0
+0
+0
+
+1
+0
+0
+0
+ℎ𝑖𝑖 =
+0
+1
+1
+0
+
+8 bit
+
+0
+1
+1
+0
+0
+1
+
+6 bit
+
+0
+0
+ℎ𝑒𝑒 = 0
+0
+0
+1
+
+Interleaving
+
+Payload is extended with random data to get a block of data
+with symbol alphabet size N times codeword length
+
+30
+
+Interleaver Example cont.
+he
+
+• Header and payload is stacked to form codewords ai
+
+Interleaving
+
+ai
+
+pe
+
+0
+0
+0
+0
+0
+0
+ℎ𝑖𝑖
+ℎ = 𝑝𝑝 = 0
+𝑖𝑖
+0
+0
+1
+1
+1
+0
+
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+1
+1
+1
+
+1
+0
+0
+0
+0
+1
+1
+0
+0
+0
+0
+1
+1
+
+0
+1
+0
+0
+1
+0
+0
+1
+0
+0
+0
+0
+1
+
+0
+1
+1
+0
+1
+1
+0
+0
+0
+0
+0
+0
+0
+
+0
+0
+1
+1
+0
+1
+1
+0
+0
+0
+0
+0
+0
+
+0
+1
+0
+1
+1
+0
+1
+0
+1
+1
+0
+0
+0
+
+0
+0x 02
+1
+0x 𝐵𝐵𝐵
+0
+0x 𝐶𝐶𝐶
+0
+0x 60
+0
+0x A1
+1
+0x 𝐷𝐷𝐷
+0 = 0x 62
+0
+0x 01
+0
+0x 20
+0
+0x 28
+1
+0x 1C
+0
+0x 0𝐸𝐸
+0
+0x 09
+
+Interleaving
+L
+p'
+
+N
+Payload
+
+31
+
+Gray Mapping
+• Erroneous symbol most likely mistaken with
+adjacent symbol.
+• Gray code maps a bit sequence such that two
+successive values differ by just one bit
+
+ai
+
+a
+GrayMapping
+
+N
+Payload
+
+𝑎𝑎𝑖𝑖 (𝑗𝑗, 𝑘𝑘)
+𝑎𝑎𝑗𝑗 = �
+𝑎𝑎𝑖𝑖 𝑗𝑗, 𝑘𝑘 ⊕ 𝑎𝑎𝑖𝑖 (𝑗𝑗, 𝑘𝑘 − 1)
+
+for 𝑘𝑘 = 0
+else
+
+without Gray mapping
+
+transmitter
+
+N
+Payload
+
+with Gray mapping
+
+transmitter
+ai = 63
+
+0 1 1 1 1 1 1
+Gray mapping
+
+ai = 63
+
+0 1 1 1 1 1 1
+
+a = 65
+
+channel
+âi = 64
+
+1 0 0 0 0 0 0
+
+channel
+â = 66
+
+7 bit errors
+
+1 0 0 0 0 1 0
+Gray demapping
+
+âi = 62
+receiver
+
+1 0 0 0 0 0 1
+
+receiver
+
+0 1 1 1 1 1 0
+1 bit error
+
+Receiver mistakes symbol 𝑎𝑎𝑖𝑖 with adjacent symbol 𝑎𝑎�𝑖𝑖 = 𝑎𝑎𝑖𝑖 + 1
+
+32
+
+Gray Mapping Example
+0x 02
+0x 𝐵𝐵𝐵
+0x 𝐶𝐶𝐶
+0x 60
+0x A1
+0x 𝐷𝐷𝐷
+𝑎𝑎𝑖𝑖 = 0x 62
+0x 01
+0x 20
+0x 28
+0x 1C
+0x 0𝐸𝐸
+0x 09
+
+0x 𝐹𝐹𝐹
+243
+0x 21
+33
+0x 40
+64
+0x 80
+128
+0x 23
+35
+0x 𝐵𝐵𝐵
+177
+𝑎𝑎 = 0x 93 ≡ 147
+0x 𝐸𝐸𝐸
+227
+0x 06
+6
+0x 𝐹𝐹𝐹𝐹
+253
+0x 18
+24
+0x 𝐷𝐷𝐷𝐷
+223
+0x 𝐶𝐶𝐶𝐶
+207
+
+ai
+
+a
+GrayMapping
+
+N
+Payload
+
+N
+Payload
+
+33
+
+Gray Mapping Matlab Implementation
+function g = bin2gray(b)
+%BIN2GRAY performs a Gray mapping of the binary vector b
+%
+The function performs a Gray mapping of the binary vector b according
+%
+to:
+%
+g_i = b_i
+for i = 0
+%
+g_i = b_i xor g_i-1 else
+len = size(b, 2);
+g(len) = b(len);
+for idx = 1 : len - 1
+x = xor(b(len - idx + 1), b(len - idx));
+g(len - idx) = x;
+end
+end
+
+34
+
+Modulator
+preamble
+
+• After encoding steps, the preamble is added
+
+Encoding
+L
+p
+
+preamble
+
+a
+
+p
+
+• The symbols are modulated to the signal
+
+header
+
+s(t)
+Modulator
+
+N
+payload
+
+payload
+
+frequency (kHz)
+
+62.5
+
+0
+
+time
+
+-62.5
+
+LoRa signal s(t)
+35
+
+Modulator Matlab Implementation
+function iqdata = LoRa_modulator(symbols, SF, PL, syncword, ovs)
+%LORA_MODULATOR creates a LoRa signal
+%
+This function crates a LoRa signal for the vector symbols with the
+%
+spreading factor SF, the preamble length PL, the syncword, and the
+%
+oversampling factor ovs.
+iqdata = [];
+phaseacc = 0;
+%create preamble chirps
+for preamble = 1 : PL
+[chirp, phaseacc] = lora_chirpsignal(0, SF, 'up', ovs, phaseacc);
+iqdata = [iqdata chirp];
+end
+%create syncword chirps
+[chirp, phaseacc] = lora_chirpsignal(floor(syncword/16)*8 , SF, 'up', ovs, phaseacc);
+iqdata = [iqdata chirp];
+[chirp, phaseacc] = lora_chirpsignal(mod(syncword,16)*8 , SF, 'up', ovs, phaseacc);
+iqdata = [iqdata chirp];
+%create 2.25 frame delimiter downchirps
+[chirp, phaseacc] = lora_chirpsignal(0, SF, 'down', ovs, phaseacc);
+iqdata = [iqdata chirp];
+[chirp, phaseacc] = lora_chirpsignal(0, SF, 'down', ovs, phaseacc);
+iqdata = [iqdata chirp];
+[chirp, phaseacc] = lora_chirpsignal(0, SF, 'down_quarter', ovs, phaseacc);
+iqdata = [iqdata chirp];
+%create chirps for the input symbols
+for sym = symbols
+[chirp, phaseacc] = lora_chirpsignal(sym, SF, 'up', ovs, phaseacc);
+iqdata = [iqdata chirp];
+end
+
+36
+
+Chirp-Creation Matlab Implementation
+function [chirp, phaseacc] = lora_chirpsignal(symbol, SF,
+chirpmode, ovs, phaseacc)
+%LORA_CHIRPSIGNAL creates a LoRa chirp
+%
+The function lora_chirpsignal creates a chirp representing
+%
+the input symbol with the spreading factor SF, oversampling
+%
+factor ovs, starting phase paseacc, and the chirpmode:
+%
+chirpmode = "UP"
+upchirp
+%
+chirpmode = "DOWN"
+downchirp
+%
+chirpmode = "DOWN_QUATER"
+downchirp with 1/4 symbol length.
+N = 2 ^ SF;
+NN = N * ovs;
+fMin = -pi / ovs;
+fMax = pi / ovs;
+fStep = (2 * pi) / (N * ovs * ovs);
+f0 = (2 * pi * symbol) / NN;
+f = fMin + f0;
+%define length for mode "DOWN_QUATER"
+if isequal(upper(chirpmode), 'DOWN_QUARTER')
+NN = NN / 4;
+end
+chirp = zeros(1, NN);
+
+%create upchirp
+if isequal(upper(chirpmode), 'UP')
+for idx = 1 : NN
+if f > fMax
+f = f - (fMax - fMin);
+end
+phaseacc = phaseacc + f;
+chirp(idx) = exp(1i * phaseacc);
+f = f + fStep;
+end
+end
+%create downchirp
+if isequal(upper(chirpmode), 'DOWN') || isequal(upper(chirpmode),
+'DOWN_QUARTER')
+for idx = 1 : NN
+if f > fMax
+f = f - (fMax - fMin);
+end
+phaseacc = phaseacc - f;
+chirp(idx) = exp(1i * phaseacc);
+f = f + fStep;
+end
+end
+
+37
+
+Example
+Same Example with 𝑆𝑆𝑆𝑆 = 11:
+
+payload 𝑝𝑝 =
+
+• Whitening:
+
+whitening sequence
+whitened payload
+
+𝑤𝑤 =
+
+0x 𝐹𝐹𝐹𝐹
+0x 𝐹𝐹𝐹𝐹
+
+𝑝𝑝𝑤𝑤 = 𝑝𝑝 ⊕ 𝑤𝑤 =
+
+0x 00
+0x 00
+
+0x 𝐹𝐹𝐹𝐹
+0x 𝐹𝐹𝐹𝐹
+
+38
+
+Example
+Same Example with 𝑆𝑆𝑆𝑆 = 11:
+• Encoding:
+
+payload 𝑝𝑝 =
+
+𝐿𝐿ℎ = 𝑆𝑆𝑆𝑆 – 2 = 9
+
+0x 0
+0 0 0
+0x 2
+0 0 1
+0x 2
+0 0 1
+0x 0
+0 0 0
+ℎ = 0x 𝐸𝐸 = 1 0 1
+0x 𝐹𝐹
+1 1 1
+0x 𝐹𝐹
+1 1 1
+0x 𝐸𝐸
+1 1 1
+0x 𝐹𝐹
+1 1 1
+
+0
+0
+0
+0
+0
+1
+1
+0
+1
+
+𝑝𝑝𝑤𝑤
+
+whole payload data fits in remaining space in header
+0x 𝐹𝐹
+1
+0x 𝐹𝐹
+1
+=
+𝑝𝑝𝑤𝑤 =
+0x 𝐸𝐸
+0
+0x 𝐹𝐹
+1
+
+1
+1
+1
+1
+
+1
+1
+1
+1
+
+1
+1
+1
+1
+
+𝑝𝑝𝑤𝑤 ′ = 0
+
+0x 00
+0
+0x 27
+0
+0x 2𝐴𝐴
+1
+0x 00
+0
+ℎ𝑒𝑒 = 0x 𝐴𝐴𝐴 = 0
+0x 𝐹𝐹𝐹𝐹
+1
+0x 𝐹𝐹𝐹𝐹
+1
+0x 𝐸𝐸𝐸
+0
+0x 𝐹𝐹𝐹𝐹
+1
+
+0x 00
+0x 00
+0
+1
+0
+0
+1
+1
+1
+0
+1
+
+0
+1
+1
+0
+1
+1
+1
+1
+1
+
+0
+1
+0
+0
+0
+1
+1
+0
+1
+
+0
+0
+0
+0
+1
+1
+1
+1
+1
+
+0
+0
+0
+0
+0
+1
+1
+1
+1
+
+0
+1
+1
+0
+1
+1
+1
+1
+1
+
+0
+0
+0
+0
+0
+1
+1
+0
+1
+
+𝑝𝑝𝑒𝑒 = 0
+39
+
+Example
+Same Example with 𝑆𝑆𝑆𝑆 = 11:
+
+payload 𝑝𝑝 =
+
+• Interleaving:
+
+0x 00
+0x 00
+
+8 bit
+
+0
+1
+1
+0
+1
+1
+1
+1
+1
+
+0
+1
+0
+0
+0
+1
+1
+0
+1
+
+0
+0
+0
+0
+1
+1
+1
+1
+1
+
+0
+0
+0
+0
+0
+1
+1
+1
+1
+
+0
+1
+1
+0
+1
+1
+1
+1
+1
+
+0
+0
+0
+0
+0
+1
+1
+0
+1
+
+0x 471
+1
+0x 3𝐹𝐹𝐹
+0
+0x 𝐶𝐶𝐶𝐶
+0
+0x 𝐶𝐶𝐶𝐶
+0
+ℎ𝑖𝑖 = 𝑎𝑎𝑖𝑖 =
+=
+0x 650
+0
+0x 𝐹𝐹𝐹𝐹
+1
+0x 591
+1
+0x 291
+1
+
+0
+1
+0
+0
+0
+0
+1
+1
+
+1
+1
+1
+0
+1
+1
+0
+0
+
+1
+1
+1
+1
+0
+1
+0
+0
+
+1
+1
+1
+1
+1
+0
+1
+1
+
+0
+0
+1
+1
+0
+1
+0
+0
+
+1
+0
+1
+1
+1
+1
+1
+0
+
+0
+1
+0
+0
+1
+1
+0
+1
+
+0
+1
+0
+0
+0
+1
+1
+0
+
+8 bit
+
+0
+1
+0
+0
+1
+1
+1
+0
+1
+
+9 bit
+
+0x 00
+0
+0x 27
+0
+0x 2𝐴𝐴
+1
+0x 00
+0
+ℎ𝑒𝑒 = 0x 𝐴𝐴𝐴 = 0
+0x 𝐹𝐹𝐹𝐹
+1
+0x 𝐹𝐹𝐹𝐹
+1
+0x 𝐸𝐸𝐸
+0
+0x 𝐹𝐹𝐹𝐹
+1
+
+9 bit
+
+40
+
+Example
+Same Example with 𝑆𝑆𝑆𝑆 = 11:
+• Gray Mapping:
+
+0x 471
+0x 3𝐹𝐹𝐹
+0x 𝐶𝐶𝐶𝐶
+0x 𝐶𝐶𝐶𝐶
+𝑎𝑎𝑖𝑖 =
+0x 650
+0x 𝐹𝐹𝐹𝐹
+0x 591
+0x 291
+
+payload 𝑝𝑝 =
+
+0x 00
+0x 00
+
+0x 7𝐴𝐴𝐴
+1692
+0x 2𝐴𝐴𝐴
+648
+0x 750
+348
+0x 820
+160
+𝑎𝑎𝑖𝑖 =
+=
+0x 460
+400
+0x 5𝐵𝐵𝐵
+1748
+0x 911
+1124
+0x 𝐶𝐶𝐶𝐶
+1136
+
+41
+
+Example
+Same Example with 𝑆𝑆𝑆𝑆 = 11:
+
+payload 𝑝𝑝 =
+
+• Resulting signal:
+
+preamble
+
+0x 00
+0x 00
+
+header
+
+62.5
+
+time
+
+-62.5
+
+42
+
+Contents
+• Spread Spectrum Basics
+• LoRa Chirped Spread Spectrum
+• LoRa Frame Format
+• LoRa Encoding Scheme
+• Airtime
+
+43
+
+Airtime
+• Payload Length
+with:
+− 𝑃𝑃𝑃𝑃
+− 𝑆𝑆𝑆𝑆
+− 𝐶𝐶𝐶𝐶𝐶𝐶
+− 𝐻𝐻
+− 𝑁𝑁
+− 𝐶𝐶𝐶𝐶
+
+Payload length
+Spreading factor
+CRC-presence
+implicit mode 𝐻𝐻 = 1, explicit mode 𝐻𝐻 = 0
+Symbol alphabet size
+Code rate (𝐶𝐶𝐶𝐶 = 1 … 4 representing code rates 4/5, 4/6, 4/7, and 4/8)
+
+• Airtime of a LoRa signal:
+
+44
+
+Airtime
+
+45
+
+

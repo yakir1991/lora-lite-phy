@@ -39,6 +39,7 @@ SyncWordDetector::SyncWordDetector(int sf, int bandwidth_hz, int sample_rate_hz,
 std::size_t SyncWordDetector::demod_symbol(const std::vector<Sample> &samples,
                                            std::size_t sym_index,
                                            std::ptrdiff_t preamble_offset,
+                                           double cfo_hz,
                                            FFTScratch &scratch,
                                            double &magnitude) const {
     const std::ptrdiff_t start_signed = preamble_offset + static_cast<std::ptrdiff_t>(sym_index * sps_);
@@ -48,41 +49,54 @@ std::size_t SyncWordDetector::demod_symbol(const std::vector<Sample> &samples,
     const std::size_t start = static_cast<std::size_t>(start_signed);
     scratch.input.assign(sps_, std::complex<double>{});
 
+    const double fs = static_cast<double>(sample_rate_hz_);
+    const double Ts = 1.0 / fs;
     for (std::size_t i = 0; i < sps_; ++i) {
         const auto &s = samples[start + i];
-        scratch.input[i] = std::complex<double>(s.real(), s.imag()) * downchirp_[i];
+        const double angle = -2.0 * std::numbers::pi * cfo_hz * Ts * static_cast<double>(i);
+        const std::complex<double> rot(std::cos(angle), std::sin(angle));
+        scratch.input[i] = std::complex<double>(s.real(), s.imag()) * downchirp_[i] * rot;
     }
 
-    const std::size_t N = scratch.input.size();
-    scratch.spectrum.assign(N, std::complex<double>{});
-    for (std::size_t k = 0; k < N; ++k) {
+    // Downsample to K points (chips) and perform K-point IDFT like payload demod
+    const std::size_t chips = static_cast<std::size_t>(1) << static_cast<std::size_t>(sf_);
+    const std::size_t os_factor = sps_ / chips;
+    std::vector<std::complex<double>> dec;
+    dec.reserve(chips);
+    for (std::size_t i = 0; i < sps_; i += os_factor) {
+        dec.push_back(scratch.input[i]);
+    }
+
+    std::vector<std::complex<double>> spec(chips, std::complex<double>{});
+    for (std::size_t k = 0; k < chips; ++k) {
         std::complex<double> acc{0.0, 0.0};
-        const double coeff = -2.0 * std::numbers::pi * static_cast<double>(k) / static_cast<double>(N);
-        for (std::size_t n = 0; n < N; ++n) {
+        const double coeff = 2.0 * std::numbers::pi * static_cast<double>(k) / static_cast<double>(chips);
+        for (std::size_t n = 0; n < dec.size(); ++n) {
             const double angle = coeff * static_cast<double>(n);
-            const double c = std::cos(angle);
-            const double s = std::sin(angle);
-            acc += scratch.input[n] * std::complex<double>(c, s);
+            acc += dec[n] * std::complex<double>(std::cos(angle), std::sin(angle));
         }
-        scratch.spectrum[k] = acc;
+        spec[k] = acc;
     }
 
-    std::size_t best_bin = 0;
+    std::size_t best_k = 0;
     double best_mag = 0.0;
-    for (std::size_t k = 0; k < N; ++k) {
-        const double mag = std::abs(scratch.spectrum[k]);
+    for (std::size_t k = 0; k < spec.size(); ++k) {
+        const double mag = std::abs(spec[k]);
         if (mag > best_mag) {
             best_mag = mag;
-            best_bin = k;
+            best_k = k;
         }
     }
 
+    // Align with payload: pos-1 in K-domain
+    const std::size_t k_aligned = (best_k + chips - 1) % chips;
     magnitude = best_mag;
-    return best_bin;
+    return k_aligned; // 0..K-1
 }
 
 std::optional<SyncWordDetection> SyncWordDetector::analyze(const std::vector<Sample> &samples,
-                                                           std::ptrdiff_t preamble_offset) const {
+                                                           std::ptrdiff_t preamble_offset,
+                                                           double cfo_hz) const {
     if (preamble_offset < 0) {
         return std::nullopt;
     }
@@ -101,34 +115,70 @@ std::optional<SyncWordDetection> SyncWordDetector::analyze(const std::vector<Sam
     scratch.input.reserve(sps_);
     scratch.spectrum.reserve(sps_);
 
-    bool preamble_ok = true;
+    const std::size_t chips_per_symbol = static_cast<std::size_t>(1) << static_cast<std::size_t>(sf_);
+    const std::size_t tol = 2; // bins tolerance in K-domain
 
+    // First pass: collect raw preamble bins
+    std::vector<std::size_t> pre_bins;
+    pre_bins.reserve(kPreambleSymCount);
     for (std::size_t sym = 0; sym < kPreambleSymCount; ++sym) {
         double mag = 0.0;
-        const std::size_t bin = demod_symbol(samples, sym, preamble_offset, scratch, mag);
-        detection.symbol_bins.push_back(static_cast<int>(bin));
+        const std::size_t bin = demod_symbol(samples, sym, preamble_offset, cfo_hz, scratch, mag);
+        pre_bins.push_back(bin);
         detection.magnitudes.push_back(mag);
-        if (bin != 0) {
-            preamble_ok = false;
+    }
+
+    // Estimate constant offset from preamble (mode of bins)
+    std::size_t offset_est = 0;
+    {
+        std::size_t best_count = 0;
+        for (std::size_t i = 0; i < pre_bins.size(); ++i) {
+            std::size_t val = pre_bins[i];
+            std::size_t cnt = 0;
+            for (std::size_t j = 0; j < pre_bins.size(); ++j) {
+                if (pre_bins[j] == val) cnt++;
+            }
+            if (cnt > best_count) {
+                best_count = cnt;
+                offset_est = val;
+            }
         }
     }
 
+    // Normalize preamble bins and evaluate preamble_ok
+    bool preamble_ok = true;
+    for (std::size_t i = 0; i < pre_bins.size(); ++i) {
+        std::size_t norm = (pre_bins[i] + chips_per_symbol - offset_est) % chips_per_symbol;
+        detection.symbol_bins.push_back(static_cast<int>(norm));
+        const std::size_t dist0 = std::min(norm, chips_per_symbol - norm);
+        if (dist0 > tol) preamble_ok = false;
+    }
     detection.preamble_ok = preamble_ok;
 
-    const unsigned nibble_hi = ((sync_word_ >> 4U) & 0x0FU) << 3U;
-    const unsigned nibble_lo = (sync_word_ & 0x0FU) << 3U;
-    const unsigned expected_sync[] = {nibble_hi, nibble_lo};
+    const std::size_t nibble_hi = ((sync_word_ >> 4U) & 0x0FU) << 3U;
+    const std::size_t nibble_lo = (sync_word_ & 0x0FU) << 3U;
+    const std::size_t expected_sync_sym[] = {nibble_hi, nibble_lo};
 
     bool sync_ok = true;
     for (std::size_t idx = 0; idx < kSyncSymCount; ++idx) {
         double mag = 0.0;
         const std::size_t sym_index = kPreambleSymCount + idx;
-        const std::size_t bin = demod_symbol(samples, sym_index, preamble_offset, scratch, mag);
+        const std::size_t raw_bin = demod_symbol(samples, sym_index, preamble_offset, cfo_hz, scratch, mag);
+        std::size_t bin = (raw_bin + chips_per_symbol - offset_est) % chips_per_symbol;
+        const std::size_t exp_bin = ((idx == 0) ? nibble_hi : nibble_lo) % chips_per_symbol;
+        // Choose orientation (bin or its complement) that is closest to expected
+        const std::size_t comp = (chips_per_symbol - bin) % chips_per_symbol;
+        auto dist_circ = [chips_per_symbol](std::size_t a, std::size_t b){
+            std::size_t d = (a > b) ? (a - b) : (b - a);
+            return std::min(d, chips_per_symbol - d);
+        };
+        const std::size_t d_bin = dist_circ(bin, exp_bin);
+        const std::size_t d_comp = dist_circ(comp, exp_bin);
+        if (d_comp < d_bin) bin = comp;
         detection.symbol_bins.push_back(static_cast<int>(bin));
         detection.magnitudes.push_back(mag);
-        if (bin != expected_sync[idx]) {
-            sync_ok = false;
-        }
+        std::size_t dist = dist_circ(bin, exp_bin);
+        if (dist > tol) sync_ok = false;
     }
 
     detection.sync_ok = sync_ok;

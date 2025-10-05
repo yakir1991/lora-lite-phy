@@ -18,6 +18,7 @@ struct DecodeParams {
     int sample_rate_hz = 500000;
     bool ldro_enabled = false;
     unsigned sync_word = 0x12;
+    bool skip_sync_word_check = false;
     bool implicit_header = false;
     int implicit_payload_length = 0;
     bool implicit_has_crc = true;

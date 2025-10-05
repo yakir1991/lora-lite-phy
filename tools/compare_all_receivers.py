@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from subprocess import run
+from subprocess import run, TimeoutExpired
 from typing import Dict, Any, Tuple
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,7 +24,7 @@ def ldro_flag(meta: Dict[str, Any]) -> str:
     return '0'
 
 
-def run_cpp(cf32: Path, meta: Dict[str, Any]) -> Tuple[bool, str, str]:
+def run_cpp(cf32: Path, meta: Dict[str, Any], timeout_s: int | None) -> Tuple[bool, str, str]:
     cmd = [
         str(ROOT / 'cpp_receiver' / 'build' / 'decode_cli'),
         '--sf', str(meta.get('sf')),
@@ -32,15 +32,23 @@ def run_cpp(cf32: Path, meta: Dict[str, Any]) -> Tuple[bool, str, str]:
         '--fs', str(meta.get('samp_rate', meta.get('fs', 0))),
         '--ldro', ldro_flag(meta),
     ]
+    if 'sync_word' in meta:
+        try:
+            cmd += ['--sync-word', hex(int(meta['sync_word']))]
+        except Exception:
+            pass
     if meta.get('impl_header'):
         cmd += [
             '--implicit-header',
-            '--impl-len', str(meta.get('payload_len', 0)),
-            '--impl-cr', str(meta.get('cr', 1)),
-            '--impl-crc', '1' if meta.get('crc', True) else '0',
+            '--payload-len', str(meta.get('payload_len', 0)),
+            '--cr', str(meta.get('cr', 1)),
+            '--has-crc' if meta.get('crc', True) else '--no-crc',
         ]
     cmd.append(str(cf32))
-    proc = run(cmd, capture_output=True, text=True)
+    try:
+        proc = run(cmd, capture_output=True, text=True, timeout=timeout_s)
+    except TimeoutExpired:
+        return False, '', f'timeout after {timeout_s}s'
     if proc.returncode != 0:
         return False, '', proc.stderr
     hexval = ''
@@ -92,6 +100,7 @@ def main():
     parser = argparse.ArgumentParser(description='Compare outputs from all receivers')
     parser.add_argument('--output', default='results/receiver_comparison.json', help='Output summary JSON path')
     parser.add_argument('--limit', type=int, help='Limit number of vectors for quick tests')
+    parser.add_argument('--timeout', type=int, default=60, help='Per-vector timeout for C++ run (seconds)')
     args = parser.parse_args()
 
     python_truth = json.loads(PY_TRUTH.read_text()) if PY_TRUTH.exists() else {}
@@ -110,7 +119,7 @@ def main():
         py_info = python_truth.get(rel, {'status': 'missing'})
         gnur_info = gnur_truth.get(rel, {'status': 'missing'})
 
-        cpp_ok, cpp_hex, cpp_err = run_cpp(cf32, meta)
+        cpp_ok, cpp_hex, cpp_err = run_cpp(cf32, meta, timeout_s=args.timeout)
         category = categorize(py_info, gnur_info, cpp_ok, cpp_hex)
         counts[category] = counts.get(category, 0) + 1
 

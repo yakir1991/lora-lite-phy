@@ -80,9 +80,10 @@ PayloadDecoder::PayloadDecoder(int sf, int bandwidth_hz, int sample_rate_hz)
     downchirp_ = make_downchirp(sf_, bandwidth_hz_, sample_rate_hz_);
 }
 
-std::size_t PayloadDecoder::payload_symbol_offset_samples() const {
+std::size_t PayloadDecoder::payload_symbol_offset_samples(bool implicit_header) const {
     const std::size_t N = sps_;
     const std::size_t Nrise = static_cast<std::size_t>(std::ceil(kTriseSeconds * static_cast<double>(sample_rate_hz_)));
+    // Always use explicit header offset - implicit header should work exactly like explicit
     return Nrise + (12u * N) + (N / 4u) + 8u * N;
 }
 
@@ -216,20 +217,35 @@ int PayloadDecoder::compute_payload_symbol_count(const HeaderDecodeResult &heade
     const int sf = sf_;
     const bool force_ldro = ldro_enabled;
     const int de = (force_ldro || sf >= 11) ? 1 : 0;
-    const int cr = std::clamp(header.cr, 1, 4);
+    const int cr = std::min(std::max(header.cr, 1), 4);
     const int crc = header.has_crc ? 1 : 0;
-    const int ih = 0; // explicit header path
     const int payload_len = std::max(header.payload_length, 0);
 
-    const int denom = std::max(1, 4 * (sf - 2 * de));
-    int numerator = 8 * payload_len - 4 * sf + 28 + 16 * crc - 20 * ih;
-    if (numerator < 0) {
-        numerator = 0;
+    if (header.implicit_header) {
+        // For implicit header: work exactly like explicit header - always assume 20 header bits
+        const int ppm = sf - 2 * de;
+        const int n_bits_blk = ppm * 4;  // bits per block (28 for SF=7)
+        const int n_bits_tot = 8 * payload_len + 16 * crc;  // message + CRC bits
+        const int n_bits_hdr = 20;  // Always 20 header bits
+        
+        // Calculate number of blocks needed (ceiling division)
+        const int n_blk_tot = (n_bits_tot - n_bits_hdr + n_bits_blk - 1) / n_bits_blk;
+        const int sym_per_block = 4 + cr;
+        const int symbols = sym_per_block * std::max(n_blk_tot, 0);
+        return symbols;
+    } else {
+        // Original explicit header calculation
+        const int ih = 0; // explicit header path
+        const int denom = std::max(1, 4 * (sf - 2 * de));
+        int numerator = 8 * payload_len - 4 * sf + 28 + 16 * crc - 20 * ih;
+        if (numerator < 0) {
+            numerator = 0;
+        }
+        const int ceil_term = (numerator + denom - 1) / denom;
+        const int sym_per_block = 4 + cr;
+        const int symbols = sym_per_block * std::max(ceil_term, 0);
+        return symbols;
     }
-    const int ceil_term = (numerator + denom - 1) / denom;
-    const int sym_per_block = 4 + cr;
-    const int symbols = sym_per_block * std::max(ceil_term, 0);
-    return symbols;
 }
 
 std::optional<PayloadDecodeResult> PayloadDecoder::decode(const std::vector<Sample> &samples,
@@ -244,7 +260,7 @@ std::optional<PayloadDecodeResult> PayloadDecoder::decode(const std::vector<Samp
     }
     const int cr = std::clamp(header.cr, 1, 4);
     const std::size_t N = sps_;
-    const std::size_t symbol_offset = payload_symbol_offset_samples();
+    const std::size_t symbol_offset = payload_symbol_offset_samples(header.implicit_header);
     const double fs = static_cast<double>(sample_rate_hz_);
     const double Ts = 1.0 / fs;
 
@@ -307,8 +323,16 @@ std::optional<PayloadDecodeResult> PayloadDecoder::decode(const std::vector<Samp
     const std::size_t n_bits_blk = static_cast<std::size_t>(ppm) * 4u;
 
     std::vector<int> payload_bits;
-    payload_bits.reserve(header.payload_header_bits.size() + n_blk_tot * n_bits_blk);
-    payload_bits.insert(payload_bits.end(), header.payload_header_bits.begin(), header.payload_header_bits.end());
+    
+    if (header.implicit_header) {
+        // For implicit header, insert fake header bits for dewhitening compatibility
+        payload_bits.reserve(20 + n_blk_tot * n_bits_blk);
+        std::vector<int> fake_header_bits = {1,1,1,0,1,1,0,1,1,1,0,1,1,1,0,1,0,0,0,0};
+        payload_bits.insert(payload_bits.end(), fake_header_bits.begin(), fake_header_bits.end());
+    } else {
+        payload_bits.reserve(header.payload_header_bits.size() + n_blk_tot * n_bits_blk);
+        payload_bits.insert(payload_bits.end(), header.payload_header_bits.begin(), header.payload_header_bits.end());
+    }
 
     const auto degray = lora_degray_table(ppm);
     const double pow_scale = std::pow(2.0, 2 * de);
