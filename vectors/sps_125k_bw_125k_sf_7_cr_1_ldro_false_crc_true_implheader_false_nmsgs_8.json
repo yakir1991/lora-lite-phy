@@ -1,0 +1,10 @@
+{
+  "samp_rate": 125000,
+  "bw": 125000,
+  "sf": 7,
+  "cr": 1,
+  "ldro_mode": 0,
+  "crc": true,
+  "impl_header": false,
+  "filename": "sps_125k_bw_125k_sf_7_cr_1_ldro_false_crc_true_implheader_false_nmsgs_8.cf32"
+}

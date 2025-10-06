@@ -9,6 +9,10 @@
 
 namespace lora {
 
+// PreambleDetector performs a simple matched-filter search for the LoRa preamble.
+// It correlates a reference up-chirp against the input and finds the offset with
+// maximum magnitude (normalized). The search is done in two stages: coarse stride,
+// then fine per-sample refinement.
 PreambleDetector::PreambleDetector(int sf, int bandwidth_hz, int sample_rate_hz)
     : sf_(sf), bandwidth_hz_(bandwidth_hz), sample_rate_hz_(sample_rate_hz) {
     if (sf < 5 || sf > 12) {
@@ -25,9 +29,14 @@ PreambleDetector::PreambleDetector(int sf, int bandwidth_hz, int sample_rate_hz)
     const std::size_t chips_per_symbol = static_cast<std::size_t>(1) << sf_;
     sps_ = chips_per_symbol * os_factor;
 
+    // Precompute the ideal reference up-chirp used for correlation.
     reference_upchirp_ = make_upchirp(sf_, bandwidth_hz_, sample_rate_hz_);
 }
 
+// Run matched-filter detection.
+// - Coarse pass: step by sps/4 samples and track the best correlation magnitude.
+// - Refine pass: search +/- one coarse step around the coarse best with stride=1.
+// Metric is |sum(conj(ref[i]) * x[pos+i])| / sps. We pick the maximum; ties break by smaller offset.
 std::optional<PreambleDetection> PreambleDetector::detect(const std::vector<Sample> &samples) const {
     if (samples.size() < sps_) {
         return std::nullopt;
@@ -37,6 +46,7 @@ std::optional<PreambleDetection> PreambleDetector::detect(const std::vector<Samp
     std::size_t coarse_best_offset = 0;
     double coarse_best_metric = -1.0;
 
+    // Coarse sweep with larger stride to reduce work.
     for (std::size_t pos = 0; pos + sps_ <= samples.size(); pos += step) {
         std::complex<double> acc{0.0, 0.0};
         for (std::size_t i = 0; i < sps_; ++i) {
@@ -50,6 +60,7 @@ std::optional<PreambleDetection> PreambleDetector::detect(const std::vector<Samp
         }
     }
 
+    // Fine search around the best coarse position.
     const std::size_t refine_radius = step;
     const std::size_t start = (coarse_best_offset > refine_radius) ? (coarse_best_offset - refine_radius) : 0;
     const std::size_t end = std::min(samples.size() - sps_, coarse_best_offset + refine_radius);
@@ -64,6 +75,7 @@ std::optional<PreambleDetection> PreambleDetector::detect(const std::vector<Samp
             acc += std::conj(reference_upchirp_[i]) * std::complex<double>(sample.real(), sample.imag());
         }
         const double metric = std::abs(acc) / static_cast<double>(sps_);
+        // Prefer larger metric; if equal within epsilon, prefer the earlier offset for stability.
         if (metric > best_metric + 1e-9 || (std::abs(metric - best_metric) <= 1e-9 && pos < best_offset)) {
             best_metric = metric;
             best_offset = pos;
