@@ -5,6 +5,11 @@ cmake_minimum_required(VERSION 3.10)
 execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/version.sh
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     OUTPUT_VARIABLE LIQUID_VERSION)
+# Fallback if version detection fails (e.g., missing git meta):
+if(NOT LIQUID_VERSION)
+    set(LIQUID_VERSION "1.0.0")
+    message(WARNING "Liquid-DSP version detection failed; using fallback version ${LIQUID_VERSION}")
+endif()
 
 # project definition
 project(liquid VERSION ${LIQUID_VERSION} LANGUAGES C CXX)

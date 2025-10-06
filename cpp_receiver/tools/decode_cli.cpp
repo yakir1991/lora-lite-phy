@@ -10,17 +10,29 @@
 
 namespace {
 
+// Minimal command-line tool to run the C++ LoRa receiver on a cf32 file.
+// It parses basic PHY parameters and header mode from flags, runs the
+// high-level Receiver, and prints decode status plus optional debug info.
+// Exit codes:
+//   0 -> success (payload CRC verified and message decoded)
+//   1 -> decode attempted but unsuccessful (sync/header/payload failure)
+//   2 -> CLI/argument error or I/O error
+
 struct ParsedArgs {
     std::filesystem::path input;
+    // PHY params
     int sf = 7;
     int bandwidth_hz = 125000;
     int sample_rate_hz = 500000;
     bool ldro_enabled = false;
+    // Diagnostics
     bool debug = false;
+    // Header mode/fields (used when implicit_header=true)
     bool implicit_header = false;
     int payload_length = 0;
     int coding_rate = 1;
     bool has_crc = true;
+    // Sync word control
     unsigned sync_word = 0x12u;
     bool skip_sync_word_check = false;
 };
@@ -44,6 +56,8 @@ void print_usage(const char *prog) {
 
 ParsedArgs parse_args(int argc, char **argv) {
     ParsedArgs args;
+    // Simple argv parser with positional last-argument as input path.
+    // Numeric options accept decimal or 0x-prefixed hex for sync word.
     for (int i = 1; i < argc; ++i) {
         std::string cur = argv[i];
         if (cur == "--sf" && i + 1 < argc) {
@@ -90,6 +104,7 @@ ParsedArgs parse_args(int argc, char **argv) {
 
 int main(int argc, char **argv) {
     try {
+        // 1) Parse CLI and map to library DecodeParams.
         auto parsed = parse_args(argc, argv);
         lora::DecodeParams params;
         params.sf = parsed.sf;
@@ -103,6 +118,7 @@ int main(int argc, char **argv) {
         params.implicit_has_crc = parsed.has_crc;
         params.implicit_cr = parsed.coding_rate;
 
+        // Validate implicit header requirements when enabled.
         if (parsed.implicit_header) {
             if (params.implicit_payload_length <= 0) {
                 throw std::runtime_error("Implicit header requires --payload-len > 0");
@@ -112,10 +128,12 @@ int main(int argc, char **argv) {
             }
         }
 
+        // 2) Run decode over the provided cf32 file.
         lora::Receiver receiver(params);
         const auto samples = lora::IqLoader::load_cf32(parsed.input);
         const auto result = receiver.decode_samples(samples);
 
+        // 3) Print a compact status line; optionally include debug fields.
         std::cout << "frame_synced=" << result.frame_synced
                   << " header_ok=" << result.header_ok
                   << " payload_crc_ok=" << result.payload_crc_ok
@@ -135,6 +153,7 @@ int main(int argc, char **argv) {
                 std::cout << '\n';
             }
         }
+        // Print payload as uppercase hex without separators if present.
         if (!result.payload.empty()) {
             std::cout << "payload_hex=";
             std::ios old_state(nullptr);
@@ -148,6 +167,7 @@ int main(int argc, char **argv) {
             std::cout << '\n';
             std::cout.copyfmt(old_state);
         }
+        // Optional additional sync diagnostics when --debug is set.
         if (parsed.debug) {
             try {
                 lora::FrameSynchronizer fs(parsed.sf, parsed.bandwidth_hz, parsed.sample_rate_hz);
@@ -174,8 +194,10 @@ int main(int argc, char **argv) {
                 std::cout << "sync_dbg error\n";
             }
         }
+        // Return 0 only if end-to-end decode succeeded; 1 otherwise.
         return result.success ? 0 : 1;
     } catch (const std::exception &ex) {
+        // CLI/argument/I-O errors: report and return 2. Usage is printed for convenience.
         std::cerr << "[ERROR] " << ex.what() << '\n';
         print_usage(argv[0]);
         return 2;

@@ -10,21 +10,40 @@
 namespace lora {
 
 struct HeaderDecodeResult {
-    std::vector<int> raw_symbols; // k_hdr values (length 8 for SF7 explicit header)
+    // Raw demodulated header symbol bins (K-domain), length equals header symbol count
+    // (e.g., 8 for SF7 explicit header). Useful for debugging and parity checks.
+    std::vector<int> raw_symbols;
     bool fcs_ok = false;
+    // Payload length in bytes as indicated by the header (0..255 for standard LoRa PHY).
     int payload_length = -1;
+    // Whether a CRC16 is present for the payload.
     bool has_crc = false;
+    // Code rate (CR) decoded from the header, range 1..4.
     int cr = -1;
+    // True when operating in implicit-header mode (fields supplied externally).
     bool implicit_header = false;
-    std::vector<int> payload_header_bits; // residual bits feeding into payload decoding (may be empty)
+    // Residual header bits passed along to payload decoding (may be empty).
+    std::vector<int> payload_header_bits;
 };
 
 class HeaderDecoder {
 public:
     using Sample = std::complex<float>;
 
+    // Construct a LoRa header decoder with PHY parameters.
+    // Parameters:
+    //  - sf: Spreading factor (5..12)
+    //  - bandwidth_hz: LoRa bandwidth in Hz
+    //  - sample_rate_hz: complex sample rate in Hz (must be integer multiple of BW)
     HeaderDecoder(int sf, int bandwidth_hz, int sample_rate_hz);
 
+    // Decode the header symbols starting at the synchronized frame position.
+    // Inputs:
+    //  - samples: entire I/Q buffer
+    //  - sync: result from FrameSynchronizer with timing/CFO
+    // Output:
+    //  - HeaderDecodeResult with fcs_ok flag, payload length, has_crc, and CR.
+    //  - std::nullopt if demodulation fails or an internal consistency check fails.
     [[nodiscard]] std::optional<HeaderDecodeResult> decode(const std::vector<Sample> &samples,
                                                            const FrameSyncResult &sync) const;
 
@@ -37,6 +56,7 @@ private:
 
     std::vector<std::complex<double>> downchirp_;
 
+    // Compute LoRa header CRC5 from the first three header nibbles.
     static int compute_header_crc(int n0, int n1, int n2);
 };
 

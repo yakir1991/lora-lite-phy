@@ -1,6 +1,7 @@
 #include "sync_word_detector.hpp"
 
 #include "chirp_generator.hpp"
+#include "fft_utils.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -17,6 +18,20 @@ constexpr std::size_t kSyncSymCount = 2;
 
 } // namespace
 
+// SyncWordDetector validates the LoRa sync word immediately following the preamble.
+// Given:
+//  - Spreading factor (SF), bandwidth (Hz), and sample rate (Hz)
+//  - The configured 8-bit sync word (two 4-bit nibbles)
+//  - A preamble_offset (start of the preamble) and CFO estimate (Hz)
+// It demodulates 8 preamble symbols and the 2 sync symbols using a downchirp
+// dechirp + K-point IDFT-like peak search, compensates CFO, and checks that the
+// two sync symbols match the expected bins encoded by the sync word nibbles.
+//
+// Output is a SyncWordDetection struct containing:
+//  - preamble_ok: whether all preamble symbols normalize near DC (within tol)
+//  - sync_ok: whether both sync symbols match the expected bins (within tol)
+//  - symbol_bins: normalized preamble bins plus the two sync bins
+//  - magnitudes: peak magnitudes per symbol (debug/quality metric)
 SyncWordDetector::SyncWordDetector(int sf, int bandwidth_hz, int sample_rate_hz, unsigned sync_word)
     : sf_(sf), bandwidth_hz_(bandwidth_hz), sample_rate_hz_(sample_rate_hz), sync_word_(sync_word & 0xFFu) {
     if (sf < 5 || sf > 12) {
@@ -36,6 +51,14 @@ SyncWordDetector::SyncWordDetector(int sf, int bandwidth_hz, int sample_rate_hz,
     downchirp_ = make_downchirp(sf_, bandwidth_hz_, sample_rate_hz_);
 }
 
+// Demodulate one LoRa symbol starting at sym_index relative to preamble_offset.
+// Steps:
+//  1) CFO rotation compensation.
+//  2) Multiply by a reference downchirp (dechirp).
+//  3) Decimate to K chips (K=2^SF) by picking every os_factor-th sample.
+//  4) Compute a K-point IDFT-like sum to estimate the tone bin.
+//  5) Return the aligned bin index and its magnitude.
+// Note: We align by subtracting 1 in K-domain (consistent with payload demod).
 std::size_t SyncWordDetector::demod_symbol(const std::vector<Sample> &samples,
                                            std::size_t sym_index,
                                            std::ptrdiff_t preamble_offset,
@@ -58,25 +81,23 @@ std::size_t SyncWordDetector::demod_symbol(const std::vector<Sample> &samples,
         scratch.input[i] = std::complex<double>(s.real(), s.imag()) * downchirp_[i] * rot;
     }
 
-    // Downsample to K points (chips) and perform K-point IDFT like payload demod
+    // Aggregate to K chips by summing all os_factor samples within each chip window,
+    // then perform a K-point IDFT-like search. This preserves amplitude proportional
+    // to samples-per-symbol (sps) rather than picking a single sample per chip.
     const std::size_t chips = static_cast<std::size_t>(1) << static_cast<std::size_t>(sf_);
     const std::size_t os_factor = sps_ / chips;
-    std::vector<std::complex<double>> dec;
-    dec.reserve(chips);
-    for (std::size_t i = 0; i < sps_; i += os_factor) {
-        dec.push_back(scratch.input[i]);
+    std::vector<std::complex<double>> dec(chips, std::complex<double>{});
+    for (std::size_t chip = 0; chip < chips; ++chip) {
+        const std::size_t base = chip * os_factor;
+        std::complex<double> acc{0.0, 0.0};
+        for (std::size_t j = 0; j < os_factor; ++j) {
+            acc += scratch.input[base + j];
+        }
+        dec[chip] = acc;
     }
 
-    std::vector<std::complex<double>> spec(chips, std::complex<double>{});
-    for (std::size_t k = 0; k < chips; ++k) {
-        std::complex<double> acc{0.0, 0.0};
-        const double coeff = 2.0 * std::numbers::pi * static_cast<double>(k) / static_cast<double>(chips);
-        for (std::size_t n = 0; n < dec.size(); ++n) {
-            const double angle = coeff * static_cast<double>(n);
-            acc += dec[n] * std::complex<double>(std::cos(angle), std::sin(angle));
-        }
-        spec[k] = acc;
-    }
+    std::vector<std::complex<double>> spec = dec;
+    lora::fft::transform_pow2(spec, /*inverse=*/true);
 
     std::size_t best_k = 0;
     double best_mag = 0.0;
@@ -90,6 +111,7 @@ std::size_t SyncWordDetector::demod_symbol(const std::vector<Sample> &samples,
 
     // Align with payload: pos-1 in K-domain
     const std::size_t k_aligned = (best_k + chips - 1) % chips;
+    // Since we sum os_factor samples per chip, best_mag is already on the order of sps.
     magnitude = best_mag;
     return k_aligned; // 0..K-1
 }
@@ -116,7 +138,7 @@ std::optional<SyncWordDetection> SyncWordDetector::analyze(const std::vector<Sam
     scratch.spectrum.reserve(sps_);
 
     const std::size_t chips_per_symbol = static_cast<std::size_t>(1) << static_cast<std::size_t>(sf_);
-    const std::size_t tol = 2; // bins tolerance in K-domain
+    const std::size_t tol = 2; // tolerance in bins (K-domain circular distance)
 
     // First pass: collect raw preamble bins
     std::vector<std::size_t> pre_bins;
@@ -128,7 +150,8 @@ std::optional<SyncWordDetection> SyncWordDetector::analyze(const std::vector<Sam
         detection.magnitudes.push_back(mag);
     }
 
-    // Estimate constant offset from preamble (mode of bins)
+    // Estimate constant offset in K-domain from preamble by taking the mode of bins.
+    // This compensates for any constant rotation/offset so that preamble bins map near 0.
     std::size_t offset_est = 0;
     {
         std::size_t best_count = 0;
@@ -145,7 +168,8 @@ std::optional<SyncWordDetection> SyncWordDetector::analyze(const std::vector<Sam
         }
     }
 
-    // Normalize preamble bins and evaluate preamble_ok
+    // Normalize preamble bins by removing the offset_est and check proximity to DC (0),
+    // allowing circular distance within 'tol' bins. If any exceeds, preamble_ok=false.
     bool preamble_ok = true;
     for (std::size_t i = 0; i < pre_bins.size(); ++i) {
         std::size_t norm = (pre_bins[i] + chips_per_symbol - offset_est) % chips_per_symbol;
@@ -159,6 +183,9 @@ std::optional<SyncWordDetection> SyncWordDetector::analyze(const std::vector<Sam
     const std::size_t nibble_lo = (sync_word_ & 0x0FU) << 3U;
     const std::size_t expected_sync_sym[] = {nibble_hi, nibble_lo};
 
+    // Validate the two sync symbols. We normalize by offset_est and then choose
+    // the orientation (bin or its complement) that minimizes circular distance
+    // to the expected bin for this nibble. If distance > tol, mark sync_ok=false.
     bool sync_ok = true;
     for (std::size_t idx = 0; idx < kSyncSymCount; ++idx) {
         double mag = 0.0;

@@ -1,0 +1,10 @@
+{
+  "samp_rate": 4000000,
+  "sf": 5,
+  "bw": 500000,
+  "cr": 3,
+  "ldro_mode": 0,
+  "crc": true,
+  "impl_header": false,
+  "filename": "sps4Mhz_sf5_bw500khz_cr47_preamblelen12_syncword18_explicitheader_hascrcFalse_softdecodingTrue.cf32"
+}

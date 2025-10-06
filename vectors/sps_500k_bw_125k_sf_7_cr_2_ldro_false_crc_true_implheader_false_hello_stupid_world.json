@@ -1,0 +1,10 @@
+{
+  "samp_rate": 500000,
+  "bw": 125000,
+  "sf": 7,
+  "cr": 2,
+  "ldro_mode": 0,
+  "crc": true,
+  "impl_header": false,
+  "filename": "sps_500k_bw_125k_sf_7_cr_2_ldro_false_crc_true_implheader_false_hello_stupid_world.cf32"
+}

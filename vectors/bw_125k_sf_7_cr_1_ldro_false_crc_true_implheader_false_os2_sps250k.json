@@ -1,0 +1,10 @@
+{
+  "bw": 125000,
+  "sf": 7,
+  "cr": 1,
+  "ldro_mode": 0,
+  "crc": true,
+  "impl_header": false,
+  "samp_rate": 250000,
+  "filename": "bw_125k_sf_7_cr_1_ldro_false_crc_true_implheader_false_os2_sps250k.cf32"
+}

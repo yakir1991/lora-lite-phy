@@ -67,7 +67,13 @@ def run_gnu_radio_decoder(vector_path: Path, metadata: Dict) -> Dict:
     cmd.append("--impl-header" if metadata.get("impl_header") else "--explicit-header")
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            errors="replace",
+        )
     except subprocess.TimeoutExpired:
         return {"status": "timeout", "stdout": "", "stderr": ""}
 
@@ -114,7 +120,13 @@ def run_lora_lite_cpp(vector_path: Path, metadata: Dict) -> Dict:
     ]
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            errors="replace",
+        )
     except subprocess.TimeoutExpired:
         return {"status": "timeout", "payload_hex": None, "stdout": "", "stderr": ""}
 
