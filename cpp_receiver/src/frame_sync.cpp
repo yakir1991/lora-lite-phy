@@ -12,6 +12,13 @@
 #include <stdexcept>
 #include <vector>
 
+// Frame synchronization is the trickiest stage in the LoRa PHY because it has
+// to line up timing and coarse frequency from raw captures that may have large
+// CFO and front-end artifacts. This file contains both the offline
+// `FrameSynchronizer` (single vector) and the stateful `StreamingFrameSynchronizer`
+// used by the streaming receiver. The implementation mirrors SDR references but
+// is heavily annotated to explain each heuristic so future tweaks stay safe.
+
 namespace lora {
 
 namespace {
@@ -95,8 +102,87 @@ FrameSynchronizer::FrameSynchronizer(int sf, int bandwidth_hz, int sample_rate_h
     sps_ = chips_per_symbol * os_factor_;
 
     // Reference chirps used for dechirp (down) and matched filtering / checks (up).
+    // These are deterministic sequences constructed from SF, BW, and Fs.
     upchirp_ = make_upchirp(sf_, bandwidth_hz_, sample_rate_hz_);
     downchirp_ = make_downchirp(sf_, bandwidth_hz_, sample_rate_hz_);
+}
+
+StreamingFrameSynchronizer::StreamingFrameSynchronizer(int sf, int bandwidth_hz, int sample_rate_hz)
+    : base_(sf, bandwidth_hz, sample_rate_hz) {
+    // Cache samples-per-symbol for trimming and guard calculations.
+    sps_ = base_.samples_per_symbol();
+}
+
+void StreamingFrameSynchronizer::reset() {
+    // Return to a clean state; drop buffer and any active detection lock.
+    buffer_.clear();
+    buffer_global_offset_ = 0;
+    total_samples_ingested_ = 0;
+    locked_ = false;
+    detection_.reset();
+}
+
+void StreamingFrameSynchronizer::prime(std::span<const Sample> samples, std::size_t global_offset) {
+    // Initialize the rolling buffer with a baseline chunk and set the absolute
+    // sample index of its first element to `global_offset`.
+    reset();
+    buffer_global_offset_ = global_offset;
+    append_samples(samples);
+}
+
+std::optional<FrameSyncResult> StreamingFrameSynchronizer::update(std::span<const Sample> chunk) {
+    if (chunk.empty()) {
+        return detection_;
+    }
+    append_samples(chunk);
+
+    if (!locked_) {
+        // Try to detect a new preamble in the current buffer. When a detection
+        // exists we keep the buffer (so downstream decoders can consume it).
+        // Otherwise, we trim to bound memory.
+        detection_ = base_.synchronize(buffer_);
+        if (detection_.has_value()) {
+            locked_ = true;
+        } else {
+            trim_buffer();
+        }
+    }
+
+    return detection_;
+}
+
+void StreamingFrameSynchronizer::append_samples(std::span<const Sample> samples) {
+    // Extend the rolling buffer and track the total number of samples ingested.
+    buffer_.insert(buffer_.end(), samples.begin(), samples.end());
+    total_samples_ingested_ += samples.size();
+}
+
+std::size_t StreamingFrameSynchronizer::guard_keep_samples() const {
+    // Keep a safety margin of symbols in the buffer to allow look-back for
+    // fine searches without reloading older samples.
+    return 16 * sps_;
+}
+
+void StreamingFrameSynchronizer::trim_buffer() {
+    const std::size_t guard_keep = guard_keep_samples();
+    if (buffer_.size() > guard_keep) {
+        consume(buffer_.size() - guard_keep);
+    }
+}
+
+void StreamingFrameSynchronizer::consume(std::size_t samples) {
+    if (samples == 0 || samples > buffer_.size()) {
+        return;
+    }
+    // Physically remove the consumed prefix and advance the absolute index.
+    buffer_.erase(buffer_.begin(), buffer_.begin() + static_cast<std::ptrdiff_t>(samples));
+    buffer_global_offset_ += samples;
+    if (locked_) {
+        // Consuming invalidates any previous detection because offsets change
+        // and the detection should be re-established by the caller.
+        locked_ = false;
+        detection_.reset();
+    }
 }
 
 // Slide a one-symbol window across the stream to detect the LoRa preamble pattern.
@@ -118,6 +204,8 @@ std::optional<FrameSyncResult> FrameSynchronizer::synchronize(const std::vector<
     const std::size_t Nrise = static_cast<std::size_t>(std::ceil(kTriseSeconds * fs));
 
     // History buffers for recent peak metrics per phase and chirp orientation.
+    // Each entry stores the last several coarse-bin measurements used to verify
+    // the inter-phase pattern expected from the LoRa preamble.
     std::vector<std::array<double, 6>> m_vec(2 * kPhases);
     for (auto &arr : m_vec) {
         arr.fill(-1.0);
@@ -144,8 +232,9 @@ std::optional<FrameSyncResult> FrameSynchronizer::synchronize(const std::vector<
         }
 
         // 2) Coarse DFT and peak bin selection for both orientations.
-    const auto Su = compute_spectrum_fft(win_u, N, /*inverse=*/false);
-    const auto Sd = compute_spectrum_fft(win_d, N, /*inverse=*/false);
+        // Use power-of-two FFT with no extra zero-padding for coarse stage.
+        const auto Su = compute_spectrum_fft(win_u, N, /*inverse=*/false);
+        const auto Sd = compute_spectrum_fft(win_d, N, /*inverse=*/false);
 
         std::size_t idx_u = argmax_abs(Su);
         std::size_t idx_d = argmax_abs(Sd);
@@ -278,11 +367,15 @@ std::optional<FrameSyncResult> FrameSynchronizer::synchronize(const std::vector<
                          (2.0 * static_cast<double>(kFineOversample)) + static_cast<double>(best_s_ofs) -
                          11.0 * static_cast<double>(N) - static_cast<double>(Nrise);
 
+    // Round up to the next integer sample to avoid early indexing before the estimated start.
     const std::ptrdiff_t p_ofs_est = static_cast<std::ptrdiff_t>(std::ceil(t_est));
 
     // Package results. preamble_offset is clamped to non-negative.
     FrameSyncResult result;
     result.p_ofs_est = p_ofs_est;
+    // The coarse preamble estimate is derived from the window start minus a
+    // heuristic number of symbols traversed during detection (aligned with the
+    // pattern check above). Clamp negative to 0 relative to the provided buffer.
     const std::ptrdiff_t preamble = static_cast<std::ptrdiff_t>(best_s_ofs) -
                                     static_cast<std::ptrdiff_t>(11 * N);
     result.preamble_offset = preamble > 0 ? preamble : 0;

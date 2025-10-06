@@ -16,6 +16,7 @@ add_library(lora_cpp_receiver STATIC
     src/preamble_detector.cpp
     src/payload_decoder.cpp
     src/receiver.cpp
+    src/streaming_receiver.cpp
     src/sync_word_detector.cpp
 )
 
@@ -107,6 +108,9 @@ target_link_libraries(decode_cli PRIVATE lora_cpp_receiver)
 # Diagnostic tool: print sync word analysis magnitudes for a given vector
 add_executable(sync_mags tools/sync_mags.cpp)
 target_link_libraries(sync_mags PRIVATE lora_cpp_receiver)
+
+add_executable(streaming_harness tools/streaming_harness.cpp)
+target_link_libraries(streaming_harness PRIVATE lora_cpp_receiver)
 
 # Warnings on all targets, MSVC and GCC/Clang.
 if (MSVC)

@@ -4,12 +4,23 @@
 #include "payload_decoder.hpp"
 #include "preamble_detector.hpp"
 #include "receiver.hpp"
+#include "streaming_receiver.hpp"
 #include "sync_word_detector.hpp"
 
 #include <cmath>
 #include <cstdio>
 #include <filesystem>
+#include <random>
 #include <stdexcept>
+#include <algorithm>
+#include <span>
+
+// Lightweight smoke tests for the C++ receiver pipeline. They intentionally
+// avoid any external unit test framework so that CMake/Ninja builds can run them
+// as part of `ctest` without extra dependencies. Each helper checks one stage of
+// the pipeline against a reference capture, making it easier to localize
+// regressions when tweaking DSP heuristics. Comments annotate the purpose of
+// each test and the rationale for key constants and tolerances.
 
 namespace {
 
@@ -25,12 +36,14 @@ namespace {
 // The intent is fast feedback during development without bringing in a full testing framework.
 
 // Resolve the repository root configured by CMake to locate test vectors.
+// LORA_CPP_RECEIVER_SOURCE_DIR is provided by the CMake build.
 std::filesystem::path source_root() {
     static const std::filesystem::path root = std::filesystem::path(LORA_CPP_RECEIVER_SOURCE_DIR);
     return root;
 }
 
 // Location of example vectors used in the tests.
+// We keep vectors at repo_root/vectors to be shared by Python and C++ tests.
 std::filesystem::path vector_root() {
     static const std::filesystem::path root = source_root().parent_path();
     return root / "vectors";
@@ -44,19 +57,24 @@ void require(bool condition, const char *message) {
 }
 
 // Helpers for approximate equality checks with configurable tolerance.
+// Absolute tolerance comparison for floats; keeps tests robust to minor
+// numerical differences between platforms or compiler flags.
 bool approx(float lhs, float rhs, float eps = 1e-5f) {
     return std::fabs(lhs - rhs) <= eps;
 }
 
+// Same for doubles.
 bool approx_double(double lhs, double rhs, double eps = 1e-5) {
     return std::fabs(lhs - rhs) <= eps;
 }
 
+// Compare complex values component-wise with a shared tolerance.
 bool approx_complex(const std::complex<float> &lhs, const std::complex<float> &rhs, float eps = 1e-5f) {
     return approx(lhs.real(), rhs.real(), eps) && approx(lhs.imag(), rhs.imag(), eps);
 }
 
 // Load the canonical reference capture used by all baseline checks.
+// The file encodes: sps=500k, bw=125k, sf=7, cr=2, ldro=off, crc=on, payload="hello stupid world".
 const auto &load_reference_samples() {
     static const auto samples = lora::IqLoader::load_cf32(
         vector_root() / "sps_500k_bw_125k_sf_7_cr_2_ldro_false_crc_true_implheader_false_hello_stupid_world.unknown");
@@ -64,6 +82,7 @@ const auto &load_reference_samples() {
 }
 
 // Validate basic IQ loading invariants: sample count, first few samples, and amplitude stats.
+// This guards against file I/O regressions and endian/format issues.
 void test_iq_loader() {
     const auto &samples = load_reference_samples();
 
@@ -95,6 +114,7 @@ void test_iq_loader() {
 }
 
 // Check preamble detection: for this vector, we expect a start at 0 and a near-ideal metric.
+// samples_per_symbol should be 512 for SF7 at Fs/BW = 500k/125k = 4, so sps = 128*4 = 512.
 void test_preamble_detector() {
     const auto &samples = load_reference_samples();
 
@@ -108,6 +128,7 @@ void test_preamble_detector() {
 }
 
 // Verify sync word detection and preamble bin normalization.
+// Expected bins include 8 and 16 after eight zero preamble bins, which encode sync word 0x12.
 void test_sync_word_detector() {
     const auto &samples = load_reference_samples();
 
@@ -155,6 +176,7 @@ void test_sync_word_detector() {
 }
 
 // Validate frame synchronization outputs: fine timing offset and CFO estimate.
+// The expected values are specific to the reference vector and algorithm tuning.
 void test_frame_sync() {
     const auto &samples = load_reference_samples();
 
@@ -166,6 +188,7 @@ void test_frame_sync() {
 }
 
 // Check explicit header decode: FCS, payload length, CRC flag, CR, and raw K-bins.
+// Raw symbol values (K-bins) help catch subtle demodulation regressions.
 void test_header_decoder() {
     const auto &samples = load_reference_samples();
 
@@ -186,6 +209,7 @@ void test_header_decoder() {
 }
 
 // Validate payload decoding and CRC16 using header and frame sync results.
+// Expected payload bytes correspond to ASCII "hello stupid world".
 void test_payload_decoder() {
     const auto &samples = load_reference_samples();
 
@@ -211,6 +235,7 @@ void test_payload_decoder() {
 }
 
 // End-to-end check using the high-level Receiver facade.
+// Verifies the integrated path returns the same expected payload.
 void test_full_receiver() {
     const auto &samples = load_reference_samples();
 
@@ -235,6 +260,173 @@ void test_full_receiver() {
     require(result.payload == expected_bytes, "Receiver payload mismatch");
 }
 
+// Test streaming receiver with various chunk sizes to ensure chunk boundaries
+// do not affect correctness or event sequencing.
+void test_streaming_receiver_chunking() {
+    const auto &samples = load_reference_samples();
+
+    const std::vector<unsigned char> expected_bytes = {
+        0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x73, 0x74,
+        0x75, 0x70, 0x69, 0x64, 0x20, 0x77, 0x6f, 0x72,
+        0x6c, 0x64
+    };
+
+    const std::vector<std::size_t> chunk_sizes = {1, 7, 64, 1024};
+
+    for (std::size_t chunk : chunk_sizes) {
+        // Configure decode parameters matching the reference vector.
+        lora::DecodeParams params;
+        params.sf = 7;
+        params.bandwidth_hz = 125000;
+        params.sample_rate_hz = 500000;
+        params.ldro_enabled = false;
+
+        lora::StreamingReceiver streaming(params);
+        std::vector<lora::StreamingReceiver::FrameEvent> events;
+
+        std::size_t offset = 0;
+        while (offset < samples.size()) {
+            // Feed chunks; accumulate all emitted events for later validation.
+            const std::size_t take = std::min(chunk, samples.size() - offset);
+            std::span<const lora::StreamingReceiver::Sample> span(&samples[offset], take);
+            auto ev = streaming.push_samples(span);
+            events.insert(events.end(), ev.begin(), ev.end());
+            offset += take;
+        }
+
+        require(!events.empty(), "Streaming receiver emitted no events");
+
+        const auto sync_it = std::find_if(events.begin(), events.end(), [](const auto &ev) {
+            return ev.type == lora::StreamingReceiver::FrameEvent::Type::SyncAcquired;
+        });
+        require(sync_it != events.end(), "Streaming receiver missing sync event");
+        require(sync_it->sync.has_value(), "Sync event missing state");
+
+        const auto err_it = std::find_if(events.begin(), events.end(), [](const auto &ev) {
+            return ev.type == lora::StreamingReceiver::FrameEvent::Type::FrameError;
+        });
+        require(err_it == events.end(), "Streaming receiver reported error");
+
+        const auto done_it = std::find_if(events.begin(), events.end(), [](const auto &ev) {
+            return ev.type == lora::StreamingReceiver::FrameEvent::Type::FrameDone;
+        });
+        require(done_it != events.end(), "Streaming receiver missing FrameDone event");
+        require(done_it->result.has_value(), "FrameDone missing decode result");
+        require(done_it->result->success, "Streaming decode did not succeed");
+        require(done_it->result->payload == expected_bytes, "Streaming payload mismatch");
+    }
+}
+
+// Build a composite buffer with two frames separated by a gap of zeros and
+// verify that the streaming receiver emits two successful FrameDone events.
+void test_streaming_receiver_multi_frame() {
+    const auto &samples = load_reference_samples();
+
+    const std::vector<unsigned char> expected_bytes = {
+        0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x73, 0x74,
+        0x75, 0x70, 0x69, 0x64, 0x20, 0x77, 0x6f, 0x72,
+        0x6c, 0x64
+    };
+
+    const std::size_t gap_symbols = 16;
+    const std::size_t gap_samples = gap_symbols * 512; // sps=512 for reference vector
+
+    std::vector<lora::StreamingReceiver::Sample> composite;
+    composite.reserve(samples.size() * 2 + gap_samples);
+    composite.insert(composite.end(), samples.begin(), samples.end());
+    composite.insert(composite.end(), gap_samples, lora::StreamingReceiver::Sample{0.0f, 0.0f});
+    composite.insert(composite.end(), samples.begin(), samples.end());
+
+    lora::DecodeParams params;
+    params.sf = 7;
+    params.bandwidth_hz = 125000;
+    params.sample_rate_hz = 500000;
+    params.ldro_enabled = false;
+
+    lora::StreamingReceiver streaming(params);
+
+    std::size_t chunk = 321;
+    std::size_t offset = 0;
+    std::vector<lora::StreamingReceiver::FrameEvent> events;
+    while (offset < composite.size()) {
+        const std::size_t take = std::min(chunk, composite.size() - offset);
+        std::span<const lora::StreamingReceiver::Sample> span(&composite[offset], take);
+        auto ev = streaming.push_samples(span);
+        events.insert(events.end(), ev.begin(), ev.end());
+        offset += take;
+    }
+
+    const auto err_it = std::find_if(events.begin(), events.end(), [](const auto &ev) {
+        return ev.type == lora::StreamingReceiver::FrameEvent::Type::FrameError;
+    });
+    require(err_it == events.end(), "Streaming multi-frame reported error");
+
+    std::vector<const lora::StreamingReceiver::FrameEvent *> done_events;
+    for (const auto &ev : events) {
+        if (ev.type == lora::StreamingReceiver::FrameEvent::Type::FrameDone) {
+            done_events.push_back(&ev);
+        }
+    }
+    require(done_events.size() >= 2, "Expected at least two FrameDone events");
+    for (const auto *ev : done_events) {
+        require(ev->result.has_value(), "FrameDone missing result");
+        require(ev->result->success, "FrameDone result not successful");
+        require(ev->result->payload == expected_bytes, "Frame payload mismatch in multi-frame test");
+    }
+}
+
+// Add low-variance AWGN to the reference samples and enable emit_payload_bytes.
+// Ensure robustness by verifying progressive byte events match the expected payload.
+void test_streaming_receiver_awgn() {
+    const auto &samples = load_reference_samples();
+
+    std::vector<lora::StreamingReceiver::Sample> noisy(samples.begin(), samples.end());
+
+    std::mt19937 rng(12345); // fixed seed for deterministic noise
+    std::normal_distribution<float> noise(0.0f, 0.01f);
+    for (auto &s : noisy) {
+        s += lora::StreamingReceiver::Sample{noise(rng), noise(rng)};
+    }
+
+    lora::DecodeParams params;
+    params.sf = 7;
+    params.bandwidth_hz = 125000;
+    params.sample_rate_hz = 500000;
+    params.ldro_enabled = false;
+    params.emit_payload_bytes = true;
+
+    lora::StreamingReceiver streaming(params);
+
+    std::vector<unsigned char> collected_bytes;
+
+    const std::size_t chunk = 321;
+    std::size_t offset = 0;
+    while (offset < noisy.size()) {
+        const std::size_t take = std::min(chunk, noisy.size() - offset);
+        std::span<const lora::StreamingReceiver::Sample> span(&noisy[offset], take);
+        auto events = streaming.push_samples(span);
+        for (const auto &ev : events) {
+            if (ev.type == lora::StreamingReceiver::FrameEvent::Type::PayloadByte && ev.payload_byte.has_value()) {
+                collected_bytes.push_back(*ev.payload_byte);
+            } else if (ev.type == lora::StreamingReceiver::FrameEvent::Type::FrameDone) {
+                offset = noisy.size();
+                break;
+            }
+        }
+        offset += take;
+    }
+
+    const std::vector<unsigned char> expected_bytes = {
+        0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x73, 0x74,
+        0x75, 0x70, 0x69, 0x64, 0x20, 0x77, 0x6f, 0x72,
+        0x6c, 0x64
+    };
+
+    require(collected_bytes.size() == expected_bytes.size(), "AWGN streaming: unexpected payload size");
+    require(std::equal(collected_bytes.begin(), collected_bytes.end(), expected_bytes.begin()),
+            "AWGN streaming: payload mismatch");
+}
+
 } // namespace
 
 int main() {
@@ -247,11 +439,17 @@ int main() {
         test_header_decoder();
         test_payload_decoder();
         test_full_receiver();
+        test_streaming_receiver_chunking();
+        test_streaming_receiver_multi_frame();
+        test_streaming_receiver_awgn();
         // If we reach here, all tests passed. Print per-stage PASS messages.
         std::puts("[PASS] frame sync baseline checks");
         std::puts("[PASS] header decoder baseline checks");
         std::puts("[PASS] payload decoder baseline checks");
         std::puts("[PASS] full receiver baseline checks");
+        std::puts("[PASS] streaming receiver chunked checks");
+        std::puts("[PASS] streaming receiver multi-frame checks");
+        std::puts("[PASS] streaming receiver AWGN checks");
     } catch (const std::exception &ex) {
         std::fprintf(stderr, "[FAIL] %s\n", ex.what());
         return 1;

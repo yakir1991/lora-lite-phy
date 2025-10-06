@@ -5,6 +5,13 @@
 #include <numbers>
 #include <stdexcept>
 
+// The FFT module intentionally keeps a single translation unit so that the
+// fallback radix-2 implementation remains easy to audit. The entry point
+// `transform_pow2` transparently dispatches to Liquid-DSP when available, or to
+// the bundled radix-2 Cooley–Tukey path otherwise. We guard every public
+// function with explicit input validation (power-of-two lengths) because the LoRa
+// demod stages rely on tight invariants and we want failures to be loud.
+
 #ifdef LORA_ENABLE_LIQUID_DSP
 #include <liquid/liquid.h>
 #endif

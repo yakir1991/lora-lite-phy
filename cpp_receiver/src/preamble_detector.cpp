@@ -7,6 +7,12 @@
 #include <complex>
 #include <stdexcept>
 
+// The preamble detector acts as a coarse entry point to the LoRa frame: it finds
+// the repeating up-chirps and hands back an offset plus a simple match metric.
+// We keep the implementation intentionally direct (two-pass matched filtering)
+// because other stages depend on deterministic behavior for unit tests and CLI
+// tooling. Any heuristics or constants are documented to ease future tuning.
+
 namespace lora {
 
 // PreambleDetector performs a simple matched-filter search for the LoRa preamble.

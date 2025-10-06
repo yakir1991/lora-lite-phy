@@ -1,4 +1,5 @@
 #include "receiver.hpp"
+#include "streaming_receiver.hpp"
 #include "frame_sync.hpp"
 #include "sync_word_detector.hpp"
 
@@ -7,6 +8,17 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <span>
+#include <cstddef>
+#include <iomanip>
+
+// Tiny command-line front-end for the C++ LoRa receiver library. The goal is to
+// keep dependencies minimal while still being able to:
+//   * Parse PHY configuration from flags (SF/BW/Fs/LDRO/sync word)
+//   * Toggle implicit-header decoding and provide the required metadata
+//   * Switch between the one-shot `Receiver` and chunked `StreamingReceiver`
+//   * Emit debug aids such as raw bins or sync diagnostics when requested
+// Exit codes mirror the high-level decode outcome so scripts can gate on them.
 
 namespace {
 
@@ -35,6 +47,9 @@ struct ParsedArgs {
     // Sync word control
     unsigned sync_word = 0x12u;
     bool skip_sync_word_check = false;
+    bool streaming = false;
+    std::size_t chunk_size = 2048;
+    bool emit_payload_bytes = false;
 };
 
 void print_usage(const char *prog) {
@@ -51,6 +66,9 @@ void print_usage(const char *prog) {
               << "  --no-crc                Disable payload CRC when implicit header (default: enabled)\n"
               << "  --has-crc               Explicitly enable payload CRC\n"
               << "  --skip-syncword         Do not enforce sync-word check (use with caution)\n"
+              << "  --streaming             Use streaming receiver (chunked)\n"
+              << "  --chunk <int>           Chunk size for streaming mode (default 2048)\n"
+              << "  --payload-bytes         Emit payload bytes as they decode (streaming mode)\n"
               << "  --debug                 Print extra diagnostics\n";
 }
 
@@ -83,6 +101,12 @@ ParsedArgs parse_args(int argc, char **argv) {
             args.has_crc = true;
         } else if (cur == "--skip-syncword") {
             args.skip_sync_word_check = true;
+        } else if (cur == "--streaming") {
+            args.streaming = true;
+        } else if (cur == "--chunk" && i + 1 < argc) {
+            args.chunk_size = static_cast<std::size_t>(std::stoul(argv[++i]));
+        } else if (cur == "--payload-bytes") {
+            args.emit_payload_bytes = true;
         } else if (cur == "--debug") {
             args.debug = true;
         } else if (cur == "--help" || cur == "-h") {
@@ -117,6 +141,7 @@ int main(int argc, char **argv) {
         params.implicit_payload_length = parsed.payload_length;
         params.implicit_has_crc = parsed.has_crc;
         params.implicit_cr = parsed.coding_rate;
+        params.emit_payload_bytes = parsed.emit_payload_bytes;
 
         // Validate implicit header requirements when enabled.
         if (parsed.implicit_header) {
@@ -129,6 +154,81 @@ int main(int argc, char **argv) {
         }
 
         // 2) Run decode over the provided cf32 file.
+        if (parsed.streaming) {
+            lora::StreamingReceiver streaming(params);
+            const auto samples = lora::IqLoader::load_cf32(parsed.input);
+
+            std::vector<unsigned char> payload;
+            bool frame_done = false;
+            std::size_t offset = 0;
+            const std::size_t chunk = std::max<std::size_t>(1, parsed.chunk_size);
+
+            while (offset < samples.size()) {
+                const std::size_t take = std::min(chunk, samples.size() - offset);
+                std::span<const lora::StreamingReceiver::Sample> span(&samples[offset], take);
+                auto events = streaming.push_samples(span);
+                for (const auto &ev : events) {
+                    switch (ev.type) {
+                    case lora::StreamingReceiver::FrameEvent::Type::PayloadByte:
+                        if (ev.payload_byte.has_value()) {
+                            payload.push_back(*ev.payload_byte);
+                            if (parsed.debug) {
+                                std::cout << "payload_byte=" << std::hex << std::uppercase
+                                          << std::setw(2) << std::setfill('0') << static_cast<int>(*ev.payload_byte) << std::dec << '\n';
+                            }
+                        }
+                        break;
+                    case lora::StreamingReceiver::FrameEvent::Type::FrameDone:
+                        frame_done = true;
+                        if (ev.result.has_value()) {
+                            std::cout << "frame_synced=" << ev.result->frame_synced
+                                      << " header_ok=" << ev.result->header_ok
+                                      << " payload_crc_ok=" << ev.result->payload_crc_ok
+                                      << " payload_len=" << ev.result->payload.size() << '\n';
+                            if (parsed.debug) {
+                                std::cout << "p_ofs_est=" << ev.result->p_ofs_est
+                                          << " header_payload_len=" << ev.result->header_payload_length
+                                          << " raw_payload_symbols=" << ev.result->raw_payload_symbols.size() << '\n';
+                            }
+                            if (!ev.result->payload.empty()) {
+                                std::cout << "payload_hex=";
+                                std::ios old_state(nullptr);
+                                old_state.copyfmt(std::cout);
+                                for (unsigned char b : ev.result->payload) {
+                                    std::cout << std::hex << std::uppercase;
+                                    std::cout.width(2);
+                                    std::cout.fill('0');
+                                    std::cout << static_cast<int>(b);
+                                }
+                                std::cout << '\n';
+                                std::cout.copyfmt(old_state);
+                            }
+                        }
+                        break;
+                    case lora::StreamingReceiver::FrameEvent::Type::FrameError:
+                        std::cout << "frame_synced=0 header_ok=0 payload_crc_ok=0 payload_len=0\n";
+                        if (!ev.message.empty()) {
+                            std::cout << "error=" << ev.message << '\n';
+                        }
+                        frame_done = true;
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                if (frame_done) {
+                    break;
+                }
+                offset += take;
+            }
+
+            if (!frame_done) {
+                std::cout << "frame_synced=0 header_ok=0 payload_crc_ok=0 payload_len=" << payload.size() << '\n';
+            }
+
+            return frame_done ? 0 : 1;
+        }
+
         lora::Receiver receiver(params);
         const auto samples = lora::IqLoader::load_cf32(parsed.input);
         const auto result = receiver.decode_samples(samples);

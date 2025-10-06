@@ -33,6 +33,8 @@ struct DecodeParams {
     bool implicit_has_crc = true;
     // Required when implicit_header=true: code rate 1..4.
     int implicit_cr = 1;
+    // Emit payload bytes incrementally when streaming.
+    bool emit_payload_bytes = false;
 };
 
 struct DecodeResult {

@@ -11,6 +11,13 @@
 #include <stdexcept>
 #include <vector>
 
+// LoRa's explicit header encodes payload metadata across eight symbols with a
+// combination of Gray mapping, interleaving, and Hamming-like parity. The goal of
+// this file is to keep that dance understandable: we demodulate tones, undo the
+// mapping step by step, then validate the CRC5 before surfacing fields back to the
+// caller. Inline helpers focus on the math (FFT, Gray tables, parity checks) so
+// the top-level `HeaderDecoder::decode` reads like a sequential recipe.
+
 namespace lora {
 
 namespace {
@@ -284,6 +291,10 @@ std::optional<HeaderDecodeResult> HeaderDecoder::decode(const std::vector<Sample
         }
     }
     return result;
+}
+
+std::size_t HeaderDecoder::symbol_span_samples() const {
+    return 8u * sps_;
 }
 
 // Compute the 5-bit LoRa header checksum (CRC5) as specified by the bit relations over n0,n1,n2.

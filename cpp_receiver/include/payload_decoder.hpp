@@ -41,6 +41,9 @@ public:
         const HeaderDecodeResult &header,
         bool ldro_enabled) const;
 
+    [[nodiscard]] std::size_t payload_symbol_offset_samples(bool implicit_header) const;
+    [[nodiscard]] int compute_payload_symbol_count(const HeaderDecodeResult &header, bool ldro_enabled) const;
+
     struct WhiteningMode {
         enum Type { TABLE, PN9, PN9_MSB } type;
         int seed;
@@ -55,13 +58,8 @@ private:
 
     std::vector<std::complex<double>> downchirp_;
 
-    // Compute the sample offset from the start of the frame to the first payload symbol,
-    // accounting for explicit vs implicit header.
-    [[nodiscard]] std::size_t payload_symbol_offset_samples(bool implicit_header) const;
     // Build Gray de-mapping table for a given number of bits per symbol (SF - 2*DE).
     [[nodiscard]] std::vector<int> lora_degray_table(int bits) const;
-    // Compute number of payload symbols, considering LDRO and header fields.
-    [[nodiscard]] int compute_payload_symbol_count(const HeaderDecodeResult &header, bool ldro_enabled) const;
     // Convert an integer to a vector of bits (LSB-first), length bit_count.
     [[nodiscard]] std::vector<int> num_to_bits(unsigned value, int bit_count) const;
     // Read one byte from a bit vector starting at offset (LSB-first).

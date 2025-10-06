@@ -1,0 +1,14 @@
+{
+  "sf": 9,
+  "bw": 125000,
+  "cr": 4,
+  "crc": true,
+  "impl_header": false,
+  "ldro_mode": 2,
+  "samp_rate": 1000000,
+  "payload_len": 12,
+  "payload_hex": "4aa3af87b62604e542921105",
+  "filename": "tx_sf9_bw125000_cr4_crc1_impl0_ldro2_pay12.cf32",
+  "sample_rate": 1000000,
+  "implicit_header": false
+}

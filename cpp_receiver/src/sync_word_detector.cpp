@@ -9,6 +9,12 @@
 #include <numbers>
 #include <stdexcept>
 
+// After the preamble and before the header, LoRa transmits two sync symbols that
+// encode an 8-bit value. Verifying those symbols serves both as a false-positive
+// guard (preamble tones can appear in noise) and as a quick sanity check of CFO
+// compensation. This file packages that logic into `SyncWordDetector`, including
+// a helper to demodulate individual symbols with CFO rotation and chirp removal.
+
 namespace lora {
 
 namespace {
