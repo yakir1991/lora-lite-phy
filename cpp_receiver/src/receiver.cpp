@@ -2,6 +2,12 @@
 
 #include <stdexcept>
 
+// This translation unit wires the core PHY building blocks (frame sync, header
+// decoder, payload decoder, optional sync-word check) into a high-level
+// `Receiver` facade. The goal is for embedding applications to have a single
+// call that returns a rich `DecodeResult` while still being able to probe each
+// stage during debugging via unit tests or CLI tooling.
+
 namespace lora {
 
 // Receiver orchestrates the complete LoRa PHY decoding pipeline.

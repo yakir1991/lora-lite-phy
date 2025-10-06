@@ -11,6 +11,12 @@
 #include <numbers>
 #include <stdexcept>
 
+// Payload decoding stitches together many LoRa quirks: symbol alignment via the
+// fine sync estimate, CFO removal, Gray de-mapping with optional LDRO scaling,
+// block interleaver undo, whitening, and CRC verification. This file keeps those
+// steps in one place so the data flow is easy to trace while still exposing
+// enough helpers for unit tests to poke individual pieces.
+
 namespace lora {
 
 namespace {

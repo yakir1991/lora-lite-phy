@@ -1,0 +1,14 @@
+{
+  "sf": 7,
+  "bw": 250000,
+  "cr": 1,
+  "crc": false,
+  "impl_header": false,
+  "ldro_mode": 2,
+  "samp_rate": 1000000,
+  "payload_len": 8,
+  "payload_hex": "65336413989eafee",
+  "filename": "tx_sf7_bw250000_cr1_crc0_impl0_ldro2_pay8.cf32",
+  "sample_rate": 1000000,
+  "implicit_header": false
+}

@@ -4,6 +4,11 @@
 #include <numbers>
 #include <stdexcept>
 
+// Chirp synthesis is shared by multiple stages (preamble detection, frame sync,
+// header/payload demodulation). This file keeps the math explicit so any change
+// in phase model or oversampling assumptions is easy to audit. The helpers return
+// `std::complex<double>` sequences that downstream code later casts to float.
+
 namespace lora {
 
 namespace {

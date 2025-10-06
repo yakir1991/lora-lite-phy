@@ -47,6 +47,8 @@ public:
     [[nodiscard]] std::optional<HeaderDecodeResult> decode(const std::vector<Sample> &samples,
                                                            const FrameSyncResult &sync) const;
 
+    [[nodiscard]] std::size_t symbol_span_samples() const;
+
 private:
     int sf_ = 7;
     int bandwidth_hz_ = 125000;

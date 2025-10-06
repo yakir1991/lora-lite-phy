@@ -6,6 +6,11 @@
 #include <iostream>
 #include <string>
 
+// Developer utility to inspect the raw bins/magnitudes around the preamble and
+// sync symbols. Helpful when tuning frame synchronization thresholds or verifying
+// captures whose sync words differ from the default 0x12. The tool prints CSV-like
+// sequences so they can be piped into quick plots or diffed between runs.
+
 int main(int argc, char **argv) {
     if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " <file.cf32>\n";
