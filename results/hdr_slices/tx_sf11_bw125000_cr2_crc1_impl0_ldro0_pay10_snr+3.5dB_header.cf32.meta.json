@@ -1,0 +1,19 @@
+{
+  "sf": 11,
+  "bw": 125000,
+  "fs": 1000000,
+  "cr": 2,
+  "has_crc": 1,
+  "impl_header": 0,
+  "ldro_mode": 0,
+  "sync_word": 18,
+  "payload_len": 14,
+  "cfo_used_hz": -15.2588,
+  "p_ofs_est": -50,
+  "slice_start": 0,
+  "slice_end": 333824,
+  "cand_offset_samples": 0,
+  "attempts": 1,
+  "header_bins": [1122,1862,294,1218,1946,1762,238,1022],
+  "header_ok": 1
+}

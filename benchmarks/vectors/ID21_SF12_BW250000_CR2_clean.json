@@ -1,0 +1,12 @@
+{
+  "sf": 12,
+  "bw": 250000,
+  "cr": 2,
+  "crc": true,
+  "impl_header": true,
+  "ldro_mode": 1,
+  "samp_rate": 1000000,
+  "payload_len": 100,
+  "payload_hex": "3d99d4c6326ba6a4709ede91289ca97a6b73a5b59a0c8ecd45b317ffc46135f1fdd493c845396514493f3d1677b2db1863f2137bb33214f0a4059dcf1e2fd6536d4114721a0dee897319332e6f2b88c29c9f069eec6a7a0613c60128e69e69b2e3e0508b",
+  "filename": "tx_sf12_bw250000_cr2_crc1_impl1_ldro1_pay100.cf32"
+}

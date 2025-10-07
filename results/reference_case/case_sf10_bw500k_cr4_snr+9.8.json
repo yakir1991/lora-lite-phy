@@ -1,0 +1,14 @@
+{
+  "vector": "golden_vectors/new_batch/tx_sf10_bw500000_cr4_crc1_impl0_ldro0_pay10_snr+9.8dB.cf32",
+  "metadata_hint": {
+    "sf": 10,
+    "bw": 500000,
+    "cr": 4,
+    "ldro": false,
+    "crc": true,
+    "implicit_header": false,
+    "sample_rate_hz": 1000000
+  },
+  "expected_from_gnuradio": "58f77c8829437f0be905",
+  "notes": "Header decode fails repeatedly in streaming path with p_ofs=-50. Use as a high-SNR header-fail reference."
+}

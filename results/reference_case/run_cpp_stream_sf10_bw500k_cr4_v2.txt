@@ -1,0 +1,1 @@
+frame_synced=0 header_ok=0 payload_crc_ok=0 payload_len=0

@@ -18,7 +18,19 @@ namespace lora::fft {
 // Notes:
 //  - Some call sites may use a separate scratch/workspace to avoid reallocation;
 //    this routine itself operates only on the provided buffer.
+struct Scratch {
+    std::vector<std::complex<double>> twiddles;
+
+    [[nodiscard]] std::vector<std::complex<double>> &ensure_twiddles(std::size_t n) {
+        if (twiddles.size() != n) {
+            twiddles.resize(n);
+        }
+        return twiddles;
+    }
+};
+
 void transform_pow2(std::vector<std::complex<double>> &data, bool inverse);
+void transform_pow2(std::vector<std::complex<double>> &data, bool inverse, Scratch &scratch);
 
 } // namespace lora::fft
 

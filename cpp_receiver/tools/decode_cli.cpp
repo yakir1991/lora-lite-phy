@@ -50,6 +50,13 @@ struct ParsedArgs {
     bool streaming = false;
     std::size_t chunk_size = 2048;
     bool emit_payload_bytes = false;
+    // Diagnostics
+    std::string dump_header_iq_path;
+    int dump_header_iq_payload_syms = 64;
+    bool dump_header_iq_always = false;
+    bool header_cfo_sweep = false;
+    double header_cfo_range_hz = 100.0;
+    double header_cfo_step_hz = 50.0;
 };
 
 void print_usage(const char *prog) {
@@ -69,6 +76,12 @@ void print_usage(const char *prog) {
               << "  --streaming             Use streaming receiver (chunked)\n"
               << "  --chunk <int>           Chunk size for streaming mode (default 2048)\n"
               << "  --payload-bytes         Emit payload bytes as they decode (streaming mode)\n"
+              << "  --dump-header-iq <path> Dump cf32 IQ around header window during streaming\n"
+              << "  --dump-header-iq-payload-syms <int> Extra payload symbols to include in slice (default 64)\n"
+              << "  --dump-header-iq-always    Dump slice even if header decode fails (diagnostics)\n"
+              << "  --hdr-cfo-sweep         Sweep small CFO offsets during header decode\n"
+              << "  --hdr-cfo-range <Hz>    CFO sweep half-range in Hz (default 100)\n"
+              << "  --hdr-cfo-step <Hz>     CFO sweep step in Hz (default 50)\n"
               << "  --debug                 Print extra diagnostics\n";
 }
 
@@ -107,6 +120,18 @@ ParsedArgs parse_args(int argc, char **argv) {
             args.chunk_size = static_cast<std::size_t>(std::stoul(argv[++i]));
         } else if (cur == "--payload-bytes") {
             args.emit_payload_bytes = true;
+        } else if (cur == "--dump-header-iq" && i + 1 < argc) {
+            args.dump_header_iq_path = argv[++i];
+        } else if (cur == "--dump-header-iq-payload-syms" && i + 1 < argc) {
+            args.dump_header_iq_payload_syms = std::stoi(argv[++i]);
+        } else if (cur == "--dump-header-iq-always") {
+            args.dump_header_iq_always = true;
+        } else if (cur == "--hdr-cfo-sweep") {
+            args.header_cfo_sweep = true;
+        } else if (cur == "--hdr-cfo-range" && i + 1 < argc) {
+            args.header_cfo_range_hz = std::stod(argv[++i]);
+        } else if (cur == "--hdr-cfo-step" && i + 1 < argc) {
+            args.header_cfo_step_hz = std::stod(argv[++i]);
         } else if (cur == "--debug") {
             args.debug = true;
         } else if (cur == "--help" || cur == "-h") {
@@ -142,6 +167,12 @@ int main(int argc, char **argv) {
         params.implicit_has_crc = parsed.has_crc;
         params.implicit_cr = parsed.coding_rate;
         params.emit_payload_bytes = parsed.emit_payload_bytes;
+    params.dump_header_iq_path = parsed.dump_header_iq_path;
+        params.dump_header_iq_payload_syms = parsed.dump_header_iq_payload_syms;
+        params.dump_header_iq_always = parsed.dump_header_iq_always;
+    params.header_cfo_sweep = parsed.header_cfo_sweep;
+    params.header_cfo_range_hz = parsed.header_cfo_range_hz;
+    params.header_cfo_step_hz = parsed.header_cfo_step_hz;
 
         // Validate implicit header requirements when enabled.
         if (parsed.implicit_header) {

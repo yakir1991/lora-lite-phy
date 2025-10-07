@@ -140,7 +140,7 @@ std::optional<FrameSyncResult> StreamingFrameSynchronizer::update(std::span<cons
         // Try to detect a new preamble in the current buffer. When a detection
         // exists we keep the buffer (so downstream decoders can consume it).
         // Otherwise, we trim to bound memory.
-        detection_ = base_.synchronize(buffer_);
+        detection_ = base_.synchronize(buffer_, scratch_frame_);
         if (detection_.has_value()) {
             locked_ = true;
         } else {

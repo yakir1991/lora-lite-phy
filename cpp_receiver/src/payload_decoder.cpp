@@ -84,13 +84,13 @@ PayloadDecoder::PayloadDecoder(int sf, int bandwidth_hz, int sample_rate_hz)
 }
 
 // Compute payload start offset (samples) relative to preamble start.
-// Note: Even in implicit-header mode we keep the same offset as explicit (preamble + 12.25 sym + 8 header sym)
-// so the payload indexing remains consistent; we adjust only the bit accounting logic later.
-std::size_t PayloadDecoder::payload_symbol_offset_samples(bool /*implicit_header*/) const {
+// In explicit mode: preamble + 12.25 symbols + 8 header symbols.
+// In implicit (embedded) mode: preamble + 12.25 symbols (no header symbols transmitted).
+std::size_t PayloadDecoder::payload_symbol_offset_samples(bool implicit_header) const {
     const std::size_t N = sps_;
     const std::size_t Nrise = static_cast<std::size_t>(std::ceil(kTriseSeconds * static_cast<double>(sample_rate_hz_)));
-    // Always use explicit header offset - implicit header should work exactly like explicit
-    return Nrise + (12u * N) + (N / 4u) + 8u * N;
+    const std::size_t header_syms = implicit_header ? 0u : 8u;
+    return Nrise + (12u * N) + (N / 4u) + header_syms * N;
 }
 
 // Lazily build and cache the inverse Gray mapping table for the requested bit width.
@@ -229,16 +229,14 @@ int PayloadDecoder::compute_payload_symbol_count(const HeaderDecodeResult &heade
     const int payload_len = std::max(header.payload_length, 0);
 
     if (header.implicit_header) {
-        // For implicit header: work exactly like explicit header - always assume 20 header bits
-        const int ppm = sf - 2 * de;
-        const int n_bits_blk = ppm * 4;  // bits per block (28 for SF=7)
-        const int n_bits_tot = 8 * payload_len + 16 * crc;  // message + CRC bits
-        const int n_bits_hdr = 20;  // Always 20 header bits
-        
-        // Calculate number of blocks needed (ceiling division)
-        const int n_blk_tot = (n_bits_tot - n_bits_hdr + n_bits_blk - 1) / n_bits_blk;
+        // Use LoRa formula with IH=1 for implicit header mode
+        const int ih = 1;
+        const int denom = std::max(1, 4 * (sf - 2 * de));
+        int numerator = 8 * payload_len - 4 * sf + 28 + 16 * crc - 20 * ih;
+        if (numerator < 0) { numerator = 0; }
+        const int ceil_term = (numerator + denom - 1) / denom;
         const int sym_per_block = 4 + cr;
-        const int symbols = sym_per_block * std::max(n_blk_tot, 0);
+        const int symbols = sym_per_block * std::max(ceil_term, 0);
         return symbols;
     } else {
         // Original explicit header calculation
@@ -273,7 +271,8 @@ std::optional<PayloadDecodeResult> PayloadDecoder::decode(const std::vector<Samp
                                                           bool ldro_enabled,
                                                           MutableByteSpan external_payload,
                                                           MutableIntSpan external_raw_symbols) const {
-    if (!header.fcs_ok || header.payload_length <= 0) {
+    // In implicit-header mode the FCS over the header does not exist; accept synthesized header.
+    if ((!header.implicit_header && !header.fcs_ok) || header.payload_length <= 0) {
 #ifndef NDEBUG
         std::fprintf(stderr, "[decode] header invalid\n");
 #endif
@@ -353,13 +352,10 @@ std::optional<PayloadDecodeResult> PayloadDecoder::decode(const std::vector<Samp
     const std::size_t n_blk_tot = raw_symbols.size() / static_cast<std::size_t>(n_sym_blk);
     const std::size_t n_bits_blk = static_cast<std::size_t>(ppm) * 4u; // bits per block
 
-    // Assemble payload bits: prepend header-provided bits (or fake ones in implicit mode) for whitening alignment.
-    // Seed the payload bit buffer with either header-derived bits or synthetic placeholders.
+    // Assemble payload bits: prepend any extra header-derived bits (beyond the standard 20) for whitening alignment.
+    // In implicit mode there are no header symbols, so no header-derived bits are available and we start from zero.
     payload_bits_buffer_.clear();
-    if (header.implicit_header) {
-        static const int fake_bits[20] = {1,1,1,0,1,1,0,1,1,1,0,1,1,1,0,1,0,0,0,0};
-        payload_bits_buffer_.insert(payload_bits_buffer_.end(), std::begin(fake_bits), std::end(fake_bits));
-    } else {
+    if (!header.implicit_header) {
         payload_bits_buffer_.insert(payload_bits_buffer_.end(), header.payload_header_bits.begin(), header.payload_header_bits.end());
     }
     payload_bits_buffer_.resize(payload_bits_buffer_.size() + n_blk_tot * n_bits_blk);

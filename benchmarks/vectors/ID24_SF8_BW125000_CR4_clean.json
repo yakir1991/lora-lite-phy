@@ -1,0 +1,12 @@
+{
+  "sf": 8,
+  "bw": 125000,
+  "cr": 4,
+  "crc": true,
+  "impl_header": false,
+  "ldro_mode": 0,
+  "samp_rate": 500000,
+  "payload_len": 8,
+  "payload_hex": "f3ae60ca6e9023e9",
+  "filename": "tx_sf8_bw125000_cr4_crc1_impl0_ldro0_pay8.cf32"
+}

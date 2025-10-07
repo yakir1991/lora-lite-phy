@@ -1,0 +1,17 @@
+{
+  "scenario_id": 10,
+  "sf": 8,
+  "bw": 500000,
+  "fs": 2000000,
+  "cr": 4,
+  "ldro": false,
+  "sync_word": "0x12",
+  "payload_len": 90,
+  "payload_seed": 9950,
+  "payload_hex": "5FEB08D7EFAF7EEF25C7863ACF509CBA8E92F7FE49ABABF6088E9596D7B9F0B8A09DBF5E83DB6DF6F73DC69D398AB36962E27B54766A7EA61191C3CA09CFBF47F8F7296E55F7F228D3FDF0951F7E76CD084C00BF9A1787C7B667",
+  "snr_db": -5.0,
+  "clean_vector": "benchmarks/vectors/ID10_SF8_BW500000_CR4_clean.cf32",
+  "noisy_vector": "benchmarks/vectors/ID10_SF8_BW500000_CR4_SNR-5.0.cf32",
+  "implicit_header": false,
+  "crc": true
+}

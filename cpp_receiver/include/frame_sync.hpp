@@ -149,6 +149,10 @@ class StreamingFrameSynchronizer {
 public:
     using Sample = FrameSynchronizer::Sample;
 
+    struct Scratch {
+        FrameSynchronizer::Scratch frame_scratch;
+    };
+
     // Initialize streaming synchronizer with LoRa parameters.
     StreamingFrameSynchronizer(int sf, int bandwidth_hz, int sample_rate_hz);
 
@@ -178,6 +182,9 @@ public:
 private:
     // Underlying batch synchronizer used for local detections
     FrameSynchronizer base_;
+
+    // Embedded reuse of scratch buffers for detections.
+    FrameSynchronizer::Scratch scratch_frame_;
 
     // Scratch storage reused across update() calls to avoid repeated allocations in embedded builds.
     FrameSynchronizer::Scratch scratch_;

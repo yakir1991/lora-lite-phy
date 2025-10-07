@@ -1,0 +1,12 @@
+{
+  "sf": 7,
+  "bw": 500000,
+  "cr": 4,
+  "crc": true,
+  "impl_header": false,
+  "ldro_mode": 0,
+  "samp_rate": 2000000,
+  "payload_len": 64,
+  "payload_hex": "f61bd6b473603c6789ac724528245d0c972464f2ac6c5b1207cebbaa4b7b88ae85f88e6b3e76374067cdaa1f5f9c701e0bef5020a7ff75b07360ace17746ef42",
+  "filename": "tx_sf7_bw500000_cr4_crc1_impl0_ldro0_pay64.cf32"
+}
