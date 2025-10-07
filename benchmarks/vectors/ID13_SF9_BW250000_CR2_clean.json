@@ -1,0 +1,12 @@
+{
+  "sf": 9,
+  "bw": 250000,
+  "cr": 2,
+  "crc": true,
+  "impl_header": true,
+  "ldro_mode": 1,
+  "samp_rate": 1000000,
+  "payload_len": 80,
+  "payload_hex": "68ded79b561ce25cff11ff497499ab5eedf4856449109d53f9a915ea86bfb244e1e8e997224514c799926428ce8a1de036bc4b8713095b4b0b1b4ded3e77327b6f05f68daaf88b4b699396098a30077d",
+  "filename": "tx_sf9_bw250000_cr2_crc1_impl1_ldro1_pay80.cf32"
+}

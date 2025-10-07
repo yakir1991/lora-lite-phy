@@ -35,6 +35,25 @@ struct DecodeParams {
     int implicit_cr = 1;
     // Emit payload bytes incrementally when streaming.
     bool emit_payload_bytes = false;
+
+    // Diagnostics: when non-empty, write a cf32 slice around the header
+    // (preamble end through header symbols) to this file path during streaming
+    // header decode attempts.
+    std::string dump_header_iq_path;
+    // When dumping header IQ, also include additional payload symbols after
+    // the header to aid external decoders (default: 64 symbols).
+    int dump_header_iq_payload_syms = 64;
+    // If set, dump the header slice even when header decode fails. The slice
+    // will be centered around the estimated header window using the current
+    // sync candidate parameters.
+    bool dump_header_iq_always = false;
+    // Diagnostics: when true, try a small sweep of CFO offsets around the
+    // synchronizer estimate during header decode to improve robustness.
+    bool header_cfo_sweep = false;
+    // When CFO sweep is enabled, sweep ±header_cfo_range_hz in increments of
+    // header_cfo_step_hz around the synchronizer CFO estimate.
+    double header_cfo_range_hz = 100.0;
+    double header_cfo_step_hz = 50.0;
 };
 
 struct DecodeResult {

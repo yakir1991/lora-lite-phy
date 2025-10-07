@@ -137,4 +137,29 @@ void transform_pow2(std::vector<std::complex<double>> &data, bool inverse) {
     transform_pow2_fallback(data, inverse);
 }
 
+void transform_pow2(std::vector<std::complex<double>> &data, bool inverse, Scratch &scratch) {
+    const std::size_t n = data.size();
+    if (n == 0) {
+        return;
+    }
+    if (!is_power_of_two(n)) {
+        throw std::invalid_argument("transform_pow2 expects power-of-two length");
+    }
+
+#ifdef LORA_ENABLE_LIQUID_DSP
+    if (transform_pow2_liquid(data, inverse)) {
+        return;
+    }
+#ifdef LORA_REQUIRE_LIQUID
+    throw std::runtime_error("Liquid-DSP required but not available at runtime");
+#endif
+#endif
+
+    auto &buffer = scratch.ensure_twiddles(n);
+    // Copy data into scratch buffer to avoid reallocations in repeated calls.
+    buffer.assign(data.begin(), data.end());
+    transform_pow2_fallback(buffer, inverse);
+    std::copy(buffer.begin(), buffer.end(), data.begin());
+}
+
 } // namespace lora::fft

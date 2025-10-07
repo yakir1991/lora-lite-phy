@@ -1,0 +1,3 @@
+frame_synced=1 header_ok=1 payload_crc_ok=1 payload_len=13
+p_ofs_est=-50 header_payload_len=13 raw_payload_symbols=24
+payload_hex=58C3B77CC28829437F0BC3A905

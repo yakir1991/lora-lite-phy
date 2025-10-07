@@ -1,0 +1,16 @@
+{
+  "sf": 12,
+  "bw": 125000,
+  "cr": 3,
+  "crc": true,
+  "impl_header": false,
+  "ldro_mode": 0,
+  "samp_rate": 1000000,
+  "payload_len": 17,
+  "payload_hex": "5ae67ca2674ebc902d61b78d7b5c2f1753",
+  "filename": "tx_sf12_bw125000_cr3_crc1_impl0_ldro0_pay17.cf32",
+  "generator": "custom_gnuradio",
+  "message": null,
+  "implicit_header": false,
+  "snr_db": -10.88
+}
