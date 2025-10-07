@@ -5,6 +5,7 @@
 #include <complex>
 #include <cstddef>
 #include <optional>
+#include <span>
 #include <vector>
 
 namespace lora {
@@ -24,6 +25,9 @@ struct HeaderDecodeResult {
     bool implicit_header = false;
     // Residual header bits passed along to payload decoding (may be empty).
     std::vector<int> payload_header_bits;
+    // Views to reduce copying when callers provide fixed storage.
+    std::span<const int> raw_symbol_view;
+    std::span<const int> payload_header_bits_view;
 };
 
 class HeaderDecoder {
@@ -46,6 +50,18 @@ public:
     //  - std::nullopt if demodulation fails or an internal consistency check fails.
     [[nodiscard]] std::optional<HeaderDecodeResult> decode(const std::vector<Sample> &samples,
                                                            const FrameSyncResult &sync) const;
+
+    struct MutableIntSpan {
+        int *data = nullptr;
+        std::size_t capacity = 0;
+        constexpr MutableIntSpan() = default;
+        constexpr MutableIntSpan(int *ptr, std::size_t cap) : data(ptr), capacity(cap) {}
+    };
+
+    [[nodiscard]] std::optional<HeaderDecodeResult> decode(const std::vector<Sample> &samples,
+                                                           const FrameSyncResult &sync,
+                                                           MutableIntSpan header_symbols,
+                                                           MutableIntSpan header_bits) const;
 
     [[nodiscard]] std::size_t symbol_span_samples() const;
 

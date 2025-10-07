@@ -31,6 +31,7 @@ target_include_directories(lora_cpp_receiver
 # Set LORA_REQUIRE_LIQUID=ON to make failure to use Liquid a hard error at runtime.
 option(LORA_WITH_LIQUID_DSP "Enable Liquid-DSP accelerated FFT" ON)
 option(LORA_REQUIRE_LIQUID "Require Liquid-DSP at runtime (no fallback)" OFF)
+option(LORA_EMBEDDED_PROFILE "Enable embedded-friendly build defaults (no Liquid-DSP, minimal STL)" OFF)
 
 if (LORA_WITH_LIQUID_DSP)
     set(LIQUID_FOUND FALSE)
@@ -80,6 +81,17 @@ endif()
 
 if (LORA_REQUIRE_LIQUID)
     target_compile_definitions(lora_cpp_receiver PRIVATE LORA_REQUIRE_LIQUID)
+endif()
+
+if (LORA_EMBEDDED_PROFILE)
+    # Embedded profile is intended for cross-compilation to MCUs/SoCs where dynamic allocation
+    # and heavy STL features should be avoided. Pair with a toolchain file as needed.
+    if (LORA_WITH_LIQUID_DSP)
+        message(WARNING "LORA_EMBEDDED_PROFILE=ON: forcing LORA_WITH_LIQUID_DSP=OFF for minimal dependencies")
+    endif()
+    set(LORA_WITH_LIQUID_DSP OFF CACHE BOOL "" FORCE)
+    target_compile_definitions(lora_cpp_receiver PUBLIC LORA_EMBEDDED_PROFILE)
+    set_target_properties(lora_cpp_receiver PROPERTIES POSITION_INDEPENDENT_CODE OFF)
 endif()
 
 # Expose the source directory to code (used by tests to find vectors).

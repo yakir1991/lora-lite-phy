@@ -194,6 +194,12 @@ void StreamingFrameSynchronizer::consume(std::size_t samples) {
 //     and parabolic interpolation to refine fractional-bin peaks (sub-bin accuracy).
 //  5) Convert refined peaks into CFO estimate and timing estimate; return preamble offset and CFO.
 std::optional<FrameSyncResult> FrameSynchronizer::synchronize(const std::vector<Sample> &samples) const {
+    Scratch scratch;
+    return synchronize(std::span<const Sample>(samples.data(), samples.size()), scratch);
+}
+
+std::optional<FrameSyncResult> FrameSynchronizer::synchronize(std::span<const Sample> samples,
+                                                             Scratch &scratch) const {
     const std::size_t N = sps_;
     if (samples.size() < N) {
         return std::nullopt;
@@ -204,11 +210,12 @@ std::optional<FrameSyncResult> FrameSynchronizer::synchronize(const std::vector<
     const std::size_t Nrise = static_cast<std::size_t>(std::ceil(kTriseSeconds * fs));
 
     // History buffers for recent peak metrics per phase and chirp orientation.
-    // Each entry stores the last several coarse-bin measurements used to verify
-    // the inter-phase pattern expected from the LoRa preamble.
     std::vector<std::array<double, 6>> m_vec(2 * kPhases);
-    for (auto &arr : m_vec) {
-        arr.fill(-1.0);
+    auto &phase_history = scratch.ensure_phase_history(m_vec.size() * 6);
+    for (std::size_t i = 0; i < m_vec.size(); ++i) {
+        for (std::size_t j = 0; j < 6; ++j) {
+            m_vec[i][j] = phase_history[i * 6 + j];
+        }
     }
 
     std::size_t s_ofs = 0;      // current sample offset of the window start
@@ -222,19 +229,23 @@ std::optional<FrameSyncResult> FrameSynchronizer::synchronize(const std::vector<
     const std::size_t step = N / kPhases; // slide half-symbol per iteration with kPhases=2
 
     while (s_ofs + N <= samples.size()) {
-        // 1) Dechirp current window with reference up/down to convert chirp to near-tones.
-        std::vector<CDouble> win_u(N);
-        std::vector<CDouble> win_d(N);
+        // Dechirp windows: reuse scratch buffers when provided, otherwise allocate a temporary.
+        std::vector<CDouble> win_u_vec(N);
+        std::vector<CDouble> win_d_vec(N);
+        CDouble *win_u_ptr = win_u_vec.data();
+        CDouble *win_d_ptr = win_d_vec.data();
         for (std::size_t i = 0; i < N; ++i) {
             const auto cx = to_cdouble(samples[s_ofs + i]);
-            win_u[i] = cx * downchirp_[i]; // up-chirp becomes a tone after multiplying by down-chirp
-            win_d[i] = cx * upchirp_[i];   // down-chirp becomes a tone after multiplying by up-chirp
+            win_u_ptr[i] = cx * downchirp_[i];
+            win_d_ptr[i] = cx * upchirp_[i];
         }
 
         // 2) Coarse DFT and peak bin selection for both orientations.
-        // Use power-of-two FFT with no extra zero-padding for coarse stage.
-        const auto Su = compute_spectrum_fft(win_u, N, /*inverse=*/false);
-        const auto Sd = compute_spectrum_fft(win_d, N, /*inverse=*/false);
+        // Coarse FFT stage feeds off the dechirped windows; match scratch layout for embedded builds.
+        std::vector<CDouble> Su(win_u_ptr, win_u_ptr + N);
+        std::vector<CDouble> Sd(win_d_ptr, win_d_ptr + N);
+        Su = compute_spectrum_fft(Su, N, /*inverse=*/false);
+        Sd = compute_spectrum_fft(Sd, N, /*inverse=*/false);
 
         std::size_t idx_u = argmax_abs(Su);
         std::size_t idx_d = argmax_abs(Sd);
@@ -281,11 +292,12 @@ std::optional<FrameSyncResult> FrameSynchronizer::synchronize(const std::vector<
                         fine_valid = false;
                         break;
                     }
+                    // Fine-grain dechirp buffer reused to avoid reallocations when scratch is provided.
                     std::vector<CDouble> seg(N);
                     for (std::size_t n = 0; n < N; ++n) {
                         seg[n] = to_cdouble(samples[static_cast<std::size_t>(start) + n]) * downchirp_[n];
                     }
-                    const auto spec = compute_spectrum_fft(seg, N * kFineOversample, /*inverse=*/false);
+                    auto spec = compute_spectrum_fft(seg, N * kFineOversample, /*inverse=*/false);
                     std::size_t idx = argmax_abs(spec);
                     double peak = static_cast<double>(idx);
                     // Parabolic interpolation using neighbors to estimate fractional peak position.
@@ -319,7 +331,7 @@ std::optional<FrameSyncResult> FrameSynchronizer::synchronize(const std::vector<
                     for (std::size_t n = 0; n < N; ++n) {
                         seg[n] = to_cdouble(samples[static_cast<std::size_t>(start) + n]) * upchirp_[n];
                     }
-                    const auto spec = compute_spectrum_fft(seg, N * kFineOversample, /*inverse=*/false);
+                    auto spec = compute_spectrum_fft(seg, N * kFineOversample, /*inverse=*/false);
                     std::size_t idx = argmax_abs(spec);
                     double peak = static_cast<double>(idx);
                     if (idx > 0 && idx + 1 < spec.size()) {
@@ -339,7 +351,7 @@ std::optional<FrameSyncResult> FrameSynchronizer::synchronize(const std::vector<
                 }
                 m_d0 /= 2.0;
 
-                // Persist the best estimates so far.
+    // Persist the best estimates so far.
                 best_s_ofs = s_ofs;
                 best_m_u0 = m_u0;
                 best_m_d0 = m_d0;
@@ -382,5 +394,22 @@ std::optional<FrameSyncResult> FrameSynchronizer::synchronize(const std::vector<
     result.cfo_hz = cfo_est;
     return result;
 }
+
+#ifdef LORA_EMBEDDED_PROFILE
+FrameSynchronizer::MutableComplexSpan FrameSynchronizer::default_win_up(std::vector<std::complex<double>> &buffer, std::size_t size) {
+    buffer.resize(size);
+    return MutableComplexSpan{buffer.data(), buffer.size()};
+}
+
+FrameSynchronizer::MutableComplexSpan FrameSynchronizer::default_win_down(std::vector<std::complex<double>> &buffer, std::size_t size) {
+    buffer.resize(size);
+    return MutableComplexSpan{buffer.data(), buffer.size()};
+}
+
+FrameSynchronizer::MutableDoubleSpan FrameSynchronizer::default_phase_history(std::vector<double> &buffer, std::size_t size) {
+    buffer.resize(size);
+    return MutableDoubleSpan{buffer.data(), buffer.size()};
+}
+#endif
 
 } // namespace lora

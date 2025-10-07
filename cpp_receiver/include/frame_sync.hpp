@@ -3,8 +3,8 @@
 #include <complex>
 #include <cstddef>
 #include <optional>
-#include <vector>
 #include <span>
+#include <vector>
 
 namespace lora {
 
@@ -33,6 +33,75 @@ class FrameSynchronizer {
 public:
     using Sample = std::complex<float>;
 
+    // Scratch buffers to avoid per-call allocations when embedding the synchronizer.
+    struct Scratch {
+        std::vector<std::complex<double>> win_up;
+        std::vector<std::complex<double>> win_down;
+        std::vector<std::complex<double>> spectrum_up;
+        std::vector<std::complex<double>> spectrum_down;
+        std::vector<std::complex<double>> fine_segment;
+        std::vector<std::complex<double>> fine_spectrum;
+        std::vector<double> phase_history;
+
+        // Ensure the up-chirp dechirp window is large enough and return mutable access.
+        [[nodiscard]] std::vector<std::complex<double>> &ensure_win_up(std::size_t required) {
+            if (win_up.size() < required) {
+                win_up.resize(required);
+            }
+            return win_up;
+        }
+
+        // Ensure the down-chirp dechirp window is large enough and return mutable access.
+        [[nodiscard]] std::vector<std::complex<double>> &ensure_win_down(std::size_t required) {
+            if (win_down.size() < required) {
+                win_down.resize(required);
+            }
+            return win_down;
+        }
+
+        // Allow reuse of coarse FFT buffers for the up-chirp path.
+        [[nodiscard]] std::vector<std::complex<double>> &ensure_spectrum_up(std::size_t required) {
+            if (spectrum_up.size() < required) {
+                spectrum_up.resize(required);
+            }
+            return spectrum_up;
+        }
+
+        // Allow reuse of coarse FFT buffers for the down-chirp path.
+        [[nodiscard]] std::vector<std::complex<double>> &ensure_spectrum_down(std::size_t required) {
+            if (spectrum_down.size() < required) {
+                spectrum_down.resize(required);
+            }
+            return spectrum_down;
+        }
+
+        // Temporary storage used during fine CFO/timing refinement.
+        [[nodiscard]] std::vector<std::complex<double>> &ensure_fine_segment(std::size_t required) {
+            if (fine_segment.size() < required) {
+                fine_segment.resize(required);
+            }
+            return fine_segment;
+        }
+
+        // FFT buffer for the fine refinement stage.
+        [[nodiscard]] std::vector<std::complex<double>> &ensure_fine_spectrum(std::size_t required) {
+            if (fine_spectrum.size() < required) {
+                fine_spectrum.resize(required);
+            }
+            return fine_spectrum;
+        }
+
+        // Phase-history scratch used by the preamble pattern checker (initialised to -1).
+        [[nodiscard]] std::vector<double> &ensure_phase_history(std::size_t required) {
+            if (phase_history.size() != required) {
+                phase_history.assign(required, -1.0);
+            } else {
+                std::fill(phase_history.begin(), phase_history.end(), -1.0);
+            }
+            return phase_history;
+        }
+    };
+
     // Construct a LoRa frame synchronizer.
     // Parameters:
     //  - sf: Spreading factor (5..12)
@@ -50,6 +119,8 @@ public:
     //    validates preamble pattern consistency, then refines timing with a fine search.
     //  - p_ofs_est should be passed to header/payload decoders to ensure symbol alignment.
     [[nodiscard]] std::optional<FrameSyncResult> synchronize(const std::vector<Sample> &samples) const;
+    [[nodiscard]] std::optional<FrameSyncResult> synchronize(std::span<const Sample> samples,
+                                                             Scratch &scratch) const;
 
     // Convenience accessors for derived parameters and reference chirps
     [[nodiscard]] std::size_t samples_per_symbol() const { return sps_; }
@@ -107,6 +178,9 @@ public:
 private:
     // Underlying batch synchronizer used for local detections
     FrameSynchronizer base_;
+
+    // Scratch storage reused across update() calls to avoid repeated allocations in embedded builds.
+    FrameSynchronizer::Scratch scratch_;
 
     // Rolling buffer of recent samples; indices relate to buffer_global_offset_
     std::vector<Sample> buffer_;
