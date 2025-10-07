@@ -44,6 +44,12 @@ PreambleDetector::PreambleDetector(int sf, int bandwidth_hz, int sample_rate_hz)
 // - Refine pass: search +/- one coarse step around the coarse best with stride=1.
 // Metric is |sum(conj(ref[i]) * x[pos+i])| / sps. We pick the maximum; ties break by smaller offset.
 std::optional<PreambleDetection> PreambleDetector::detect(const std::vector<Sample> &samples) const {
+    Scratch scratch;
+    return detect(std::span<const Sample>(samples.data(), samples.size()), scratch);
+}
+
+std::optional<PreambleDetection> PreambleDetector::detect(std::span<const Sample> samples,
+                                                          Scratch &scratch) const {
     if (samples.size() < sps_) {
         return std::nullopt;
     }

@@ -4,10 +4,10 @@
 #include "fft_utils.hpp"
 
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <complex>
 #include <cstdint>
+#include <span>
 #include <numbers>
 #include <stdexcept>
 
@@ -26,19 +26,14 @@ constexpr double kTriseSeconds = 50e-6;
 
 using CDouble = std::complex<double>;
 
-// Cast input sample typedef to complex<double> for numerics.
-CDouble to_cdouble(const PayloadDecoder::Sample &sample) {
-    return CDouble(static_cast<double>(sample.real()), static_cast<double>(sample.imag()));
-}
-
-// FFT-based spectrum: use lora::fft::transform_pow2 on a copy of input (complex<double>),
-// performing an inverse-like transform to align with the previous IDFT convention.
-std::vector<CDouble> compute_spectrum_fft(std::vector<CDouble> input, std::size_t fft_len, bool inverse = true) {
-    // Pad/trim to fft_len (should already be exact K=2^SF)
-    input.resize(fft_len, CDouble{0.0, 0.0});
-    std::vector<CDouble> spectrum = input;
-    lora::fft::transform_pow2(spectrum, inverse);
-    return spectrum;
+// Convert a 16-bit value into an array of MSB-first bits; used by the CRC helper.
+std::array<int, 16> bits_from_uint16(uint16_t value) {
+    std::array<int, 16> bits{};
+    for (int i = 0; i < 16; ++i) {
+        const int shift = 15 - i;
+        bits[i] = (value >> shift) & 1;
+    }
+    return bits;
 }
 
 // Argmax by magnitude helper for spectral peaks.
@@ -91,40 +86,60 @@ PayloadDecoder::PayloadDecoder(int sf, int bandwidth_hz, int sample_rate_hz)
 // Compute payload start offset (samples) relative to preamble start.
 // Note: Even in implicit-header mode we keep the same offset as explicit (preamble + 12.25 sym + 8 header sym)
 // so the payload indexing remains consistent; we adjust only the bit accounting logic later.
-std::size_t PayloadDecoder::payload_symbol_offset_samples(bool implicit_header) const {
+std::size_t PayloadDecoder::payload_symbol_offset_samples(bool /*implicit_header*/) const {
     const std::size_t N = sps_;
     const std::size_t Nrise = static_cast<std::size_t>(std::ceil(kTriseSeconds * static_cast<double>(sample_rate_hz_)));
     // Always use explicit header offset - implicit header should work exactly like explicit
     return Nrise + (12u * N) + (N / 4u) + 8u * N;
 }
 
-// Gray decode lookup for `bits` width; LoRa payload mapping uses ppm = sf-2*DE bits per symbol.
-std::vector<int> PayloadDecoder::lora_degray_table(int bits) const {
-    const int size = 1 << bits;
-    std::vector<int> decode(size, 0);
-    for (int value = 0; value < size; ++value) {
-        int prev_bit = 0;
-        int accum = 0;
-        for (int row = 0; row < bits; ++row) {
-            const int shift = bits - 1 - row;
-            const int bit = (value >> shift) & 1;
-            const int mapped = (bit + prev_bit) & 1; // reverse Gray accumulation
-            accum = (accum << 1) | mapped;
-            prev_bit = bit;
-        }
-        decode[value] = accum;
+// Lazily build and cache the inverse Gray mapping table for the requested bit width.
+const std::vector<int> &PayloadDecoder::get_degray_table(int bits) const {
+    if (bits <= 0) {
+        static const std::vector<int> kEmpty{};
+        return kEmpty;
     }
-    return decode;
-}
 
-// Convert integer to MSB-first bit vector of length bit_count.
-std::vector<int> PayloadDecoder::num_to_bits(unsigned value, int bit_count) const {
-    std::vector<int> bits(bit_count, 0);
-    for (int i = 0; i < bit_count; ++i) {
-        const int shift = bit_count - 1 - i;
-        bits[i] = static_cast<int>((value >> shift) & 1U);
+#ifdef LORA_EMBEDDED_PROFILE
+    const std::size_t size = static_cast<std::size_t>(1) << bits;
+    if (bits != degray_bits_) {
+        for (std::size_t value = 0; value < size; ++value) {
+            int prev_bit = 0;
+            int accum = 0;
+            for (int row = 0; row < bits; ++row) {
+                const int shift = bits - 1 - row;
+                const int bit = (static_cast<int>(value) >> shift) & 1;
+                const int mapped = (bit + prev_bit) & 1;
+                accum = (accum << 1) | mapped;
+                prev_bit = bit;
+            }
+            degray_table_[value] = accum;
+        }
+        degray_bits_ = bits;
     }
-    return bits;
+    static std::vector<int> view;
+    view.assign(degray_table_.begin(), degray_table_.begin() + (static_cast<std::size_t>(1) << bits));
+    return view;
+#else
+    const std::size_t size = static_cast<std::size_t>(1) << bits;
+    if (bits != degray_bits_ || degray_table_.size() != size) {
+        degray_table_.assign(size, 0);
+        for (std::size_t value = 0; value < size; ++value) {
+            int prev_bit = 0;
+            int accum = 0;
+            for (int row = 0; row < bits; ++row) {
+                const int shift = bits - 1 - row;
+                const int bit = (static_cast<int>(value) >> shift) & 1;
+                const int mapped = (bit + prev_bit) & 1;
+                accum = (accum << 1) | mapped;
+                prev_bit = bit;
+            }
+            degray_table_[value] = accum;
+        }
+        degray_bits_ = bits;
+    }
+    return degray_table_;
+#endif
 }
 
 // Read 8 little-endian bits starting at offset into a byte.
@@ -135,20 +150,18 @@ unsigned PayloadDecoder::byte_from_bits(const std::vector<int> &bits, std::size_
 }
 
 // Remove LoRa whitening (self-synchronizing scrambler). Seeds with all ones and advances per byte.
-std::vector<int> PayloadDecoder::dewhiten_bits(const std::vector<int> &bits) const {
-    std::vector<int> out(bits);
-    std::array<int, 8> W{1, 1, 1, 1, 1, 1, 1, 1};
+void PayloadDecoder::dewhiten_bits(std::vector<int> &bits) const {
+    std::array<int, 8> W{1, 1, 1, 1, 1, 1, 1, 1}; // Whitening shift-register state.
     const std::array<int, 8> W_fb{0, 0, 0, 1, 1, 1, 0, 1};
-    const std::size_t byte_count = out.size() / 8;
+    const std::size_t byte_count = bits.size() / 8;
     for (std::size_t k = 0; k < byte_count; ++k) {
         std::size_t base = k * 8;
-        for (std::size_t j = 0; j < 8; ++j) { out[base + j] = (out[base + j] + W[j]) & 1; }
+        for (std::size_t j = 0; j < 8; ++j) { bits[base + j] = (bits[base + j] + W[j]) & 1; }
         int sum = 0; for (std::size_t j = 0; j < 8; ++j) { sum += W[j] * W_fb[j]; }
         const int W1 = sum & 1;
         for (std::size_t j = 7; j > 0; --j) { W[j] = W[j - 1]; }
         W[0] = W1;
     }
-    return out;
 }
 
 // Compute payload CRC-16 bits for a given message-bit length using the LoRa-specific state-vec method.
@@ -185,7 +198,7 @@ std::array<int, 16> PayloadDecoder::crc16_bits(const std::vector<int> &bits, std
     const std::size_t length = bit_count / 8;
     if (length < 5 || (length - 5) >= state_vec.size()) { return std::array<int, 16>{}; }
 
-    auto init_bits = num_to_bits(state_vec[length - 5], 16);
+    auto init_bits = bits_from_uint16(state_vec[length - 5]);
     std::array<int, 16> crc_tmp{}; for (int i = 0; i < 16; ++i) { crc_tmp[i] = init_bits[i]; }
 
     int pos = 0, pos4 = 4, pos11 = 11;
@@ -251,6 +264,15 @@ std::optional<PayloadDecodeResult> PayloadDecoder::decode(const std::vector<Samp
                                                           const FrameSyncResult &sync,
                                                           const HeaderDecodeResult &header,
                                                           bool ldro_enabled) const {
+    return decode(samples, sync, header, ldro_enabled, MutableByteSpan{}, MutableIntSpan{});
+}
+
+std::optional<PayloadDecodeResult> PayloadDecoder::decode(const std::vector<Sample> &samples,
+                                                          const FrameSyncResult &sync,
+                                                          const HeaderDecodeResult &header,
+                                                          bool ldro_enabled,
+                                                          MutableByteSpan external_payload,
+                                                          MutableIntSpan external_raw_symbols) const {
     if (!header.fcs_ok || header.payload_length <= 0) {
 #ifndef NDEBUG
         std::fprintf(stderr, "[decode] header invalid\n");
@@ -272,14 +294,23 @@ std::optional<PayloadDecodeResult> PayloadDecoder::decode(const std::vector<Samp
     }
 
     // 1) Demodulate raw symbol indices for the payload section.
-    std::vector<int> raw_symbols; raw_symbols.reserve(static_cast<std::size_t>(n_payload_syms));
+    std::vector<int> raw_symbols_storage;
+    std::span<int> raw_symbols;
+    if (external_raw_symbols.data && external_raw_symbols.capacity >= static_cast<std::size_t>(n_payload_syms)) {
+        raw_symbols = std::span<int>(external_raw_symbols.data, static_cast<std::size_t>(n_payload_syms));
+    } else {
+        raw_symbols_storage.resize(static_cast<std::size_t>(n_payload_syms));
+        raw_symbols = std::span<int>(raw_symbols_storage.begin(), raw_symbols_storage.end());
+    }
 
     std::ptrdiff_t ofs = static_cast<std::ptrdiff_t>(symbol_offset);
     const std::size_t K = static_cast<std::size_t>(1) << sf_;
 
+    // Reuse the per-symbol scratch buffers to avoid heap churn on each symbol.
+    symbol_buffer_.assign(N, CDouble{});
+    decimated_buffer_.assign(K, CDouble{});
+
     for (int sym = 0; sym < n_payload_syms; ++sym) {
-        // CFO rotate + dechirp current symbol window
-        std::vector<CDouble> temp(N);
         for (std::size_t n = 0; n < N; ++n) {
             const std::ptrdiff_t idx_signed = sync.p_ofs_est + ofs + static_cast<std::ptrdiff_t>(n);
             if (idx_signed < 0 || static_cast<std::size_t>(idx_signed) >= samples.size()) {
@@ -291,24 +322,27 @@ std::optional<PayloadDecodeResult> PayloadDecoder::decode(const std::vector<Samp
             }
             const double angle = -2.0 * std::numbers::pi * sync.cfo_hz * Ts * static_cast<double>(ofs + static_cast<std::ptrdiff_t>(n));
             const CDouble rot(std::cos(angle), std::sin(angle));
-            temp[n] = to_cdouble(samples[static_cast<std::size_t>(idx_signed)]) * downchirp_[n] * rot;
+            const auto &sample = samples[static_cast<std::size_t>(idx_signed)];
+            symbol_buffer_[n] = CDouble(static_cast<double>(sample.real()), static_cast<double>(sample.imag())) * downchirp_[n] * rot;
         }
 
         // Take one sample per chip (stride = os_factor_)
-        std::vector<CDouble> dec; dec.reserve(K);
-        for (std::size_t i = 0; i < N; i += os_factor_) { dec.push_back(temp[i]); }
-        if (dec.size() != K) {
+        std::size_t dec_idx = 0;
+        for (std::size_t i = 0; i < N; i += os_factor_) {
+            decimated_buffer_[dec_idx++] = symbol_buffer_[i];
+        }
+        if (dec_idx != K) {
 #ifndef NDEBUG
-            std::fprintf(stderr, "[decode] dec size mismatch %zu vs %zu\n", dec.size(), K);
+            std::fprintf(stderr, "[decode] dec size mismatch %zu vs %zu\n", dec_idx, K);
 #endif
             return std::nullopt;
         }
 
-    // FFT(K) and argmax -> raw symbol bin (inverse=true to match previous sign convention)
-    const auto spec = compute_spectrum_fft(dec, K, true);
-        std::size_t pos = argmax_abs(spec);
+        // Perform the FFT in-place and locate the dominant bin corresponding to the symbol index.
+        lora::fft::transform_pow2(decimated_buffer_, true);
+        std::size_t pos = argmax_abs(decimated_buffer_);
         int k_val = static_cast<int>(pos) - 1; if (k_val < 0) { k_val += static_cast<int>(K); }
-        raw_symbols.push_back(k_val);
+        raw_symbols[static_cast<std::size_t>(sym)] = k_val;
         ofs += static_cast<std::ptrdiff_t>(N);
     }
 
@@ -320,73 +354,84 @@ std::optional<PayloadDecodeResult> PayloadDecoder::decode(const std::vector<Samp
     const std::size_t n_bits_blk = static_cast<std::size_t>(ppm) * 4u; // bits per block
 
     // Assemble payload bits: prepend header-provided bits (or fake ones in implicit mode) for whitening alignment.
-    std::vector<int> payload_bits;
-    
+    // Seed the payload bit buffer with either header-derived bits or synthetic placeholders.
+    payload_bits_buffer_.clear();
     if (header.implicit_header) {
-        // For implicit header, insert fake header bits for dewhitening compatibility (20 bits)
-        payload_bits.reserve(20 + n_blk_tot * n_bits_blk);
-        std::vector<int> fake_header_bits = {1,1,1,0,1,1,0,1,1,1,0,1,1,1,0,1,0,0,0,0};
-        payload_bits.insert(payload_bits.end(), fake_header_bits.begin(), fake_header_bits.end());
+        static const int fake_bits[20] = {1,1,1,0,1,1,0,1,1,1,0,1,1,1,0,1,0,0,0,0};
+        payload_bits_buffer_.insert(payload_bits_buffer_.end(), std::begin(fake_bits), std::end(fake_bits));
     } else {
-        payload_bits.reserve(header.payload_header_bits.size() + n_blk_tot * n_bits_blk);
-        payload_bits.insert(payload_bits.end(), header.payload_header_bits.begin(), header.payload_header_bits.end());
+        payload_bits_buffer_.insert(payload_bits_buffer_.end(), header.payload_header_bits.begin(), header.payload_header_bits.end());
     }
+    payload_bits_buffer_.resize(payload_bits_buffer_.size() + n_blk_tot * n_bits_blk);
 
-    const auto degray = lora_degray_table(ppm);
+    // Look up the inverse Gray map that transforms LoRa bins back into binary values.
+    const auto &degray = get_degray_table(ppm);
     const double pow_scale = std::pow(2.0, 2 * de); // divide-by-4 per DE=1 (i.e., 2^(2*DE))
 
-    std::size_t payload_ofs = payload_bits.size();
-    payload_bits.resize(payload_bits.size() + n_blk_tot * n_bits_blk);
+    std::size_t payload_ofs = payload_bits_buffer_.size() - n_blk_tot * n_bits_blk;
+
+    // Prepare reusable bit-matrix buffers for LoRa interleaver/descrambler stages.
+    block_bits_buffer_.assign(static_cast<std::size_t>(ppm) * n_sym_blk, 0);
+    interleave_buffer_s_.assign(static_cast<std::size_t>(n_sym_blk) * static_cast<std::size_t>(ppm), 0);
+    interleave_buffer_c_.assign(static_cast<std::size_t>(ppm) * static_cast<std::size_t>(n_sym_blk), 0);
 
     for (std::size_t blk = 0; blk < n_blk_tot; ++blk) {
-        // Convert each symbol in the block to `ppm` bits via inverse Gray, with DE scaling.
-        std::vector<int> bits_blk(static_cast<std::size_t>(ppm) * n_sym_blk, 0);
+        int *bits_blk = block_bits_buffer_.data();
         for (int sym = 0; sym < n_sym_blk; ++sym) {
             const std::size_t idx = blk * static_cast<std::size_t>(n_sym_blk) + static_cast<std::size_t>(sym);
             int k_val = raw_symbols[idx];
             const double numerator = static_cast<double>(K) - 2.0 - static_cast<double>(k_val);
             const int bin = wrap_mod(static_cast<int>(std::llround(numerator / pow_scale)), 1 << ppm);
             const int decoded = degray[bin];
-            const auto nibble_bits = num_to_bits(static_cast<unsigned>(decoded), ppm);
-            for (int bit = 0; bit < ppm; ++bit) { bits_blk[sym * ppm + bit] = nibble_bits[bit]; }
-        }
-
-        // S: row-major [symbol][bit pos], then descramble into C with column-dependent circular shift
-        std::vector<std::vector<int>> S(n_sym_blk, std::vector<int>(ppm, 0));
-        for (int row = 0; row < n_sym_blk; ++row) {
-            for (int col = 0; col < ppm; ++col) { S[row][col] = bits_blk[row * ppm + col]; }
-        }
-
-        std::vector<std::vector<int>> C(ppm, std::vector<int>(n_sym_blk, 0));
-        for (int ii = 0; ii < ppm; ++ii) {
-            for (int jj = 0; jj < n_sym_blk; ++jj) {
-                const int src_col = (ii + jj) % ppm; // column shift per LoRa interleaver
-                C[ii][jj] = S[jj][src_col];
+            for (int bit = 0; bit < ppm; ++bit) {
+                const int shift = ppm - 1 - bit;
+                bits_blk[sym * ppm + bit] = (decoded >> shift) & 1;
             }
         }
 
-        // Flip rows (top-bottom) to match downstream bit ordering
-        for (int row = 0; row < ppm / 2; ++row) { std::swap(C[row], C[ppm - 1 - row]); }
+        int *S = interleave_buffer_s_.data();
+        int *C = interleave_buffer_c_.data();
+        for (int row = 0; row < n_sym_blk; ++row) {
+            for (int col = 0; col < ppm; ++col) {
+                S[row * ppm + col] = bits_blk[row * ppm + col];
+            }
+        }
 
-        // Extract 4 data bits per symbol (first 4 columns of each row) into payload_bits
+        for (int ii = 0; ii < ppm; ++ii) {
+            for (int jj = 0; jj < n_sym_blk; ++jj) {
+                const int src_col = (ii + jj) % ppm;
+                C[ii * n_sym_blk + jj] = S[jj * ppm + src_col];
+            }
+        }
+
+        for (int row = 0; row < ppm / 2; ++row) {
+            for (int col = 0; col < n_sym_blk; ++col) {
+                std::swap(C[row * n_sym_blk + col], C[(ppm - 1 - row) * n_sym_blk + col]);
+            }
+        }
+
         for (int row = 0; row < ppm; ++row) {
             for (int col = 0; col < 4; ++col) {
-                if (payload_ofs >= payload_bits.size()) {
+                if (payload_ofs >= payload_bits_buffer_.size()) {
 #ifndef NDEBUG
-                    std::fprintf(stderr, "[decode] payload_ofs overflow (%zu >= %zu)\n", payload_ofs, payload_bits.size());
+                    std::fprintf(stderr, "[decode] payload_ofs overflow (%zu >= %zu)\n", payload_ofs, payload_bits_buffer_.size());
 #endif
                     return std::nullopt;
                 }
-                payload_bits[payload_ofs++] = C[row][col];
+                payload_bits_buffer_[payload_ofs++] = C[row * n_sym_blk + col];
             }
         }
     }
 
     // 3) Remove whitening and pack bytes.
-    payload_bits = dewhiten_bits(payload_bits);
+    dewhiten_bits(payload_bits_buffer_);
 
-    std::size_t total_bits = payload_bits.size();
-    if (total_bits % 8 != 0) { const std::size_t padded = ((total_bits + 7u) / 8u) * 8u; payload_bits.resize(padded, 0); total_bits = padded; }
+    std::size_t total_bits = payload_bits_buffer_.size();
+    if (total_bits % 8 != 0) {
+        const std::size_t padded = ((total_bits + 7u) / 8u) * 8u;
+        payload_bits_buffer_.resize(padded, 0);
+        total_bits = padded;
+    }
     const std::size_t total_bytes = total_bits / 8;
     const std::size_t payload_length = static_cast<std::size_t>(header.payload_length);
     if (total_bytes < payload_length) {
@@ -396,27 +441,47 @@ std::optional<PayloadDecodeResult> PayloadDecoder::decode(const std::vector<Samp
         return std::nullopt;
     }
 
-    std::vector<unsigned char> bytes(total_bytes, 0);
-    for (std::size_t i = 0; i < total_bytes; ++i) { bytes[i] = static_cast<unsigned char>(byte_from_bits(payload_bits, i * 8)); }
+    // Convert the bit stream into bytes using either caller-provided storage or the internal buffer.
+    std::vector<unsigned char> payload_storage;
+    std::span<unsigned char> payload_bytes;
+    if (external_payload.data && external_payload.capacity >= total_bytes) {
+        payload_bytes = std::span<unsigned char>(external_payload.data, total_bytes);
+    } else {
+        payload_storage.assign(total_bytes, 0);
+        payload_bytes = std::span<unsigned char>(payload_storage.begin(), payload_storage.end());
+    }
+    for (std::size_t i = 0; i < total_bytes; ++i) {
+        payload_bytes[i] = static_cast<unsigned char>(byte_from_bits(payload_bits_buffer_, i * 8));
+    }
 
     // 4) Extract message and check optional CRC16.
-    std::vector<unsigned char> message(bytes.begin(), bytes.begin() + payload_length);
+    std::vector<unsigned char> message(payload_bytes.begin(), payload_bytes.begin() + payload_length);
     bool crc_ok = true;
     if (header.has_crc) {
         const std::size_t message_bit_count = payload_length * 8u;
-        if (payload_bits.size() < message_bit_count + 16u) {
+        if (payload_bits_buffer_.size() < message_bit_count + 16u) {
             crc_ok = false;
         } else {
-            auto crc_calc_bits = crc16_bits(payload_bits, message_bit_count);
-            std::array<int, 16> crc_obs_bits{}; for (int i = 0; i < 16; ++i) { crc_obs_bits[i] = payload_bits[message_bit_count + static_cast<std::size_t>(i)] & 1; }
+            auto crc_calc_bits = crc16_bits(payload_bits_buffer_, message_bit_count);
+            std::array<int, 16> crc_obs_bits{}; for (int i = 0; i < 16; ++i) { crc_obs_bits[i] = payload_bits_buffer_[message_bit_count + static_cast<std::size_t>(i)] & 1; }
             crc_ok = std::equal(crc_obs_bits.begin(), crc_obs_bits.end(), crc_calc_bits.begin());
         }
     }
 
     PayloadDecodeResult result;
-    result.raw_symbols = std::move(raw_symbols);
+    result.raw_symbols = std::move(raw_symbols_storage);
     result.bytes = std::move(message);
     result.crc_ok = crc_ok;
+    if (external_raw_symbols.data && external_raw_symbols.capacity >= static_cast<std::size_t>(n_payload_syms)) {
+        result.raw_symbol_view = raw_symbols;
+    } else {
+        result.raw_symbol_view = std::span<const int>(result.raw_symbols.begin(), result.raw_symbols.end());
+    }
+    if (external_payload.data && external_payload.capacity >= total_bytes) {
+        result.byte_view = payload_bytes;
+    } else {
+        result.byte_view = std::span<const unsigned char>(result.bytes.begin(), result.bytes.end());
+    }
     return result;
 }
 

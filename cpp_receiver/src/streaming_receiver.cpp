@@ -54,6 +54,7 @@ StreamingReceiver::push_samples(std::span<const Sample> chunk) {
     // Observe synchronizer buffer state before/after update to derive the appended tail.
     const auto &buffer_before = synchronizer_.buffer();
     const std::size_t buffer_before_size = buffer_before.size();
+    // Forward scratch-aware detection: reuses embedded buffers when available.
     const auto detection = synchronizer_.update(chunk);
     const auto &buffer = synchronizer_.buffer();
     const std::size_t buffer_after_size = buffer.size();
@@ -126,8 +127,18 @@ StreamingReceiver::push_samples(std::span<const Sample> chunk) {
                      capture_.size(),
                      local_sync.p_ofs_est);
 #endif
+        HeaderDecoder::MutableIntSpan header_symbol_span;
+        HeaderDecoder::MutableIntSpan header_bits_span;
+#ifdef LORA_EMBEDDED_PROFILE
+        static std::vector<int> header_symbol_storage;
+        static std::vector<int> header_bits_storage;
+        header_symbol_storage.resize(8);
+        header_bits_storage.resize(32);
+        header_symbol_span = {header_symbol_storage.data(), header_symbol_storage.size()};
+        header_bits_span = {header_bits_storage.data(), header_bits_storage.size()};
+#endif
         const std::vector<Sample> view(capture_.begin() + frame.preamble_offset, capture_.end());
-        const auto header = header_decoder_.decode(view, local_sync);
+        const auto header = header_decoder_.decode(view, local_sync, header_symbol_span, header_bits_span);
         if (header.has_value()) {
             frame.header = header;
             frame.sync = local_sync;
@@ -194,14 +205,29 @@ StreamingReceiver::push_samples(std::span<const Sample> chunk) {
 #endif
         const std::vector<Sample> view(capture_.begin() + frame.preamble_offset,
                                        capture_.begin() + frame.preamble_offset + frame.samples_needed);
-        const auto payload = payload_decoder_.decode(view, frame.sync, *frame.header, params_.ldro_enabled);
+    PayloadDecoder::MutableByteSpan payload_span;
+    PayloadDecoder::MutableIntSpan raw_symbol_span;
+#ifdef LORA_EMBEDDED_PROFILE
+    static std::vector<unsigned char> payload_storage;
+    static std::vector<int> raw_symbol_storage;
+    payload_storage.resize(static_cast<std::size_t>(frame.header->payload_length));
+    const int symbol_count = payload_decoder_.compute_payload_symbol_count(*frame.header, params_.ldro_enabled);
+    raw_symbol_storage.resize(symbol_count > 0 ? static_cast<std::size_t>(symbol_count) : 0);
+    if (!payload_storage.empty()) {
+        payload_span = {payload_storage.data(), payload_storage.size()};
+    }
+    if (!raw_symbol_storage.empty()) {
+        raw_symbol_span = {raw_symbol_storage.data(), raw_symbol_storage.size()};
+    }
+#endif
+    const auto payload = payload_decoder_.decode(view, frame.sync, *frame.header, params_.ldro_enabled, payload_span, raw_symbol_span);
 
         FrameEvent ev;
         ev.global_sample_index = frame.global_sample_index + frame.samples_needed;
         if (payload.has_value()) {
             // Optionally stream per-byte events for clients that want progressive output.
             if (emit_payload_bytes) {
-                for (unsigned char b : payload->bytes) {
+        for (unsigned char b : payload->byte_view) {
                     FrameEvent byte_ev;
                     byte_ev.type = FrameEvent::Type::PayloadByte;
                     byte_ev.global_sample_index = frame.global_sample_index + frame.samples_needed;
@@ -216,8 +242,8 @@ StreamingReceiver::push_samples(std::span<const Sample> chunk) {
             result.frame_synced = true;
             result.header_ok = true;
             result.payload_crc_ok = payload->crc_ok;
-            result.payload = payload->bytes;
-            result.raw_payload_symbols = payload->raw_symbols;
+            result.payload.assign(payload->byte_view.begin(), payload->byte_view.end());
+            result.raw_payload_symbols.assign(payload->raw_symbol_view.begin(), payload->raw_symbol_view.end());
             result.p_ofs_est = frame.sync.p_ofs_est;
             result.header_payload_length = frame.header->payload_length;
 

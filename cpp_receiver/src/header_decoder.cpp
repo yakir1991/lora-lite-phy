@@ -129,6 +129,13 @@ HeaderDecoder::HeaderDecoder(int sf, int bandwidth_hz, int sample_rate_hz)
 // 10) Parse fields and verify CRC5; export extra header bits if available.
 std::optional<HeaderDecodeResult> HeaderDecoder::decode(const std::vector<Sample> &samples,
                                                          const FrameSyncResult &sync) const {
+    return decode(samples, sync, MutableIntSpan{}, MutableIntSpan{});
+}
+
+std::optional<HeaderDecodeResult> HeaderDecoder::decode(const std::vector<Sample> &samples,
+                                                         const FrameSyncResult &sync,
+                                                         MutableIntSpan header_symbols,
+                                                         MutableIntSpan header_bits) const {
     const std::size_t N = sps_;
     const std::size_t K = static_cast<std::size_t>(1) << sf_;
     const double fs = static_cast<double>(sample_rate_hz_);
@@ -143,8 +150,15 @@ std::optional<HeaderDecodeResult> HeaderDecoder::decode(const std::vector<Sample
     }
 
     // Demodulate 8 raw header symbols.
-    std::vector<int> raw_symbols;
-    raw_symbols.reserve(8);
+    // Allocate header symbol storage lazily; reuse caller-provided buffer when supplied.
+    std::vector<int> raw_symbols_storage;
+    std::span<int> raw_symbols;
+    if (header_symbols.data && header_symbols.capacity >= 8) {
+        raw_symbols = std::span<int>(header_symbols.data, 8);
+    } else {
+        raw_symbols_storage.resize(8);
+        raw_symbols = std::span<int>(raw_symbols_storage.begin(), raw_symbols_storage.end());
+    }
 
     std::ptrdiff_t ofs = static_cast<std::ptrdiff_t>(header_offset);
     for (std::size_t sym = 0; sym < 8; ++sym) {
@@ -184,7 +198,7 @@ std::optional<HeaderDecodeResult> HeaderDecoder::decode(const std::vector<Sample
         if (k_val < 0) {
             k_val += static_cast<int>(K);
         }
-        raw_symbols.push_back(k_val);
+        raw_symbols[static_cast<std::size_t>(sym)] = k_val;
         ofs += static_cast<std::ptrdiff_t>(N);
     }
 
@@ -272,7 +286,12 @@ std::optional<HeaderDecodeResult> HeaderDecoder::decode(const std::vector<Sample
     // Populate result
     HeaderDecodeResult result;
     result.implicit_header = false;
-    result.raw_symbols = raw_symbols;
+    result.raw_symbols = std::move(raw_symbols_storage);
+    if (header_symbols.data && header_symbols.capacity >= 8) {
+        result.raw_symbol_view = raw_symbols;
+    } else {
+        result.raw_symbol_view = std::span<const int>(result.raw_symbols.begin(), result.raw_symbols.end());
+    }
     result.fcs_ok = (chk_rx == chk_calc);
     if (result.fcs_ok) {
         result.payload_length = length;
@@ -281,12 +300,22 @@ std::optional<HeaderDecodeResult> HeaderDecoder::decode(const std::vector<Sample
         // Export extra header bits (beyond 20) for payload mapping, if any
         const int n_bits_hdr = std::max(ppm * 4 - 20, 0);
         if (n_bits_hdr > 0) {
-            result.payload_header_bits.resize(n_bits_hdr);
-            int write_idx = 0;
-            for (int i = 5; i < ppm; ++i) {
-                for (int j = 0; j < 4 && write_idx < n_bits_hdr; ++j) {
-                    result.payload_header_bits[write_idx++] = C_flip[i][j];
+            if (header_bits.data && header_bits.capacity >= static_cast<std::size_t>(n_bits_hdr)) {
+                for (int i = 5, write_idx = 0; i < ppm && write_idx < n_bits_hdr; ++i) {
+                    for (int j = 0; j < 4 && write_idx < n_bits_hdr; ++j, ++write_idx) {
+                        header_bits.data[write_idx] = C_flip[i][j];
+                    }
                 }
+                result.payload_header_bits_view = std::span<const int>(header_bits.data, static_cast<std::size_t>(n_bits_hdr));
+            } else {
+                result.payload_header_bits.resize(n_bits_hdr);
+                int write_idx = 0;
+                for (int i = 5; i < ppm; ++i) {
+                    for (int j = 0; j < 4 && write_idx < n_bits_hdr; ++j) {
+                        result.payload_header_bits[write_idx++] = C_flip[i][j];
+                    }
+                }
+                result.payload_header_bits_view = std::span<const int>(result.payload_header_bits.begin(), result.payload_header_bits.end());
             }
         }
     }
