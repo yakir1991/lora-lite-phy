@@ -123,6 +123,9 @@ private:
 
         // Additional samples still required to continue header/payload decode
         std::size_t samples_needed = 0;
+
+        // Effective LDRO setting to use for this frame's payload decode.
+        bool ldro_enabled = false;
     };
 
     // The current frame under construction (if any)
@@ -144,7 +147,7 @@ private:
     [[nodiscard]] std::size_t payload_offset_samples() const;
 
     // Compute number of LoRa symbols the payload spans, given the decoded header
-    [[nodiscard]] int compute_payload_symbol_count(const HeaderDecodeResult &header) const;
+    [[nodiscard]] int compute_payload_symbol_count(const HeaderDecodeResult &header, bool ldro_enabled) const;
 
     // Finish the current frame, emit terminal event, and advance the capture
     // buffer by `samples_consumed` samples past the frame end
@@ -153,8 +156,8 @@ private:
     // Produce a `FrameSyncResult` whose offsets are local to the current
     // capture buffer (derived from a global/stream-aligned sync result)
     FrameSyncResult make_local_sync(const FrameSyncResult &sync, std::size_t preamble_offset) const;
+
+    [[nodiscard]] bool determine_ldro(const HeaderDecodeResult &header) const;
 };
 
 } // namespace lora
-
-

@@ -39,41 +39,51 @@ struct DecodeParams {
     // Diagnostics: when non-empty, write a cf32 slice around the header
     // (preamble end through header symbols) to this file path during streaming
     // header decode attempts.
-    std::string dump_header_iq_path;
-    // When dumping header IQ, also include additional payload symbols after
-    // the header to aid external decoders (default: 64 symbols).
-    int dump_header_iq_payload_syms = 64;
-    // If set, dump the header slice even when header decode fails. The slice
-    // will be centered around the estimated header window using the current
-    // sync candidate parameters.
-    bool dump_header_iq_always = false;
-    // Diagnostics: when true, try a small sweep of CFO offsets around the
-    // synchronizer estimate during header decode to improve robustness.
-    bool header_cfo_sweep = false;
-    // When CFO sweep is enabled, sweep ±header_cfo_range_hz in increments of
-    // header_cfo_step_hz around the synchronizer CFO estimate.
-    double header_cfo_range_hz = 100.0;
-    double header_cfo_step_hz = 50.0;
-};
+        std::string dump_header_iq_path;
+        // When dumping header IQ, also include additional payload symbols after
+        // the header to aid external decoders (default: 64 symbols).
+        int dump_header_iq_payload_syms = 64;
+        // If set, dump the header slice even when header decode fails. The slice
+        // will be centered around the estimated header window using the current
+        // sync candidate parameters.
+        bool dump_header_iq_always = false;
+        // Diagnostics: when true, try a small sweep of CFO offsets around the
+        // synchronizer estimate during header decode to improve robustness.
+        bool header_cfo_sweep = false;
+        // When CFO sweep is enabled, sweep ±header_cfo_range_hz in increments of
+        // header_cfo_step_hz around the synchronizer CFO estimate.
+        double header_cfo_range_hz = 100.0;
+        double header_cfo_step_hz = 50.0;
+        // Preserve likelihood information across demod/decoding stages instead of
+        // collapsing immediately to hard decisions.
+        bool soft_decoding = false;
+        // Automatically enable low data rate optimisation (DE bit) when symbol
+        // duration exceeds the LoRa datasheet threshold. Explicit `ldro_enabled`
+        // still forces LDRO on regardless of the automatic heuristic.
+        bool auto_ldro = true;
+        double ldro_threshold_seconds = 0.016;
+    };
 
-struct DecodeResult {
-    // True when full decode succeeded (payload CRC16 passed if present/expected).
-    bool success = false;
-    // True if preamble/frame sync succeeded.
-    bool frame_synced = false;
-    // True if header decode/validation succeeded (explicit mode only).
-    bool header_ok = false;
-    // True if payload CRC16 verified.
-    bool payload_crc_ok = false;
-    // Decoded payload bytes (message only).
-    std::vector<unsigned char> payload;
-    // Demodulated payload raw symbol bins (for debugging/analysis).
-    std::vector<int> raw_payload_symbols;
-    // Fine-aligned start index (samples) estimated by the synchronizer.
-    std::ptrdiff_t p_ofs_est = 0;
-    // Payload length parsed from the header (explicit) or implicit param.
-    int header_payload_length = 0;
-};
+    struct DecodeResult {
+        // True when full decode succeeded (payload CRC16 passed if present/expected).
+        bool success = false;
+        // True if preamble/frame sync succeeded.
+        bool frame_synced = false;
+        // True if header decode/validation succeeded (explicit mode only).
+        bool header_ok = false;
+        // True if payload CRC16 verified.
+        bool payload_crc_ok = false;
+        // Decoded payload bytes (message only).
+        std::vector<unsigned char> payload;
+        // Demodulated payload raw symbol bins (for debugging/analysis).
+        std::vector<int> raw_payload_symbols;
+        // Fine-aligned start index (samples) estimated by the synchronizer.
+        std::ptrdiff_t p_ofs_est = 0;
+        // Payload length parsed from the header (explicit) or implicit param.
+        int header_payload_length = 0;
+        // Effective LDRO state used during payload demodulation.
+        bool ldro_used = false;
+    };
 
 class Receiver {
 public:
