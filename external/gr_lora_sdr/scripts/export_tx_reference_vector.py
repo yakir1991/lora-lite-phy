@@ -13,10 +13,10 @@ print the first few samples for quick inspection.
 from __future__ import annotations
 
 import argparse
-import math
 import json
+import math
 from pathlib import Path
-from typing import Iterable, Tuple, List
+from typing import Iterable, Tuple, List, Optional, Sequence
 
 import numpy as np
 
@@ -141,6 +141,203 @@ def _parse_int_list(spec: str) -> List[int]:
         else:
             parts.append(int(chunk))
     return parts
+
+
+def _parse_complex_list(spec: str) -> List[complex]:
+    """Parse comma-separated complex tap list."""
+
+    spec = spec.strip()
+    if not spec:
+        return []
+    taps: List[complex] = []
+    for chunk in spec.split(","):
+        token = chunk.strip()
+        if not token:
+            continue
+        # Allow magnitude@delay syntax (e.g. 0.3@4)
+        if "@" in token:
+            mag_str, delay_str = token.split("@", 1)
+            tap = complex(float(mag_str), 0.0)
+            delay = int(delay_str)
+            if delay < 0:
+                raise ValueError("Tap delay must be non-negative")
+            while len(taps) <= delay:
+                taps.append(0.0)
+            taps[delay] = tap
+        else:
+            taps.append(complex(token.replace(" ", "")))
+    return taps
+
+
+def _randn_complex(size: int) -> np.ndarray:
+    return (np.random.normal(size=size) + 1j * np.random.normal(size=size)) / math.sqrt(2.0)
+
+
+def _apply_sampling_offset(signal: np.ndarray, epsilon_ppm: float) -> np.ndarray:
+    if abs(epsilon_ppm) < 1e-9:
+        return signal
+    scale = 1.0 + epsilon_ppm * 1e-6
+    n = np.arange(signal.size, dtype=np.float64)
+    target_len = max(1, int(round(signal.size * scale)))
+    idx = np.linspace(0.0, signal.size - 1, target_len, dtype=np.float64)
+    real_interp = np.interp(idx, n, signal.real, left=0.0, right=0.0)
+    imag_interp = np.interp(idx, n, signal.imag, left=0.0, right=0.0)
+    return real_interp.astype(np.float32) + 1j * imag_interp.astype(np.float32)
+
+
+def _apply_cfo(signal: np.ndarray, sample_rate: float, cfo_hz: float, cfo_drift_hz: float) -> np.ndarray:
+    if abs(cfo_hz) < 1e-12 and abs(cfo_drift_hz) < 1e-12:
+        return signal
+    t = np.arange(signal.size, dtype=np.float64) / sample_rate
+    phase = 2.0 * np.pi * (cfo_hz * t + 0.5 * cfo_drift_hz * t * t)
+    rotated = signal * np.exp(1j * phase).astype(np.complex64)
+    return rotated
+
+
+def _apply_phase_noise(signal: np.ndarray, sample_rate: float, lw: float) -> np.ndarray:
+    if lw <= 0.0:
+        return signal
+    sigma = math.sqrt(lw / sample_rate)
+    steps = np.random.normal(scale=sigma, size=signal.size).astype(np.float64)
+    phase = np.cumsum(steps)
+    return signal * np.exp(1j * phase).astype(np.complex64)
+
+
+def _apply_multipath(signal: np.ndarray, taps: Sequence[complex]) -> np.ndarray:
+    if not taps:
+        return signal
+    taps_np = np.asarray(taps, dtype=np.complex64)
+    convolved = np.convolve(signal, taps_np, mode="full")[: signal.size]
+    return convolved.astype(np.complex64)
+
+
+def _apply_fading(signal: np.ndarray, sample_rate: float, doppler_hz: float) -> np.ndarray:
+    if doppler_hz <= 0.0:
+        return signal
+    alpha = math.exp(-2.0 * np.pi * doppler_hz / sample_rate)
+    beta = math.sqrt(1.0 - alpha * alpha)
+    fade = np.zeros(signal.size, dtype=np.complex64)
+    prev = 0.0 + 0.0j
+    noise = _randn_complex(signal.size)
+    for idx in range(signal.size):
+        prev = alpha * prev + beta * noise[idx]
+        fade[idx] = prev
+    envelope = np.abs(fade)
+    env_norm = envelope / np.sqrt(np.mean(envelope ** 2) + 1e-12)
+    return signal * env_norm.astype(np.float32)
+
+
+def _apply_iq_imbalance(signal: np.ndarray, gain_db: float, phase_deg: float) -> np.ndarray:
+    if abs(gain_db) < 1e-9 and abs(phase_deg) < 1e-9:
+        return signal
+    i = signal.real
+    q = signal.imag
+    gain = 10.0 ** (gain_db / 20.0)
+    phi = math.radians(phase_deg)
+    i_adj = i * gain
+    q_adj = q * math.cos(phi) + i_adj * math.sin(phi)
+    return i_adj.astype(np.float32) + 1j * q_adj.astype(np.float32)
+
+
+def _apply_clipping(signal: np.ndarray, clip: float) -> np.ndarray:
+    if clip is None or clip <= 0.0:
+        return signal
+    real = np.clip(signal.real, -clip, clip)
+    imag = np.clip(signal.imag, -clip, clip)
+    return real.astype(np.float32) + 1j * imag.astype(np.float32)
+
+
+def _apply_quantization(signal: np.ndarray, bits: int) -> np.ndarray:
+    if bits is None or bits <= 0:
+        return signal
+    levels = 2 ** bits
+    max_val = np.max(np.abs(signal.real))
+    max_val = max(max_val, np.max(np.abs(signal.imag)))
+    if max_val < 1e-12:
+        return signal
+    scale = (levels / 2 - 1) / max_val
+    real = np.round(signal.real * scale)
+    imag = np.round(signal.imag * scale)
+    real = np.clip(real, -(levels // 2), levels // 2 - 1)
+    imag = np.clip(imag, -(levels // 2), levels // 2 - 1)
+    return (real + 1j * imag) / scale
+
+
+def _apply_awgn(signal: np.ndarray, snr_db: Optional[float]) -> np.ndarray:
+    if snr_db is None:
+        return signal
+    power = np.mean(np.abs(signal) ** 2)
+    if power <= 0.0:
+        return signal
+    snr_linear = 10.0 ** (snr_db / 10.0)
+    noise_var = power / snr_linear
+    noise = _randn_complex(signal.size) * math.sqrt(noise_var)
+    return signal + noise.astype(np.complex64)
+
+
+def simulate_air_channel(
+    signal: np.ndarray,
+    sample_rate: float,
+    *,
+    sampling_offset_ppm: float,
+    cfo_hz: float,
+    cfo_drift_hz: float,
+    phase_noise_lw: float,
+    multipath_taps: Sequence[complex],
+    rayleigh_fading: bool,
+    fading_doppler_hz: float,
+    snr_db: Optional[float],
+    iq_gain_db: float,
+    iq_phase_deg: float,
+    clip: Optional[float],
+    quant_bits: Optional[int],
+) -> Tuple[np.ndarray, dict]:
+    meta: dict = {}
+    sig = signal.astype(np.complex64, copy=True)
+
+    if abs(sampling_offset_ppm) > 0.0:
+        sig = _apply_sampling_offset(sig, sampling_offset_ppm)
+        meta["sampling_offset_ppm"] = sampling_offset_ppm
+
+    sig = _apply_cfo(sig, sample_rate, cfo_hz, cfo_drift_hz)
+    if abs(cfo_hz) > 0.0:
+        meta["cfo_hz"] = cfo_hz
+    if abs(cfo_drift_hz) > 0.0:
+        meta["cfo_drift_hz"] = cfo_drift_hz
+
+    if phase_noise_lw > 0.0:
+        sig = _apply_phase_noise(sig, sample_rate, phase_noise_lw)
+        meta["phase_noise_lw"] = phase_noise_lw
+
+    if multipath_taps:
+        sig = _apply_multipath(sig, multipath_taps)
+        meta["multipath_taps"] = [
+            {"real": float(t.real), "imag": float(t.imag)} for t in multipath_taps
+        ]
+
+    if rayleigh_fading:
+        sig = _apply_fading(sig, sample_rate, fading_doppler_hz)
+        meta["rayleigh_fading"] = {"doppler_hz": fading_doppler_hz}
+
+    sig = _apply_awgn(sig, snr_db)
+    if snr_db is not None:
+        meta["snr_db"] = snr_db
+
+    if abs(iq_gain_db) > 0.0 or abs(iq_phase_deg) > 0.0:
+        sig = _apply_iq_imbalance(sig, iq_gain_db, iq_phase_deg)
+        meta["iq_imbalance"] = {"gain_db": iq_gain_db, "phase_deg": iq_phase_deg}
+
+    if clip is not None and clip > 0.0:
+        sig = _apply_clipping(sig, clip)
+        meta["clip"] = clip
+
+    if quant_bits is not None and quant_bits > 0:
+        sig = _apply_quantization(sig, quant_bits)
+        meta["quant_bits"] = quant_bits
+
+    meta["samples"] = {"before": int(signal.size), "after": int(sig.size)}
+
+    return sig.astype(np.complex64), meta
 
 
 def _generate_frame(
@@ -378,6 +575,88 @@ def main() -> None:
     parser.add_argument(
         "--module-path", type=str, default=None, help="Extra path to locate gnuradio.lora_sdr Python bindings"
     )
+    parser.add_argument(
+        "--channel-sim",
+        action="store_true",
+        help="Apply channel impairments to generated frames (ignored when only exporting chirps)",
+    )
+    parser.add_argument(
+        "--sampling-offset-ppm",
+        type=float,
+        default=0.0,
+        help="Sampling-rate error in ppm applied before other impairments",
+    )
+    parser.add_argument(
+        "--cfo-hz",
+        type=float,
+        default=0.0,
+        help="Constant carrier frequency offset in Hz",
+    )
+    parser.add_argument(
+        "--cfo-drift-hz",
+        type=float,
+        default=0.0,
+        help="Linear CFO drift across the capture in Hz",
+    )
+    parser.add_argument(
+        "--phase-noise-lw",
+        type=float,
+        default=0.0,
+        help="Phase-noise random walk variance (rad^2 per second)",
+    )
+    parser.add_argument(
+        "--multipath-taps",
+        type=str,
+        default=None,
+        help="Comma-separated complex taps (e.g. 1,0.3-0.1j,0.1j) for multipath filtering",
+    )
+    parser.add_argument(
+        "--rayleigh-fading",
+        action="store_true",
+        help="Apply slow Rayleigh fading envelope",
+    )
+    parser.add_argument(
+        "--fading-doppler-hz",
+        type=float,
+        default=1.0,
+        help="Approximate Doppler bandwidth used for Rayleigh fading (Hz)",
+    )
+    parser.add_argument(
+        "--snr-db",
+        type=float,
+        default=None,
+        help="Add AWGN to reach the requested SNR (dB) after impairments",
+    )
+    parser.add_argument(
+        "--iq-gain-imbalance-db",
+        type=float,
+        default=0.0,
+        help="Gain imbalance between I and Q branches (dB)",
+    )
+    parser.add_argument(
+        "--iq-phase-imbalance-deg",
+        type=float,
+        default=0.0,
+        help="Phase skew between I and Q branches (degrees)",
+    )
+    parser.add_argument(
+        "--clip",
+        type=float,
+        default=None,
+        help="Clip I/Q components to +/- value (after all impairments)",
+    )
+    parser.add_argument(
+        "--quantize-bits",
+        type=int,
+        default=None,
+        help="Quantize I/Q components to the given number of bits (symmetric mid-rise)",
+    )
+    parser.add_argument(
+        "--air-output",
+        type=Path,
+        default=None,
+        help="Optional alternate directory/prefix for impaired IQ captures (defaults to --out-dir)",
+    )
 
     args = parser.parse_args()
 
@@ -415,7 +694,13 @@ def main() -> None:
             payload = args.payload.encode("utf-8")
         out_dir = args.out_dir.expanduser().resolve()
         out_dir.mkdir(parents=True, exist_ok=True)
-        generated = []
+        air_dir: Optional[Path] = None
+        if args.air_output:
+            air_dir = args.air_output.expanduser().resolve()
+            air_dir.mkdir(parents=True, exist_ok=True)
+        multipath_taps = _parse_complex_list(args.multipath_taps) if args.multipath_taps else []
+        sample_rate_hz = int(args.samp_rate) if args.samp_rate else int(args.bw)
+        generated: List[Path] = []
         for sf in sfs:
             for cr in crs:
                 for ldro in ldros:
@@ -424,7 +709,7 @@ def main() -> None:
                             iq = _generate_frame(
                                 sf=sf,
                                 bw=int(args.bw),
-                                samp_rate=int(args.samp_rate) if args.samp_rate else int(args.bw),
+                                samp_rate=sample_rate_hz,
                                 cr=cr,
                                 has_crc=has_crc,
                                 impl_head=impl,
@@ -434,12 +719,32 @@ def main() -> None:
                                 frame_zero_padd=(1 << sf),
                                 module_path=args.module_path,
                             )
+                            channel_meta: Optional[dict] = None
+                            iq_to_store = iq
+                            if args.channel_sim:
+                                iq_to_store, channel_meta = simulate_air_channel(
+                                    iq,
+                                    sample_rate_hz,
+                                    sampling_offset_ppm=args.sampling_offset_ppm,
+                                    cfo_hz=args.cfo_hz,
+                                    cfo_drift_hz=args.cfo_drift_hz,
+                                    phase_noise_lw=args.phase_noise_lw,
+                                    multipath_taps=multipath_taps,
+                                    rayleigh_fading=args.rayleigh_fading,
+                                    fading_doppler_hz=args.fading_doppler_hz,
+                                    snr_db=args.snr_db,
+                                    iq_gain_db=args.iq_gain_imbalance_db,
+                                    iq_phase_deg=args.iq_phase_imbalance_deg,
+                                    clip=args.clip,
+                                    quant_bits=args.quantize_bits,
+                                )
+                            write_dir = air_dir if (args.channel_sim and air_dir) else out_dir
                             stem = (
                                 f"tx_sf{sf}_bw{int(args.bw)}_cr{cr}_crc{int(has_crc)}_"
                                 f"impl{int(impl)}_ldro{ldro}_pay{len(payload)}"
                             )
-                            bin_path = out_dir / f"{stem}.cf32"
-                            iq.astype(np.complex64).tofile(bin_path)
+                            bin_path = write_dir / f"{stem}.cf32"
+                            iq_to_store.astype(np.complex64).tofile(bin_path)
                             meta = {
                                 "sf": sf,
                                 "bw": int(args.bw),
@@ -447,15 +752,25 @@ def main() -> None:
                                 "crc": has_crc,
                                 "impl_header": impl,
                                 "ldro_mode": ldro,
-                                "samp_rate": int(args.samp_rate) if args.samp_rate else int(args.bw),
+                                "samp_rate": sample_rate_hz,
                                 "payload_len": len(payload),
                                 "payload_hex": payload.hex(),
                                 "filename": bin_path.name,
                             }
-                            (out_dir / f"{stem}.json").write_text(json.dumps(meta, indent=2))
-                            generated.append(bin_path.name)
-                            print(f"[frame] wrote {bin_path.name} samples={len(iq)}")
-        print(f"Generated {len(generated)} frame vectors in {out_dir}")
+                            if channel_meta:
+                                channel_meta = dict(channel_meta)
+                                channel_meta["sample_rate_hz"] = sample_rate_hz
+                                meta["channel"] = channel_meta
+                                if air_dir and air_dir != out_dir:
+                                    meta.setdefault("source", {})["clean_dir"] = str(out_dir)
+                            (write_dir / f"{stem}.json").write_text(json.dumps(meta, indent=2))
+                            generated.append(bin_path)
+                            print(
+                                f"[frame] wrote {bin_path.name} samples={len(iq_to_store)} "
+                                f"dir={write_dir}"
+                            )
+        target_dir = air_dir if (args.channel_sim and air_dir) else out_dir
+        print(f"Generated {len(generated)} frame vectors in {target_dir}")
         return
 
     if args.output is None:

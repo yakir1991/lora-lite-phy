@@ -163,12 +163,12 @@ blocks:
     maxoutbuf: '0'
     minoutbuf: '0'
     output_crc_check: 'False'
-    print_rx_msg: 'True'
+    print_rx_msg: '1'
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1384, 192.0]
+    coordinate: [1448, 192.0]
     rotation: 0
     state: enabled
 - name: lora_sdr_deinterleaver_0
@@ -199,7 +199,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1264, 208.0]
+    coordinate: [1312, 280.0]
     rotation: 0
     state: enabled
 - name: lora_sdr_fft_demod_0
@@ -231,6 +231,7 @@ blocks:
     maxoutbuf: '0'
     minoutbuf: '0'
     os_factor: int(samp_rate/bw)
+    preamb_len: '8'
     sf: sf
     show_log_port: 'False'
     sync_word: '18'
@@ -270,7 +271,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [928, 216.0]
+    coordinate: [880, 324.0]
     rotation: 0
     state: enabled
 - name: lora_sdr_header_decoder_0
@@ -291,7 +292,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1104, 200.0]
+    coordinate: [1096, 316.0]
     rotation: 0
     state: enabled
 - name: uhd_usrp_source_0
@@ -744,4 +745,4 @@ connections:
 
 metadata:
   file_format: 1
-  grc_version: 3.10.3.0
+  grc_version: 3.10.11.0

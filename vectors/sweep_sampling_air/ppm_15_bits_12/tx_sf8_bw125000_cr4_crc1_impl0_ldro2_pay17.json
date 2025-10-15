@@ -1,0 +1,25 @@
+{
+  "sf": 8,
+  "bw": 125000,
+  "cr": 4,
+  "crc": true,
+  "impl_header": false,
+  "ldro_mode": 2,
+  "samp_rate": 125000,
+  "payload_len": 17,
+  "payload_hex": "796f20796f20796f207768617473207570",
+  "filename": "tx_sf8_bw125000_cr4_crc1_impl0_ldro2_pay17.cf32",
+  "channel": {
+    "sampling_offset_ppm": 15.0,
+    "snr_db": 25.0,
+    "quant_bits": 12,
+    "samples": {
+      "before": 15680,
+      "after": 15680
+    },
+    "sample_rate_hz": 125000
+  },
+  "source": {
+    "clean_dir": "/home/aquay/lora-lite-phy/vectors/sweep_sampling_clean/ppm_15_bits_12"
+  }
+}

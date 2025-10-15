@@ -28,11 +28,10 @@ options:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 10
-    - 15
+    coordinate: [10, 15]
     rotation: 0
     state: enabled
+
 blocks:
 - name: SNRdB
   id: variable
@@ -43,9 +42,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 472
-    - 104.0
+    coordinate: [472, 104.0]
     rotation: 0
     state: enabled
 - name: bw
@@ -57,9 +54,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 192
-    - 104.0
+    coordinate: [192, 104.0]
     rotation: 0
     state: enabled
 - name: center_freq
@@ -71,9 +66,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 272
-    - 16.0
+    coordinate: [272, 16.0]
     rotation: 0
     state: enabled
 - name: clk_offset
@@ -85,9 +78,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 400
-    - 104.0
+    coordinate: [400, 104.0]
     rotation: 0
     state: enabled
 - name: cr
@@ -101,9 +92,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 320
-    - 104.0
+    coordinate: [320, 104.0]
     rotation: 0
     state: enabled
 - name: has_crc
@@ -115,9 +104,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 480
-    - 16.0
+    coordinate: [480, 16.0]
     rotation: 0
     state: enabled
 - name: impl_head
@@ -129,9 +116,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 400
-    - 16.0
+    coordinate: [400, 16.0]
     rotation: 0
     state: enabled
 - name: ldro
@@ -143,9 +128,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 632
-    - 16.0
+    coordinate: [744, 12.0]
     rotation: 0
     state: enabled
 - name: pay_len
@@ -157,9 +140,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 552
-    - 16.0
+    coordinate: [608, 4.0]
     rotation: 0
     state: true
 - name: preamb_len
@@ -171,9 +152,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 560
-    - 104.0
+    coordinate: [624, 84.0]
     rotation: 0
     state: true
 - name: samp_rate
@@ -185,9 +164,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 192
-    - 16.0
+    coordinate: [192, 16.0]
     rotation: 0
     state: enabled
 - name: sf
@@ -199,9 +176,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 264
-    - 104.0
+    coordinate: [264, 104.0]
     rotation: 0
     state: enabled
 - name: soft_decoding
@@ -213,9 +188,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 704
-    - 16.0
+    coordinate: [856, 12.0]
     rotation: 0
     state: enabled
 - name: blocks_file_source_0_0
@@ -230,16 +203,14 @@ blocks:
     maxoutbuf: '0'
     minoutbuf: '0'
     offset: '0'
-    repeat: false
+    repeat: 'False'
     type: byte
     vlen: '1'
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 32
-    - 248.0
+    coordinate: [32, 248.0]
     rotation: 0
     state: enabled
 - name: channels_channel_model_0
@@ -260,10 +231,44 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 1392.0
-    - 400
+    coordinate: [1392.0, 400]
     rotation: 270
+    state: enabled
+- name: file_sink_rx_payload
+  id: blocks_file_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    append: '''False'''
+    comment: ''
+    file: /tmp/lora_rx_payload.bin
+    type: byte
+    unbuffered: '''False'''
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [0, 0]
+    rotation: 0
+    state: enabled
+- name: file_sink_tx_iq
+  id: blocks_file_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    append: '''False'''
+    comment: ''
+    file: vectors/sf8_cr48_iq.bin
+    type: complex
+    unbuffered: '''False'''
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [0, 0]
+    rotation: 0
     state: enabled
 - name: lora_sdr_add_crc_0
   id: lora_sdr_add_crc
@@ -278,9 +283,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 584
-    - 280.0
+    coordinate: [584, 280.0]
     rotation: 0
     state: enabled
 - name: lora_sdr_crc_verif_0
@@ -292,14 +295,12 @@ blocks:
     maxoutbuf: '0'
     minoutbuf: '0'
     output_crc_check: 'False'
-    print_rx_msg: 'True'
+    print_rx_msg: '1'
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 40
-    - 544.0
+    coordinate: [40, 544.0]
     rotation: 180
     state: enabled
 - name: lora_sdr_deinterleaver_0
@@ -315,9 +316,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 664
-    - 568.0
+    coordinate: [664, 568.0]
     rotation: 180
     state: enabled
 - name: lora_sdr_dewhitening_0
@@ -332,9 +331,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 200
-    - 560.0
+    coordinate: [200, 560.0]
     rotation: 180
     state: enabled
 - name: lora_sdr_fft_demod_0
@@ -351,9 +348,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 1000
-    - 568.0
+    coordinate: [1000, 568.0]
     rotation: 180
     state: enabled
 - name: lora_sdr_frame_sync_0
@@ -376,9 +371,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 1168
-    - 536.0
+    coordinate: [1168, 536.0]
     rotation: 180
     state: enabled
 - name: lora_sdr_gray_demap_0
@@ -394,9 +387,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 984
-    - 280.0
+    coordinate: [984, 280.0]
     rotation: 0
     state: true
 - name: lora_sdr_gray_mapping_0
@@ -412,9 +403,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 832
-    - 568.0
+    coordinate: [832, 568.0]
     rotation: 180
     state: true
 - name: lora_sdr_hamming_dec_0
@@ -430,9 +419,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 496
-    - 568.0
+    coordinate: [496, 568.0]
     rotation: 180
     state: enabled
 - name: lora_sdr_hamming_enc_0
@@ -449,9 +436,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 720
-    - 272.0
+    coordinate: [720, 272.0]
     rotation: 0
     state: enabled
 - name: lora_sdr_header_0
@@ -469,9 +454,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 432
-    - 264.0
+    coordinate: [432, 264.0]
     rotation: 0
     state: enabled
 - name: lora_sdr_header_decoder_0
@@ -492,9 +475,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 336
-    - 552.0
+    coordinate: [336, 552.0]
     rotation: 180
     state: enabled
 - name: lora_sdr_interleaver_0
@@ -513,9 +494,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 864
-    - 264.0
+    coordinate: [864, 264.0]
     rotation: 0
     state: enabled
 - name: lora_sdr_modulate_0
@@ -536,9 +515,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 1144
-    - 264.0
+    coordinate: [1144, 264.0]
     rotation: 0
     state: enabled
 - name: lora_sdr_whitening_0
@@ -558,132 +535,31 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate:
-    - 240
-    - 260.0
+    coordinate: [240, 260.0]
     rotation: 0
     state: enabled
-- name: file_sink_tx_iq
-  id: blocks_file_sink
-  parameters:
-    affinity: ''
-    alias: ''
-    append: '''False'''
-    comment: ''
-    file: vectors/sf8_cr48_iq.bin
-    type: complex
-    unbuffered: '''False'''
-    vlen: '1'
-    maxoutbuf: '0'
-    minoutbuf: '0'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate:
-    - 0
-    - 0
-    rotation: 0
-    state: enabled
-- name: file_sink_rx_payload
-  id: blocks_file_sink
-  parameters:
-    affinity: ''
-    alias: ''
-    append: '''False'''
-    comment: ''
-    file: /tmp/lora_rx_payload.bin
-    type: byte
-    unbuffered: '''False'''
-    vlen: '1'
-    maxoutbuf: '0'
-    minoutbuf: '0'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate:
-    - 0
-    - 0
-    rotation: 0
-    state: enabled
+
 connections:
-- - blocks_file_source_0_0
-  - '0'
-  - lora_sdr_whitening_0
-  - '0'
-- - channels_channel_model_0
-  - '0'
-  - lora_sdr_frame_sync_0
-  - '0'
-- - lora_sdr_add_crc_0
-  - '0'
-  - lora_sdr_hamming_enc_0
-  - '0'
-- - lora_sdr_deinterleaver_0
-  - '0'
-  - lora_sdr_hamming_dec_0
-  - '0'
-- - lora_sdr_dewhitening_0
-  - '0'
-  - lora_sdr_crc_verif_0
-  - '0'
-- - lora_sdr_fft_demod_0
-  - '0'
-  - lora_sdr_gray_mapping_0
-  - '0'
-- - lora_sdr_frame_sync_0
-  - '0'
-  - lora_sdr_fft_demod_0
-  - '0'
-- - lora_sdr_gray_demap_0
-  - '0'
-  - lora_sdr_modulate_0
-  - '0'
-- - lora_sdr_gray_mapping_0
-  - '0'
-  - lora_sdr_deinterleaver_0
-  - '0'
-- - lora_sdr_hamming_dec_0
-  - '0'
-  - lora_sdr_header_decoder_0
-  - '0'
-- - lora_sdr_hamming_enc_0
-  - '0'
-  - lora_sdr_interleaver_0
-  - '0'
-- - lora_sdr_header_0
-  - '0'
-  - lora_sdr_add_crc_0
-  - '0'
-- - lora_sdr_header_decoder_0
-  - '0'
-  - lora_sdr_dewhitening_0
-  - '0'
-- - lora_sdr_header_decoder_0
-  - frame_info
-  - lora_sdr_frame_sync_0
-  - frame_info
-- - lora_sdr_interleaver_0
-  - '0'
-  - lora_sdr_gray_demap_0
-  - '0'
-- - lora_sdr_whitening_0
-  - '0'
-  - lora_sdr_header_0
-  - '0'
-- - lora_sdr_modulate_0
-  - '0'
-  - channels_channel_model_0
-  - '0'
-- - lora_sdr_modulate_0
-  - '0'
-  - file_sink_tx_iq
-  - '0'
-- - lora_sdr_crc_verif_0
-  - '0'
-  - file_sink_rx_payload
-  - '0'
+- [blocks_file_source_0_0, '0', lora_sdr_whitening_0, '0']
+- [channels_channel_model_0, '0', lora_sdr_frame_sync_0, '0']
+- [lora_sdr_add_crc_0, '0', lora_sdr_hamming_enc_0, '0']
+- [lora_sdr_crc_verif_0, '0', file_sink_rx_payload, '0']
+- [lora_sdr_deinterleaver_0, '0', lora_sdr_hamming_dec_0, '0']
+- [lora_sdr_dewhitening_0, '0', lora_sdr_crc_verif_0, '0']
+- [lora_sdr_fft_demod_0, '0', lora_sdr_gray_mapping_0, '0']
+- [lora_sdr_frame_sync_0, '0', lora_sdr_fft_demod_0, '0']
+- [lora_sdr_gray_demap_0, '0', lora_sdr_modulate_0, '0']
+- [lora_sdr_gray_mapping_0, '0', lora_sdr_deinterleaver_0, '0']
+- [lora_sdr_hamming_dec_0, '0', lora_sdr_header_decoder_0, '0']
+- [lora_sdr_hamming_enc_0, '0', lora_sdr_interleaver_0, '0']
+- [lora_sdr_header_0, '0', lora_sdr_add_crc_0, '0']
+- [lora_sdr_header_decoder_0, '0', lora_sdr_dewhitening_0, '0']
+- [lora_sdr_header_decoder_0, frame_info, lora_sdr_frame_sync_0, frame_info]
+- [lora_sdr_interleaver_0, '0', lora_sdr_gray_demap_0, '0']
+- [lora_sdr_modulate_0, '0', channels_channel_model_0, '0']
+- [lora_sdr_modulate_0, '0', file_sink_tx_iq, '0']
+- [lora_sdr_whitening_0, '0', lora_sdr_header_0, '0']
+
 metadata:
   file_format: 1
-  grc_version: 3.10.5.1
+  grc_version: 3.10.11.0

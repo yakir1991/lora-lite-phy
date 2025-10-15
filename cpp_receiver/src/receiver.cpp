@@ -1,6 +1,42 @@
 #include "receiver.hpp"
 
+#include <algorithm>
+#include <cmath>
 #include <stdexcept>
+#include <vector>
+
+namespace {
+
+std::vector<std::ptrdiff_t> build_header_offset_candidates(std::size_t sps) {
+    std::vector<std::ptrdiff_t> offsets{0};
+    const double fractions[] = {1.0 / 64.0, 1.0 / 32.0, 1.0 / 16.0, 1.0 / 8.0, 1.0 / 4.0, 1.0 / 2.0, 1.0, 2.0};
+    for (double frac : fractions) {
+        const auto step = static_cast<std::ptrdiff_t>(std::llround(frac * static_cast<double>(sps)));
+        if (step <= 0) {
+            continue;
+        }
+        offsets.push_back(step);
+        offsets.push_back(-step);
+    }
+    std::sort(offsets.begin(), offsets.end());
+    offsets.erase(std::unique(offsets.begin(), offsets.end()), offsets.end());
+    return offsets;
+}
+
+bool header_result_sane(const lora::HeaderDecodeResult &hdr) {
+    if (!hdr.fcs_ok) {
+        return false;
+    }
+    if (hdr.payload_length < 0 || hdr.payload_length > 255) {
+        return false;
+    }
+    if (hdr.cr < 1 || hdr.cr > 4) {
+        return false;
+    }
+    return true;
+}
+
+} // namespace
 
 // This translation unit wires the core PHY building blocks (frame sync, header
 // decoder, payload decoder, optional sync-word check) into a high-level
@@ -48,7 +84,8 @@ DecodeResult Receiver::decode_samples(const std::vector<IqLoader::Sample> &sampl
         // Early exit: nothing else to do if we didn't find a valid preamble.
         return result;
     }
-    result.p_ofs_est = sync->p_ofs_est;
+    FrameSyncResult sync_for_payload = *sync;
+    result.p_ofs_est = sync_for_payload.p_ofs_est;
 
     // 2) Optional sync word validation. Some capture flows may disable this
     //    to iterate faster or when sync word is unknown.
@@ -79,20 +116,32 @@ DecodeResult Receiver::decode_samples(const std::vector<IqLoader::Sample> &sampl
         result.header_ok = true;
     } else {
         // Explicit mode: demodulate the 8-symbol header and verify its CRC5.
-        header = header_decoder_.decode(samples, *sync);
-        result.header_ok = header.has_value() && header->fcs_ok;
+        header = header_decoder_.decode(samples, sync_for_payload);
+        result.header_ok = header.has_value() && header_result_sane(*header);
         if (!result.header_ok || !header.has_value()) {
-            // If header CRC fails, we stop here and report failure.
-            return result;
+            header = search_header(samples, sync_for_payload);
+            result.header_ok = header.has_value() && header_result_sane(*header);
+            if (!result.header_ok || !header.has_value()) {
+                return result;
+            }
         }
     }
     result.header_payload_length = header->payload_length;
+    result.p_ofs_est = sync_for_payload.p_ofs_est;
 
     // 4) Payload decode using timing/CFO from sync and parameters from header.
     //    Produces raw symbols (for debugging), dewhitened bytes, and CRC16 result.
-    const auto payload = payload_decoder_.decode(samples, *sync, *header, params_.ldro_enabled);
-    if (!payload.has_value()) {
-        return result;
+    auto payload = payload_decoder_.decode(samples, sync_for_payload, *header, params_.ldro_enabled);
+    if (!payload.has_value() || !payload->crc_ok) {
+        auto recovered = search_payload(samples, sync_for_payload, *header);
+        if (recovered.has_value()) {
+            payload = std::move(recovered);
+        } else {
+            if (payload.has_value()) {
+                result.payload_crc_ok = payload->crc_ok;
+            }
+            return result;
+        }
     }
 
     result.payload_crc_ok = payload->crc_ok;
@@ -101,6 +150,90 @@ DecodeResult Receiver::decode_samples(const std::vector<IqLoader::Sample> &sampl
     // Success requires payload CRC16 to pass; other flags indicate partial progress.
     result.success = result.payload_crc_ok;
     return result;
+}
+
+std::optional<HeaderDecodeResult> Receiver::search_header(const std::vector<IqLoader::Sample> &samples,
+                                                          FrameSyncResult &sync) const {
+    const std::size_t sps = frame_sync_.samples_per_symbol();
+    const auto offsets = build_header_offset_candidates(sps);
+
+    const double base_cfo = sync.cfo_hz;
+    double sweep_range = std::max(params_.header_cfo_range_hz, std::max(200.0, std::abs(base_cfo) * 2.5));
+    double sweep_step = params_.header_cfo_step_hz > 0.0
+                            ? std::min(params_.header_cfo_step_hz, sweep_range / 20.0)
+                            : sweep_range / 40.0;
+    if (sweep_step <= 0.0) {
+        sweep_step = sweep_range / 40.0;
+    }
+    sweep_step = std::max(2.0, sweep_step);
+
+    for (std::ptrdiff_t offset : offsets) {
+        FrameSyncResult trial_sync = sync;
+        trial_sync.p_ofs_est += offset;
+
+        auto header = header_decoder_.decode(samples, trial_sync);
+        if (header.has_value() && header_result_sane(*header)) {
+            sync = trial_sync;
+            return header;
+        }
+
+        // CFO sweep around the synchronizer estimate.
+        for (double delta = sweep_step; delta <= sweep_range; delta += sweep_step) {
+            for (double signed_delta : {+delta, -delta}) {
+                FrameSyncResult cfo_trial = trial_sync;
+                cfo_trial.cfo_hz = sync.cfo_hz + signed_delta;
+                header = header_decoder_.decode(samples, cfo_trial);
+                if (header.has_value() && header_result_sane(*header)) {
+                    sync = cfo_trial;
+                    return header;
+                }
+            }
+        }
+    }
+
+    return std::nullopt;
+}
+
+std::optional<PayloadDecodeResult> Receiver::search_payload(const std::vector<IqLoader::Sample> &samples,
+                                                          FrameSyncResult &sync,
+                                                          const HeaderDecodeResult &header) const {
+    const std::size_t sps = frame_sync_.samples_per_symbol();
+    const auto offsets = build_header_offset_candidates(sps);
+
+    const double base_cfo = sync.cfo_hz;
+    double sweep_range = std::max(params_.header_cfo_range_hz, std::max(200.0, std::abs(base_cfo) * 2.5));
+    double sweep_step = params_.header_cfo_step_hz > 0.0
+                            ? std::min(params_.header_cfo_step_hz, sweep_range / 20.0)
+                            : sweep_range / 40.0;
+    if (sweep_step <= 0.0) {
+        sweep_step = sweep_range / 40.0;
+    }
+    sweep_step = std::max(2.0, sweep_step);
+
+    for (std::ptrdiff_t offset : offsets) {
+        FrameSyncResult trial_sync = sync;
+        trial_sync.p_ofs_est += offset;
+
+        auto payload = payload_decoder_.decode(samples, trial_sync, header, params_.ldro_enabled);
+        if (payload.has_value() && payload->crc_ok) {
+            sync = trial_sync;
+            return payload;
+        }
+
+        for (double delta = sweep_step; delta <= sweep_range; delta += sweep_step) {
+            for (double signed_delta : {+delta, -delta}) {
+                FrameSyncResult cfo_trial = trial_sync;
+                cfo_trial.cfo_hz = sync.cfo_hz + signed_delta;
+                payload = payload_decoder_.decode(samples, cfo_trial, header, params_.ldro_enabled);
+                if (payload.has_value() && payload->crc_ok) {
+                    sync = cfo_trial;
+                    return payload;
+                }
+            }
+        }
+    }
+
+    return std::nullopt;
 }
 
 DecodeResult Receiver::decode_file(const std::filesystem::path &path) const {

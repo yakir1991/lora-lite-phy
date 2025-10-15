@@ -96,6 +96,12 @@ public:
     [[nodiscard]] DecodeResult decode_file(const std::filesystem::path &path) const;
 
 private:
+    [[nodiscard]] std::optional<HeaderDecodeResult> search_header(const std::vector<IqLoader::Sample> &samples,
+                                                                  FrameSyncResult &sync) const;
+    [[nodiscard]] std::optional<PayloadDecodeResult> search_payload(const std::vector<IqLoader::Sample> &samples,
+                                                                    FrameSyncResult &sync,
+                                                                    const HeaderDecodeResult &header) const;
+
     DecodeParams params_;
     FrameSynchronizer frame_sync_;
     HeaderDecoder header_decoder_;

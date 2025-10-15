@@ -1,0 +1,12 @@
+Streaming receiver vs GNU Radio
+========================================
+[1/1] tx_sf8_bw125000_cr4_crc1_impl0_ldro2_pay17.cf32 (impl=False)
+
+Summary
+========================================
+Total vectors      : 1
+GNU Radio success  : 100.0%
+C++ success (strm) : 0.0%
+Payload match rate : 0.0%
+
+Saved results to /home/aquay/lora-lite-phy/results/streaming_compat_results.json

@@ -7,7 +7,7 @@
 # GNU Radio Python Flow Graph
 # Title: Lora Rx
 # Author: Tapparel Joachim@EPFL,TCL
-# GNU Radio version: v3.11.0.0git-604-gd7f88722
+# GNU Radio version: 3.10.11.0
 
 from gnuradio import gr
 from gnuradio.filter import firdes
@@ -21,6 +21,7 @@ from gnuradio import uhd
 import time
 import gnuradio.lora_sdr as lora_sdr
 import numpy as np
+import threading
 
 
 
@@ -29,6 +30,7 @@ class lora_RX(gr.top_block):
 
     def __init__(self):
         gr.top_block.__init__(self, "Lora Rx", catch_exceptions=True)
+        self.flowgraph_started = threading.Event()
 
         ##################################################
         # Variables
@@ -159,6 +161,7 @@ def main(top_block_cls=lora_RX, options=None):
     signal.signal(signal.SIGTERM, sig_handler)
 
     tb.start()
+    tb.flowgraph_started.set()
 
     try:
         input('Press Enter to quit: ')

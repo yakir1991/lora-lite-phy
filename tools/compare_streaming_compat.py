@@ -175,117 +175,132 @@ def extract_gr_payload_hex(result: Dict) -> Optional[str]:
 
 # Defines the function run_cpp_streaming.
 def run_cpp_streaming(vector_path: Path, meta: Dict, opts: argparse.Namespace) -> Dict:
-    # Executes the statement `binary = resolve_cpp_binary()`.
     binary = resolve_cpp_binary()
-    # Begins a conditional branch to check a condition.
     if not binary:
-        # Returns the computed value to the caller.
         return {"status": "skipped", "error": "decode_cli binary not found"}
 
-    # Executes the statement `fs = int(meta.get("samp_rate") or meta.get("sample_rate"))`.
     fs = int(meta.get("samp_rate") or meta.get("sample_rate"))
-    # Executes the statement `ldro_mode = int(meta.get("ldro_mode", 0))`.
-    ldro_mode = int(meta.get("ldro_mode", 0))
-    # Executes the statement `implicit = bool(meta.get("impl_header") or meta.get("implicit_header"))`.
+    channel = meta.get("channel") or {}
+    expected_cfo = float(channel.get("cfo_hz", 0.0)) if isinstance(channel, dict) else 0.0
+    cfo_drift = float(channel.get("cfo_drift_hz", 0.0)) if isinstance(channel, dict) else 0.0
+
+    ldro_mode = meta.get("ldro_mode", 0)
+    ldro_enabled = False
+    if "ldro_enabled" in meta:
+        ldro_enabled = bool(meta["ldro_enabled"])
+    elif "ldro" in meta:
+        ldro_enabled = bool(meta["ldro"])
+    elif ldro_mode in (1, True, "1"):
+        ldro_enabled = True
+    elif ldro_mode in (2, "2"):
+        try:
+            sf_val = int(meta.get("sf", 0))
+            bw_val = float(meta.get("bw", 0))
+            symbol_time = (1 << sf_val) / bw_val if bw_val else 0.0
+            ldro_enabled = symbol_time > 0.016
+        except Exception:
+            ldro_enabled = False
+
     implicit = bool(meta.get("impl_header") or meta.get("implicit_header"))
-    # Executes the statement `has_crc = bool(meta.get("crc", True))`.
     has_crc = bool(meta.get("crc", True))
 
-    # Executes the statement `cmd = [`.
-    cmd = [
-        # Executes the statement `str(binary),`.
+    base_cmd: List[str] = [
         str(binary),
-        # Executes the statement `"--sf", str(meta["sf"]),`.
         "--sf", str(meta["sf"]),
-        # Executes the statement `"--bw", str(meta["bw"]),`.
         "--bw", str(meta["bw"]),
-        # Executes the statement `"--fs", str(fs),`.
         "--fs", str(fs),
-        # Executes the statement `"--ldro", "1" if ldro_mode else "0",`.
-        "--ldro", "1" if ldro_mode else "0",
-        # Executes the statement `"--streaming",`.
+        "--ldro", "1" if ldro_enabled else "0",
         "--streaming",
-        # Executes the statement `str(vector_path),`.
         str(vector_path),
-    # Closes the previously opened list indexing or literal.
     ]
 
-    # Implicit header (embedded profile) requires extra parameters
-    # Begins a conditional branch to check a condition.
     if implicit:
-        # Executes the statement `payload_len = int(meta.get("payload_len") or meta.get("payload_length") or 0)`.
         payload_len = int(meta.get("payload_len") or meta.get("payload_length") or 0)
-        # Executes the statement `cr = int(meta.get("cr", 1))`.
         cr = int(meta.get("cr", 1))
-        # Executes the statement `cmd.extend(["--implicit-header", "--payload-len", str(payload_len), "--cr", str(cr)])`.
-        cmd.extend(["--implicit-header", "--payload-len", str(payload_len), "--cr", str(cr)])
-        # Executes the statement `cmd.append("--has-crc" if has_crc else "--no-crc")`.
-        cmd.append("--has-crc" if has_crc else "--no-crc")
+        base_cmd.extend(["--implicit-header", "--payload-len", str(payload_len), "--cr", str(cr)])
+        base_cmd.append("--has-crc" if has_crc else "--no-crc")
 
-    # Optional sync word
-    # Begins a conditional branch to check a condition.
     if "sync_word" in meta:
-        # Executes the statement `cmd.extend(["--sync-word", str(meta["sync_word"])])`.
-        cmd.extend(["--sync-word", str(meta["sync_word"])])
+        base_cmd.extend(["--sync-word", str(meta["sync_word"])])
 
-    # Optional diagnostics
-    # Begins a conditional branch to check a condition.
+    chunk_size = getattr(opts, "streaming_chunk", None)
+    if chunk_size:
+        base_cmd.extend(["--chunk", str(int(chunk_size))])
+
+    dump_dir: Optional[Path] = None
     if getattr(opts, "hdr_cfo_sweep", False):
-        # Executes the statement `cmd.append("--hdr-cfo-sweep")`.
-        cmd.append("--hdr-cfo-sweep")
-        # Begins a conditional branch to check a condition.
+        base_cmd.append("--hdr-cfo-sweep")
         if getattr(opts, "hdr_cfo_range", None) is not None:
-            # Executes the statement `cmd.extend(["--hdr-cfo-range", str(opts.hdr_cfo_range)])`.
-            cmd.extend(["--hdr-cfo-range", str(opts.hdr_cfo_range)])
-        # Begins a conditional branch to check a condition.
+            base_cmd.extend(["--hdr-cfo-range", str(opts.hdr_cfo_range)])
         if getattr(opts, "hdr_cfo_step", None) is not None:
-            # Executes the statement `cmd.extend(["--hdr-cfo-step", str(opts.hdr_cfo_step)])`.
-            cmd.extend(["--hdr-cfo-step", str(opts.hdr_cfo_step)])
-        # Executes the statement `dump_dir = getattr(opts, "dump_header_iq_dir", None)`.
+            base_cmd.extend(["--hdr-cfo-step", str(opts.hdr_cfo_step)])
         dump_dir = getattr(opts, "dump_header_iq_dir", None)
-    # Begins a conditional branch to check a condition.
+    else:
+        dump_dir = getattr(opts, "dump_header_iq_dir", None)
+
     if dump_dir:
-        # Create a per-vector filename inside the directory
-        # Executes the statement `out_name = vector_path.stem + "_header.cf32"`.
         out_name = vector_path.stem + "_header.cf32"
-        # Executes the statement `out_path = Path(dump_dir) / out_name`.
         out_path = Path(dump_dir) / out_name
-            # Executes the statement `cmd.extend(["--dump-header-iq", str(out_path)])`.
-            cmd.extend(["--dump-header-iq", str(out_path)])
-            # If caller provided extra slice controls, pass them through
-            # Begins a conditional branch to check a condition.
-            if getattr(opts, "dump_header_iq_payload_syms", None) is not None:
-                # Executes the statement `cmd.extend(["--dump-header-iq-payload-syms", str(opts.dump_header_iq_payload_syms)])`.
-                cmd.extend(["--dump-header-iq-payload-syms", str(opts.dump_header_iq_payload_syms)])
-            # Begins a conditional branch to check a condition.
-            if getattr(opts, "dump_header_iq_always", False):
-                # Executes the statement `cmd.append("--dump-header-iq-always")`.
-                cmd.append("--dump-header-iq-always")
+        base_cmd.extend(["--dump-header-iq", str(out_path)])
+        if getattr(opts, "dump_header_iq_payload_syms", None) is not None:
+            base_cmd.extend(["--dump-header-iq-payload-syms", str(opts.dump_header_iq_payload_syms)])
+        if getattr(opts, "dump_header_iq_always", False):
+            base_cmd.append("--dump-header-iq-always")
 
-    # Begins a block that monitors for exceptions.
-    try:
-        # Executes the statement `res = subprocess.run(cmd, capture_output=True, text=True, timeout=60, errors="replace")`.
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=60, errors="replace")
-    # Handles a specific exception from the try block.
-    except subprocess.TimeoutExpired:
-        # Returns the computed value to the caller.
-        return {"status": "timeout", "stdout": "", "stderr": ""}
+    def invoke(extra: List[str], tag: Optional[str] = None) -> Dict:
+        cmd = base_cmd + extra
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True, timeout=60, errors="replace")
+        except subprocess.TimeoutExpired:
+            return {"status": "timeout", "stdout": "", "stderr": "", "payload_hex": None, "binary": str(binary), "cmd": " ".join(cmd), "attempt": tag}
 
-    # Executes the statement `payload_hex: Optional[str] = None`.
-    payload_hex: Optional[str] = None
-    # Starts a loop iterating over a sequence.
-    for line in res.stdout.splitlines():
-        # Begins a conditional branch to check a condition.
-        if line.startswith("payload_hex="):
-            # Executes the statement `payload_hex = line.split("=", 1)[1].strip()`.
-            payload_hex = line.split("=", 1)[1].strip()
-            # Exits the nearest enclosing loop early.
-            break
+        payload_hex: Optional[str] = None
+        for line in res.stdout.splitlines():
+            if line.startswith("payload_hex="):
+                payload_hex = line.split("=", 1)[1].strip()
+                break
+        status = "success" if res.returncode == 0 else "failed"
+        result = {
+            "status": status,
+            "stdout": res.stdout,
+            "stderr": res.stderr,
+            "payload_hex": payload_hex,
+            "binary": str(binary),
+            "cmd": " ".join(cmd),
+        }
+        if tag:
+            result["attempt"] = tag
+        return result
 
-    # Executes the statement `status = "success" if res.returncode == 0 else "failed"`.
-    status = "success" if res.returncode == 0 else "failed"
-    # Returns the computed value to the caller.
-    return {"status": status, "stdout": res.stdout, "stderr": res.stderr, "payload_hex": payload_hex, "binary": str(binary)}
+    result = invoke([], tag="base")
+    payload_ok = bool(result.get("payload_hex"))
+    if result["status"] != "success" or not payload_ok:
+        sweep_already = "--hdr-cfo-sweep" in base_cmd
+        cfo_magnitude = abs(expected_cfo) + abs(cfo_drift)
+        need_sweep = (cfo_magnitude > 15.0) or channel
+        if need_sweep and not sweep_already:
+            sweep_range = getattr(opts, "hdr_cfo_range", None)
+            if sweep_range is None:
+                sweep_range = max(150.0, abs(expected_cfo) * 2.5 + abs(cfo_drift) * 20.0)
+            sweep_step = getattr(opts, "hdr_cfo_step", None)
+            if sweep_step is None:
+                sweep_step = max(10.0, sweep_range / 12.0)
+            sweep_extra = [
+                "--hdr-cfo-sweep",
+                "--hdr-cfo-range", f"{sweep_range:.3f}",
+                "--hdr-cfo-step", f"{sweep_step:.3f}",
+            ]
+            result = invoke(sweep_extra, tag="auto_cfo_sweep")
+            if result["status"] != "success" or not result.get("payload_hex"):
+                # Try a wider range once more
+                wider_extra = [
+                    "--hdr-cfo-sweep",
+                    "--hdr-cfo-range", f"{max(sweep_range * 1.5, 300.0):.3f}",
+                    "--hdr-cfo-step", f"{max(sweep_step / 2.0, 5.0):.3f}",
+                ]
+                result = invoke(wider_extra, tag="auto_cfo_sweep_wide")
+
+    return result
 
 
 # Executes the statement `@dataclass`.
@@ -358,12 +373,14 @@ def main() -> None:
     parser.add_argument("--hdr-cfo-range", type=float, default=None, help="CFO sweep half-range in Hz (passed to decode_cli)")
     # Configures the argument parser for the CLI.
     parser.add_argument("--hdr-cfo-step", type=float, default=None, help="CFO sweep step in Hz (passed to decode_cli)")
-        # Configures the argument parser for the CLI.
-        parser.add_argument("--dump-header-iq-dir", type=Path, default=None, help="Directory to write header IQ slices (cf32) per vector")
-        # Configures the argument parser for the CLI.
-        parser.add_argument("--dump-header-iq-payload-syms", type=int, default=128, help="Extra payload symbols to include in slice")
-        # Configures the argument parser for the CLI.
-        parser.add_argument("--dump-header-iq-always", action="store_true", help="Dump slice even if header fails (diagnostics)")
+    # Configures the argument parser for the CLI.
+    parser.add_argument("--streaming-chunk", type=int, default=4096, help="Chunk size passed to decode_cli --streaming")
+    # Configures the argument parser for the CLI.
+    parser.add_argument("--dump-header-iq-dir", type=Path, default=None, help="Directory to write header IQ slices (cf32) per vector")
+    # Configures the argument parser for the CLI.
+    parser.add_argument("--dump-header-iq-payload-syms", type=int, default=128, help="Extra payload symbols to include in slice")
+    # Configures the argument parser for the CLI.
+    parser.add_argument("--dump-header-iq-always", action="store_true", help="Dump slice even if header fails (diagnostics)")
     # Executes the statement `args = parser.parse_args()`.
     args = parser.parse_args()
 

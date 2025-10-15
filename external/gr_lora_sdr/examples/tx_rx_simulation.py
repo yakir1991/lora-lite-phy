@@ -7,7 +7,7 @@
 # GNU Radio Python Flow Graph
 # Title: Tx Rx Simulation
 # Author: Tapparel Joachim@EPFL,TCL
-# GNU Radio version: v3.11.0.0git-604-gd7f88722
+# GNU Radio version: 3.10.11.0
 
 from gnuradio import blocks
 import pmt
@@ -18,9 +18,11 @@ from gnuradio.fft import window
 import sys
 import signal
 from argparse import ArgumentParser
+from pathlib import Path
 from gnuradio.eng_arg import eng_float, intx
 from gnuradio import eng_notation
 import gnuradio.lora_sdr as lora_sdr
+import threading
 
 
 
@@ -29,27 +31,38 @@ class tx_rx_simulation(gr.top_block):
 
     def __init__(self):
         gr.top_block.__init__(self, "Tx Rx Simulation", catch_exceptions=True)
+        self.flowgraph_started = threading.Event()
 
         ##################################################
         # Variables
         ##################################################
         self.soft_decoding = soft_decoding = False
-        self.sf = sf = 7
-        self.samp_rate = samp_rate = 500000
+        self.sf = sf = 8
+        self.samp_rate = samp_rate = 125000
         self.preamb_len = preamb_len = 8
         self.pay_len = pay_len = 16
         self.ldro = ldro = False
         self.impl_head = impl_head = False
         self.has_crc = has_crc = True
-        self.cr = cr = 2
+        self.cr = cr = 4
         self.clk_offset = clk_offset = 0
         self.center_freq = center_freq = 868.1e6
         self.bw = bw = 125000
-        self.SNRdB = SNRdB = -5
+        self.SNRdB = SNRdB = 100
 
         ##################################################
         # Blocks
         ##################################################
+
+        payload_path = Path('vectors/sf8_cr48_payload.bin')
+        if payload_path.exists():
+            payload_bytes = payload_path.read_bytes()
+            if payload_bytes:
+                if payload_bytes.endswith(b','):
+                    payload_bytes = payload_bytes[:-1]
+                payload_len = len(payload_bytes)
+                if payload_len > 0:
+                    self.pay_len = pay_len = payload_len
 
         self.lora_sdr_whitening_0 = lora_sdr.whitening(False,False,',','packet_len')
         self.lora_sdr_modulate_0 = lora_sdr.modulate(sf, samp_rate, bw, [0x12], (int(20*2**sf*samp_rate/bw)),preamb_len)
@@ -66,6 +79,10 @@ class tx_rx_simulation(gr.top_block):
         self.lora_sdr_deinterleaver_0 = lora_sdr.deinterleaver( soft_decoding)
         self.lora_sdr_crc_verif_0 = lora_sdr.crc_verif( 1, False)
         self.lora_sdr_add_crc_0 = lora_sdr.add_crc(has_crc)
+        self.file_sink_tx_iq = blocks.file_sink(gr.sizeof_gr_complex*1, 'vectors/sf8_cr48_iq.bin', False)
+        self.file_sink_tx_iq.set_unbuffered(True)
+        self.file_sink_rx_payload = blocks.file_sink(gr.sizeof_char*1, '/tmp/lora_rx_payload.bin', False)
+        self.file_sink_rx_payload.set_unbuffered(True)
         self.channels_channel_model_0 = channels.channel_model(
             noise_voltage=(10**(-SNRdB/20)),
             frequency_offset=(center_freq*clk_offset*1e-6/samp_rate),
@@ -74,8 +91,7 @@ class tx_rx_simulation(gr.top_block):
             noise_seed=0,
             block_tags=True)
         self.channels_channel_model_0.set_min_output_buffer((int(2**sf*samp_rate/bw*1.1)))
-        self.blocks_throttle_0 = blocks.throttle(gr.sizeof_gr_complex*1, (samp_rate*10),True)
-        self.blocks_file_source_0_0 = blocks.file_source(gr.sizeof_char*1, 'data/GRC_default/example_tx_source.txt', False, 0, 0)
+        self.blocks_file_source_0_0 = blocks.file_source(gr.sizeof_char*1, 'vectors/sf8_cr48_payload.bin', False, 0, 0)
         self.blocks_file_source_0_0.set_begin_tag(pmt.PMT_NIL)
 
 
@@ -84,9 +100,9 @@ class tx_rx_simulation(gr.top_block):
         ##################################################
         self.msg_connect((self.lora_sdr_header_decoder_0, 'frame_info'), (self.lora_sdr_frame_sync_0, 'frame_info'))
         self.connect((self.blocks_file_source_0_0, 0), (self.lora_sdr_whitening_0, 0))
-        self.connect((self.blocks_throttle_0, 0), (self.channels_channel_model_0, 0))
         self.connect((self.channels_channel_model_0, 0), (self.lora_sdr_frame_sync_0, 0))
         self.connect((self.lora_sdr_add_crc_0, 0), (self.lora_sdr_hamming_enc_0, 0))
+        self.connect((self.lora_sdr_crc_verif_0, 0), (self.file_sink_rx_payload, 0))
         self.connect((self.lora_sdr_deinterleaver_0, 0), (self.lora_sdr_hamming_dec_0, 0))
         self.connect((self.lora_sdr_dewhitening_0, 0), (self.lora_sdr_crc_verif_0, 0))
         self.connect((self.lora_sdr_fft_demod_0, 0), (self.lora_sdr_gray_mapping_0, 0))
@@ -98,7 +114,8 @@ class tx_rx_simulation(gr.top_block):
         self.connect((self.lora_sdr_header_0, 0), (self.lora_sdr_add_crc_0, 0))
         self.connect((self.lora_sdr_header_decoder_0, 0), (self.lora_sdr_dewhitening_0, 0))
         self.connect((self.lora_sdr_interleaver_0, 0), (self.lora_sdr_gray_demap_0, 0))
-        self.connect((self.lora_sdr_modulate_0, 0), (self.blocks_throttle_0, 0))
+        self.connect((self.lora_sdr_modulate_0, 0), (self.channels_channel_model_0, 0))
+        self.connect((self.lora_sdr_modulate_0, 0), (self.file_sink_tx_iq, 0))
         self.connect((self.lora_sdr_whitening_0, 0), (self.lora_sdr_header_0, 0))
 
 
@@ -116,14 +133,12 @@ class tx_rx_simulation(gr.top_block):
         self.lora_sdr_gray_demap_0.set_sf(self.sf)
         self.lora_sdr_hamming_enc_0.set_sf(self.sf)
         self.lora_sdr_interleaver_0.set_sf(self.sf)
-        self.lora_sdr_modulate_0.set_sf(self.sf)
 
     def get_samp_rate(self):
         return self.samp_rate
 
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
-        self.blocks_throttle_0.set_sample_rate((self.samp_rate*10))
         self.channels_channel_model_0.set_frequency_offset((self.center_freq*self.clk_offset*1e-6/self.samp_rate))
 
     def get_preamb_len(self):
@@ -209,6 +224,7 @@ def main(top_block_cls=tx_rx_simulation, options=None):
     signal.signal(signal.SIGTERM, sig_handler)
 
     tb.start()
+    tb.flowgraph_started.set()
 
     try:
         input('Press Enter to quit: ')
