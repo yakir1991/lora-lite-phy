@@ -1,5 +1,7 @@
 #pragma once
 
+#include "fft_utils.hpp"
+
 #include <complex>
 #include <cstddef>
 #include <optional>
@@ -44,7 +46,8 @@ private:
     struct FFTScratch {
         // Workspace buffers reused to avoid reallocation during demodulation.
         std::vector<std::complex<double>> input;
-        std::vector<std::complex<double>> spectrum;
+        std::vector<std::complex<float>> fft_buffer;
+        lora::fft::Scratch fft;
     };
 
     // Demodulate a single symbol index starting from preamble_offset.

@@ -158,6 +158,40 @@ with fields like:
     - `--prefix <path-substr>` – Restrict to vectors whose path starts with prefix
     - `--limit <N>` – Max failures to re-run
     - `--out-dir <dir>` – Where to save cf32 slices and meta sidecars
+
+## Upcoming work: Sample-rate correction roadmap
+
+Header/Payload decoding is now robust to large CFO, but vectors with sample-rate
+errors (ppm drift) still stress the pipeline. The next milestone is an adaptive
+resampling stage. Development will proceed in four phases:
+
+1. **Rate-error estimation**
+   - Build a helper that inspects preamble/header FFT bins and derives
+     `sample_rate_ratio` (actual/nominal) and an optional drift term.
+   - Attach this estimate to `FrameSyncResult` so all downstream stages can
+     access a unified view of timing error.
+
+2. **Resampling infrastructure** *(in progress)*
+   - ✅ Added a reusable wrapper around Liquid-DSP’s `msresamp` (with a linear
+     fallback) so both batch and streaming receivers can materialize nominal-rate
+     buffers when the synchronizer estimates a ppm error.
+   - The helper hides Liquid-DSP plumbing and exposes chunk-based APIs for
+     streaming use cases.
+
+3. **Decoder integration** *(in progress)*
+   - ✅ Batch `Receiver` and streaming paths now opportunistically resample when
+     the estimated ratio deviates by more than ~5 ppm, falling back to cursor
+     stepping otherwise.
+   - Remaining work: broaden validation, tune thresholds, and surface clearer
+     diagnostics before enabling resampling by default across regression jobs.
+
+4. **Validation & regression**
+   - Re-run `python -m tools.run_channel_regressions --regen` and diff
+     `results/channel_regression_summary.json`.
+   - Focus on the `new_cases` vectors (case1/2/4) that previously failed CRC.
+   - Add a dedicated “ppm sweep” once confidence is high.
+
+Implementation of the resampler will begin after sign-off on this plan.
     - `--hdr-cfo-range <Hz>` / `--hdr-cfo-step <Hz>` – CFO sweep params
     - `--slice-payload-syms <int>` – Extra payload symbols for slice
     - `--slice-always` – Dump even on header failures
@@ -211,4 +245,3 @@ python -m tools.analyze_header_slice_meta --dir results/hdr_slices
 - With CFO sweep (±200 Hz, 25 Hz step) the C++ streaming success is around ~66% over the provided new_batch set; remaining failures are concentrated at low SNR (e.g., SF12/BW125k/CR3).
 - Header slice parity with GNU Radio on our emitted slices still fails in most cases; adding more preamble/payload guard and accurate meta sidecars is implemented and available for further experiments.
 - The sidecars now capture raw header bins, CFO used, timing offsets, and candidate offset to guide algorithmic tweaks.
-

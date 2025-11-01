@@ -123,20 +123,21 @@ def main() -> None:
         vec_path = Path(vec)
         # Executes the statement `fs = int(meta.get('samp_rate') or meta.get('sample_rate'))`.
         fs = int(meta.get('samp_rate') or meta.get('sample_rate'))
-        # Executes the statement `ldro = int(meta.get('ldro_mode', 0))`.
-        ldro = int(meta.get('ldro_mode', 0))
-        # Executes the statement `cmd = [`.
+        ldro_mode = meta.get('ldro_mode')
+        ldro_bool = meta.get('ldro')
         cmd = [
-            # Executes the statement `str(binary),`.
             str(binary),
-            # Executes the statement `'--sf', str(meta['sf']),`.
             '--sf', str(meta['sf']),
-            # Executes the statement `'--bw', str(meta['bw']),`.
             '--bw', str(meta['bw']),
-            # Executes the statement `'--fs', str(fs),`.
             '--fs', str(fs),
-            # Executes the statement `'--ldro', '1' if ldro else '0',`.
-            '--ldro', '1' if ldro else '0',
+        ]
+        if ldro_mode is not None:
+            try:
+                cmd += ['--ldro-mode', str(int(ldro_mode))]
+            except Exception:
+                cmd += ['--ldro', '1' if ldro_bool else '0']
+        else:
+            cmd += ['--ldro', '1' if ldro_bool else '0']
             # Executes the statement `'--sync-word', str(meta.get('sync_word', 0x12)),`.
             '--sync-word', str(meta.get('sync_word', 0x12)),
             # Executes the statement `'--streaming',`.

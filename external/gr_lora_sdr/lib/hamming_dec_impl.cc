@@ -6,6 +6,13 @@
 #include <gnuradio/io_signature.h>
 #include <gnuradio/lora_sdr/utilities.h>
 
+#include <cstdint>
+#include <cstdlib>
+#include <fstream>
+#include <iomanip>
+#include <mutex>
+#include <sstream>
+
 #include "hamming_dec_impl.h"
 
 #ifdef GRLORA_DEBUG
@@ -15,6 +22,108 @@
 
 namespace gr {
     namespace lora_sdr {
+
+namespace {
+
+using gr::lora_sdr::LLR;
+
+std::ofstream &hamming_trace_stream() {
+    static std::ofstream stream;
+    static std::string path_value;
+
+    const char *env_path = std::getenv("GR_LORA_TRACE_HAMMING_DEC");
+    std::string requested_path = (env_path && env_path[0] != '\0') ? std::string(env_path) : std::string();
+
+    if (!requested_path.empty() && requested_path != path_value) {
+        if (stream.is_open()) {
+            stream.close();
+        }
+        path_value = requested_path;
+    }
+
+    if (!path_value.empty() && !stream.is_open()) {
+        stream.open(path_value, std::ios::out | std::ios::app);
+        stream << std::setprecision(6) << std::fixed;
+    }
+
+    return stream;
+}
+
+std::mutex &hamming_trace_mutex() {
+    static std::mutex mtx;
+    return mtx;
+}
+
+uint64_t next_hamming_trace_id() {
+    static uint64_t counter = 0;
+    return counter++;
+}
+
+template <typename Vector>
+std::string vector_to_string(const Vector &vec) {
+    std::ostringstream oss;
+    oss << '[';
+    for (std::size_t i = 0; i < vec.size(); ++i) {
+        if (i != 0) {
+            oss << ',';
+        }
+        oss << vec[i];
+    }
+    oss << ']';
+    return oss.str();
+}
+
+template <typename BoolVector>
+std::string bool_vector_to_string(const BoolVector &vec) {
+    std::ostringstream oss;
+    oss << '[';
+    for (std::size_t i = 0; i < vec.size(); ++i) {
+        if (i != 0) {
+            oss << ',';
+        }
+        oss << (vec[i] ? 1 : 0);
+    }
+    oss << ']';
+    return oss.str();
+}
+
+void log_hamming_soft(bool is_header,
+                      int cr_app,
+                      int cw_len,
+                      const std::vector<LLR> &codeword,
+                      int selected_idx,
+                      uint8_t decoded_nibble) {
+    auto &stream = hamming_trace_stream();
+    if (!stream.is_open()) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(hamming_trace_mutex());
+    const uint64_t id = next_hamming_trace_id();
+    stream << "{\"id\":" << id << ",\"stage\":\"soft\",\"is_header\":" << (is_header ? 1 : 0)
+           << ",\"cr_app\":" << cr_app << ",\"cw_len\":" << cw_len
+           << ",\"llr\":" << vector_to_string(codeword) << ",\"selected\":" << selected_idx
+           << ",\"decoded\":" << static_cast<int>(decoded_nibble) << "}\n";
+}
+
+void log_hamming_hard(bool is_header,
+                      int cr_app,
+                      int cw_len,
+                      const std::vector<bool> &codeword,
+                      int syndrome,
+                      uint8_t decoded_nibble) {
+    auto &stream = hamming_trace_stream();
+    if (!stream.is_open()) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(hamming_trace_mutex());
+    const uint64_t id = next_hamming_trace_id();
+    stream << "{\"id\":" << id << ",\"stage\":\"hard\",\"is_header\":" << (is_header ? 1 : 0)
+           << ",\"cr_app\":" << cr_app << ",\"cw_len\":" << cw_len
+           << ",\"bits\":" << bool_vector_to_string(codeword)
+           << ",\"syndrome\":" << syndrome << ",\"decoded\":" << static_cast<int>(decoded_nibble) << "}\n";
+}
+
+} // namespace
 
         hamming_dec::sptr
         hamming_dec::make(bool soft_decoding) {
@@ -130,7 +239,9 @@ namespace gr {
                     // and reversed bit order MSB<=>LSB
                     out[i] = ((bool)(data_nibble_soft & 0b0001) << 3) + ((bool)(data_nibble_soft & 0b0010) << 2) + ((bool)(data_nibble_soft & 0b0100) << 1) + (bool)(data_nibble_soft & 0b1000);
 
-                    
+                    log_hamming_soft(is_header, cr_app, cw_len, codeword_LLR, idx_max, out[i]);
+
+
                 } 
                 else {// Hard decoding
                     std::vector<bool> data_nibble(4, 0);
@@ -184,6 +295,8 @@ namespace gr {
                     }
 
                     out[i] = bool2int(data_nibble);
+
+                    log_hamming_hard(is_header, cr_app, cw_len, codeword, syndrom, out[i]);
                 }
             }
             return nitems_to_process;

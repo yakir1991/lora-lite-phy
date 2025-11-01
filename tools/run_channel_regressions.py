@@ -2,6 +2,10 @@
 """
 Automated channel regression harness for the LoRa Lite PHY repository.
 
+Before running, ensure the GNU Radio environment is active (e.g.
+``conda activate gr310``) so that vector generation scripts can import the
+required modules.
+
 This helper script regenerates a set of impaired LoRa IQ vectors, validates the
 C++ receiver (`decode_cli`) as well as the GNU Radio vs. streaming comparison
 (`tools.compare_streaming_compat`), and produces a single JSON summary that can
@@ -12,6 +16,7 @@ The coverage includes:
   * Rayleigh fading sweep (Doppler 0.5 → 3 Hz)
   * Sampling offset + ADC quantisation combinations
   * CFO + drift + sampling offset grid
+  * Multipath fading severity sweep
   * Five bespoke “new case” stress scenarios
 
 Outputs land under:
@@ -147,13 +152,33 @@ def run_decode_cli(binary: Path, cf32_path: Path, meta: Dict) -> Dict:
         str(meta.get("samp_rate") or meta.get("sample_rate")),
         str(cf32_path),
     ]
+    channel = meta.get("channel") or {}
+    if isinstance(channel, dict) and channel.get("sampling_offset_ppm") is not None:
+        cmd.extend(["--ppm-offset", str(channel["sampling_offset_ppm"])])
     res = run_subprocess(cmd, check=False)
     status = "success" if res.returncode == 0 else "failed"
+    attempted = [(cmd, res)]
+    if res.returncode != 0 and "--ppm-offset" in cmd:
+        idx = cmd.index("--ppm-offset")
+        fallback_cmd = [c for i, c in enumerate(cmd) if i not in {idx, idx + 1}]
+        fallback_res = run_subprocess(fallback_cmd, check=False)
+        attempted.append((fallback_cmd, fallback_res))
+        if fallback_res.returncode == 0:
+            cmd = fallback_cmd
+            res = fallback_res
+            status = "success"
     return {
         "cmd": " ".join(cmd),
         "status": status,
         "stdout": res.stdout.strip(),
         "stderr": res.stderr.strip(),
+        "attempts": [
+            {
+                "cmd": " ".join(attempt_cmd),
+                "returncode": attempt_res.returncode,
+            }
+            for attempt_cmd, attempt_res in attempted
+        ],
     }
 
 
@@ -226,6 +251,16 @@ def main() -> None:
         for drift in (0.0, 1.0, 2.0)
         for ppm in (0, 10, 20)
     ]
+    multipath_profiles = [
+        ("mp_short", {"multipath_taps": "1,0.35@4", "snr_db": 24}),
+        ("mp_mid", {"multipath_taps": "1,0.18-0.08j,0.12@6", "cfo_hz": 30, "snr_db": 21}),
+        ("mp_harsh", {"multipath_taps": "1,0.26-0.12j,0.18@5,0.1@8", "rayleigh_fading": True, "fading_doppler_hz": 2.2, "cfo_hz": 55, "sampling_offset_ppm": 8, "snr_db": 18}),
+    ]
+    synthetic_impairments = [
+        ("syn_imp_1", {"source_dir": "synthetic_impairments/air", "filename": "tx_sf9_bw125000_cr3_crc1_impl0_ldro2_pay6.cf32"}),
+        ("syn_imp_2", {"source_dir": "synthetic_impairments/air", "filename": "tx_sf10_bw125000_cr4_crc1_impl0_ldro2_pay10.cf32"}),
+        ("syn_imp_3", {"source_dir": "synthetic_impairments/air", "filename": "tx_sf8_bw250000_cr2_crc1_impl0_ldro2_pay11.cf32"}),
+    ]
     custom_cases = [
         ("case1", {"cfo_hz": 30, "cfo_drift_hz": 0.5, "sampling_offset_ppm": 12, "phase_noise_lw": 2e-4, "multipath_taps": "1,0.2-0.1j,0.05@5", "snr_db": 18}),
         ("case2", {"cfo_hz": 70, "cfo_drift_hz": 0.0, "sampling_offset_ppm": 5, "phase_noise_lw": 1e-4, "multipath_taps": "1,0.15-0.05j", "rayleigh_fading": True, "fading_doppler_hz": 1.5, "quantize_bits": 11, "snr_db": 20}),
@@ -235,6 +270,7 @@ def main() -> None:
     ]
 
     vectors_root = REPO_ROOT / "vectors"
+    synthetic_root = vectors_root / "synthetic_impairments" / "air"
 
     def process_vector(group: str, name: str, channel_kwargs: Dict[str, object]) -> None:
         clean_dir = vectors_root / f"{group}_clean" / name
@@ -267,8 +303,39 @@ def main() -> None:
             {"cfo_hz": cfo, "cfo_drift_hz": drift, "sampling_offset_ppm": ppm, "snr_db": 25, "phase_noise_lw": 5e-4},
         )
 
+    for profile_name, params in multipath_profiles:
+        enriched = dict(params)
+        enriched.setdefault("snr_db", 22)
+        process_vector("sweep_multipath", profile_name, enriched)
+
     for case_name, params in custom_cases:
         process_vector("new_cases", case_name, params)
+
+    for imp_name, params in synthetic_impairments:
+        src = synthetic_root / params["filename"]
+        if not src.exists():
+            print(f"[warn] synthetic impairment vector missing: {src}, skipping")
+            continue
+        clean_dir = vectors_root / "synthetic_impairments_clean" / imp_name
+        air_dir = vectors_root / "synthetic_impairments_air" / imp_name
+        clean_dir.mkdir(parents=True, exist_ok=True)
+        air_dir.mkdir(parents=True, exist_ok=True)
+        target_clean = clean_dir / params["filename"]
+        target_air = air_dir / params["filename"]
+        target_clean.write_bytes(src.read_bytes())
+        target_air.write_bytes(src.read_bytes())
+        meta_src = src.with_suffix(".json")
+        target_clean.with_suffix(".json").write_bytes(meta_src.read_bytes())
+        target_air.with_suffix(".json").write_bytes(meta_src.read_bytes())
+
+        meta = load_metadata(target_air)
+        decode_result = run_decode_cli(decode_cli, target_air, meta)
+        decode_result.update({"group": "synthetic_impairments", "case": imp_name, "cf32": str(target_air.relative_to(REPO_ROOT))})
+        summary["decode_cli"].append(decode_result)
+
+        streaming_result = run_streaming_compare(air_dir, args.streaming_chunk)
+        streaming_result.update({"group": "synthetic_impairments", "case": imp_name})
+        summary["streaming_reports"].append(streaming_result)
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(summary, indent=2))

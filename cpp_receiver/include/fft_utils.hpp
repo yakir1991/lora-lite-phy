@@ -31,6 +31,6 @@ struct Scratch {
 
 void transform_pow2(std::vector<std::complex<double>> &data, bool inverse);
 void transform_pow2(std::vector<std::complex<double>> &data, bool inverse, Scratch &scratch);
+void transform_pow2(std::vector<std::complex<float>> &data, bool inverse, Scratch &scratch);
 
 } // namespace lora::fft
-

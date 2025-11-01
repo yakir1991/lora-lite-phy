@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import argparse
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
@@ -18,9 +18,11 @@ import os
 import sys
 import glob
 import importlib
+import json
 import numpy as np
 import pmt
 from gnuradio import blocks, gr
+import time
 
 def _attempt_import_lora_sdr(user_paths: list[str] | None = None):
     """Try importing gnuradio.lora_sdr with optional additional search paths.
@@ -107,6 +109,7 @@ class FrameResult:
     crc_valid: Optional[bool]
     has_crc: Optional[bool]
     message_text: Optional[str]
+    info: Dict[str, object] = field(default_factory=dict)
 
     def hex_payload(self) -> str:
         return " ".join(f"{byte:02x}" for byte in self.payload)
@@ -378,6 +381,18 @@ def extract_frames(payload_bytes: bytes, tags: Iterable[gr.tag_t]) -> List[Frame
         if key != "frame_info":
             continue
         info = tag.value
+        meta_dict: Dict[str, object] = {}
+        try:
+            info_py = pmt.to_python(info)
+            if isinstance(info_py, dict):
+                for key_obj, val_obj in info_py.items():
+                    if isinstance(key_obj, (bytes, bytearray)):
+                        key_str = key_obj.decode("utf-8", errors="ignore")
+                    else:
+                        key_str = str(key_obj)
+                    meta_dict[key_str] = val_obj
+        except Exception:
+            meta_dict = {}
         pay_len_pmt = pmt.dict_ref(info, pmt.string_to_symbol("pay_len"), pmt.PMT_NIL)
         if pmt.is_integer(pay_len_pmt):
             pay_len = int(pmt.to_long(pay_len_pmt))
@@ -407,6 +422,7 @@ def extract_frames(payload_bytes: bytes, tags: Iterable[gr.tag_t]) -> List[Frame
                 crc_valid=crc_valid,
                 has_crc=crc_present,
                 message_text=None,
+                info=meta_dict,
             )
         )
 
@@ -508,7 +524,9 @@ def main() -> None:
         max_dump=args.max_dump,
     )
 
+    start_time = time.perf_counter()
     receiver.run()
+    duration_s = time.perf_counter() - start_time
     payload_bytes, tags, messages = receiver.results()
     
     # Add debug information about stages
@@ -518,8 +536,41 @@ def main() -> None:
     frames = extract_frames(payload_bytes, tags)
     combine_messages(frames, messages)
 
+    first_hex = frames[0].hex_payload().replace(" ", "").replace("\n", "").lower() if frames else None
+    frame_entries = [
+        {
+            "index": frame.index,
+            "payload_len": len(frame.payload),
+            "payload_hex": frame.hex_payload().replace(" ", "").lower(),
+            "crc_valid": frame.crc_valid,
+            "has_crc": frame.has_crc,
+            "message_text": frame.message_text,
+            "info": frame.info,
+        }
+        for frame in frames
+    ]
+    summary = {
+        "mode": "batch",
+        "success": bool(frames),
+        "frame_count": len(frames),
+        "duration_s": duration_s,
+        "sf": sf,
+        "bw": bw,
+        "samp_rate": samp_rate,
+        "cr": cr,
+        "ldro_mode": ldro_mode,
+        "impl_header": impl_head,
+        "has_crc": has_crc,
+        "payload_hex": first_hex,
+        "frames": frame_entries,
+        "messages": [frame.message_text for frame in frames if frame.message_text],
+    }
+    if frame_entries:
+        summary["frame_info"] = frame_entries[0].get("info")
+
     if not frames:
         print("No frames were decoded")
+        print(f"result_json={json.dumps(summary, separators=(',', ':'))}")
         return
 
     for frame in frames:
@@ -538,7 +589,6 @@ def main() -> None:
             print(f"  Text: {frame.message_text}")
 
     if args.dump_json:
-        import json
         # Derive raw 4-bit data stream (post-Hamming decode) from existing stage array if present.
         post_hamming_bits: list[int] = []
         try:
@@ -582,6 +632,8 @@ def main() -> None:
             print(f"[info] wrote stage dump -> {args.dump_json}")
         except Exception as e:  # pragma: no cover
             print(f"[warn] failed writing dump json: {e}")
+
+    print(f"result_json={json.dumps(summary, separators=(',', ':'))}")
 
 
 if __name__ == "__main__":

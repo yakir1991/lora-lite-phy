@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/sync_mags.dir/tools/sync_mags.cpp.o -o sync_mags  -Wl,-rpath,/home/aquay/lora-lite-phy/cpp_receiver/../external/liquid-dsp/build liblora_cpp_receiver.a /home/aquay/lora-lite-phy/cpp_receiver/../external/liquid-dsp/build/libliquid.so 

@@ -10,6 +10,8 @@
 #include <limits>
 #include <numbers>
 #include <stdexcept>
+#include <utility>
+#include <unordered_map>
 #include <vector>
 
 // Frame synchronization is the trickiest stage in the LoRa PHY because it has
@@ -36,20 +38,6 @@ constexpr std::size_t kFineOversample = 4;
 
 using CDouble = std::complex<double>;
 
-// Convert an input sample (likely float or int16 in the typedef) to std::complex<double>.
-CDouble to_cdouble(const FrameSynchronizer::Sample &s) {
-    return CDouble(static_cast<double>(s.real()), static_cast<double>(s.imag()));
-}
-
-// FFT-based spectrum utility with optional zero-padding to fft_len.
-// Uses lora::fft::transform_pow2 and returns the in-place spectrum copy.
-std::vector<CDouble> compute_spectrum_fft(const std::vector<CDouble> &input, std::size_t fft_len, bool inverse = false) {
-    std::vector<CDouble> spectrum = input;
-    spectrum.resize(fft_len, CDouble{0.0, 0.0});
-    lora::fft::transform_pow2(spectrum, inverse);
-    return spectrum;
-}
-
 // Wrap value into [0, period) and then shift to a symmetric interval around 0 later as needed.
 double wrap_mod(double value, double period) {
     double result = std::fmod(value, period);
@@ -60,7 +48,8 @@ double wrap_mod(double value, double period) {
 }
 
 // Return the index of the element with maximum magnitude.
-std::size_t argmax_abs(const std::vector<CDouble> &vec) {
+template <typename Complex>
+std::size_t argmax_abs(const std::vector<Complex> &vec) {
     std::size_t idx = 0;
     double max_mag = 0.0;
     for (std::size_t i = 0; i < vec.size(); ++i) {
@@ -105,6 +94,16 @@ FrameSynchronizer::FrameSynchronizer(int sf, int bandwidth_hz, int sample_rate_h
     // These are deterministic sequences constructed from SF, BW, and Fs.
     upchirp_ = make_upchirp(sf_, bandwidth_hz_, sample_rate_hz_);
     downchirp_ = make_downchirp(sf_, bandwidth_hz_, sample_rate_hz_);
+    upchirp_f_.resize(upchirp_.size());
+    downchirp_f_.resize(downchirp_.size());
+    for (std::size_t i = 0; i < upchirp_.size(); ++i) {
+        upchirp_f_[i] = std::complex<float>(static_cast<float>(upchirp_[i].real()),
+                                            static_cast<float>(upchirp_[i].imag()));
+    }
+    for (std::size_t i = 0; i < downchirp_.size(); ++i) {
+        downchirp_f_[i] = std::complex<float>(static_cast<float>(downchirp_[i].real()),
+                                              static_cast<float>(downchirp_[i].imag()));
+    }
 }
 
 StreamingFrameSynchronizer::StreamingFrameSynchronizer(int sf, int bandwidth_hz, int sample_rate_hz)
@@ -229,23 +228,19 @@ std::optional<FrameSyncResult> FrameSynchronizer::synchronize(std::span<const Sa
     const std::size_t step = N / kPhases; // slide half-symbol per iteration with kPhases=2
 
     while (s_ofs + N <= samples.size()) {
-        // Dechirp windows: reuse scratch buffers when provided, otherwise allocate a temporary.
-        std::vector<CDouble> win_u_vec(N);
-        std::vector<CDouble> win_d_vec(N);
-        CDouble *win_u_ptr = win_u_vec.data();
-        CDouble *win_d_ptr = win_d_vec.data();
+        // Dechirp windows directly into float scratch buffers to avoid double temporaries.
+        auto &Su = scratch.ensure_spectrum_up_float(N);
+        auto &Sd = scratch.ensure_spectrum_down_float(N);
+        Su.resize(N);
+        Sd.resize(N);
         for (std::size_t i = 0; i < N; ++i) {
-            const auto cx = to_cdouble(samples[s_ofs + i]);
-            win_u_ptr[i] = cx * downchirp_[i];
-            win_d_ptr[i] = cx * upchirp_[i];
+            const auto sample = samples[s_ofs + i];
+            Su[i] = sample * downchirp_f_[i];
+            Sd[i] = sample * upchirp_f_[i];
         }
-
         // 2) Coarse DFT and peak bin selection for both orientations.
-        // Coarse FFT stage feeds off the dechirped windows; match scratch layout for embedded builds.
-        std::vector<CDouble> Su(win_u_ptr, win_u_ptr + N);
-        std::vector<CDouble> Sd(win_d_ptr, win_d_ptr + N);
-        Su = compute_spectrum_fft(Su, N, /*inverse=*/false);
-        Sd = compute_spectrum_fft(Sd, N, /*inverse=*/false);
+        lora::fft::transform_pow2(Su, /*inverse=*/false, scratch.coarse_fft_scratch);
+        lora::fft::transform_pow2(Sd, /*inverse=*/false, scratch.coarse_fft_scratch);
 
         std::size_t idx_u = argmax_abs(Su);
         std::size_t idx_d = argmax_abs(Sd);
@@ -293,25 +288,32 @@ std::optional<FrameSyncResult> FrameSynchronizer::synchronize(std::span<const Sa
                         break;
                     }
                     // Fine-grain dechirp buffer reused to avoid reallocations when scratch is provided.
-                    std::vector<CDouble> seg(N);
+                    auto &spec = scratch.ensure_fine_segment_float(N);
+                    spec.resize(N);
                     for (std::size_t n = 0; n < N; ++n) {
-                        seg[n] = to_cdouble(samples[static_cast<std::size_t>(start) + n]) * downchirp_[n];
+                        spec[n] = samples[static_cast<std::size_t>(start) + n] * downchirp_f_[n];
                     }
-                    auto spec = compute_spectrum_fft(seg, N * kFineOversample, /*inverse=*/false);
-                    std::size_t idx = argmax_abs(spec);
-                    double peak = static_cast<double>(idx);
-                    // Parabolic interpolation using neighbors to estimate fractional peak position.
-                    if (idx > 0 && idx + 1 < spec.size()) {
-                        const double ym1 = std::abs(spec[idx - 1]);
-                        const double y0 = std::abs(spec[idx]);
-                        const double yp1 = std::abs(spec[idx + 1]);
-                        const double denom = ym1 - 2.0 * y0 + yp1;
-                        if (std::abs(denom) > 1e-9) {
-                            peak += 0.5 * (ym1 - yp1) / denom;
+                    lora::fft::transform_pow2(spec, /*inverse=*/false, scratch.fine_fft_scratch);
+                    const std::size_t idx = argmax_abs(spec);
+                    const auto mag_at = [&](std::ptrdiff_t offset) -> double {
+                        std::ptrdiff_t wrapped = static_cast<std::ptrdiff_t>(idx) + offset;
+                        if (wrapped < 0) {
+                            wrapped += static_cast<std::ptrdiff_t>(N);
+                        } else if (wrapped >= static_cast<std::ptrdiff_t>(N)) {
+                            wrapped -= static_cast<std::ptrdiff_t>(N);
                         }
+                        return std::abs(spec[static_cast<std::size_t>(wrapped)]);
+                    };
+                    const double ym1 = mag_at(-1);
+                    const double y0 = mag_at(0);
+                    const double yp1 = mag_at(1);
+                    const double denom = ym1 - 2.0 * y0 + yp1;
+                    double delta = 0.0;
+                    if (std::abs(denom) > 1e-9) {
+                        delta = 0.5 * (ym1 - yp1) / denom;
                     }
-                    // Center to symmetric interval around 0.
-                    peak = wrap_mod(peak - 1.0 + fine_period / 2.0, fine_period) - fine_period / 2.0;
+                    double peak = (static_cast<double>(idx) + delta) * static_cast<double>(kFineOversample);
+                    peak = wrap_mod(peak - static_cast<double>(kFineOversample) + fine_period / 2.0, fine_period) - fine_period / 2.0;
                     m_u0 += peak;
                 }
                 if (!fine_valid) {
@@ -327,23 +329,32 @@ std::optional<FrameSyncResult> FrameSynchronizer::synchronize(std::span<const Sa
                         fine_valid = false;
                         break;
                     }
-                    std::vector<CDouble> seg(N);
+                    auto &spec = scratch.ensure_fine_segment_float(N);
+                    spec.resize(N);
                     for (std::size_t n = 0; n < N; ++n) {
-                        seg[n] = to_cdouble(samples[static_cast<std::size_t>(start) + n]) * upchirp_[n];
+                        spec[n] = samples[static_cast<std::size_t>(start) + n] * upchirp_f_[n];
                     }
-                    auto spec = compute_spectrum_fft(seg, N * kFineOversample, /*inverse=*/false);
-                    std::size_t idx = argmax_abs(spec);
-                    double peak = static_cast<double>(idx);
-                    if (idx > 0 && idx + 1 < spec.size()) {
-                        const double ym1 = std::abs(spec[idx - 1]);
-                        const double y0 = std::abs(spec[idx]);
-                        const double yp1 = std::abs(spec[idx + 1]);
-                        const double denom = ym1 - 2.0 * y0 + yp1;
-                        if (std::abs(denom) > 1e-9) {
-                            peak += 0.5 * (ym1 - yp1) / denom;
+                    lora::fft::transform_pow2(spec, /*inverse=*/false, scratch.fine_fft_scratch);
+                    const std::size_t idx = argmax_abs(spec);
+                    const auto mag_at = [&](std::ptrdiff_t offset) -> double {
+                        std::ptrdiff_t wrapped = static_cast<std::ptrdiff_t>(idx) + offset;
+                        if (wrapped < 0) {
+                            wrapped += static_cast<std::ptrdiff_t>(N);
+                        } else if (wrapped >= static_cast<std::ptrdiff_t>(N)) {
+                            wrapped -= static_cast<std::ptrdiff_t>(N);
                         }
+                        return std::abs(spec[static_cast<std::size_t>(wrapped)]);
+                    };
+                    const double ym1 = mag_at(-1);
+                    const double y0 = mag_at(0);
+                    const double yp1 = mag_at(1);
+                    const double denom = ym1 - 2.0 * y0 + yp1;
+                    double delta = 0.0;
+                    if (std::abs(denom) > 1e-9) {
+                        delta = 0.5 * (ym1 - yp1) / denom;
                     }
-                    peak = wrap_mod(peak - 1.0 + fine_period / 2.0, fine_period) - fine_period / 2.0;
+                    double peak = (static_cast<double>(idx) + delta) * static_cast<double>(kFineOversample);
+                    peak = wrap_mod(peak - static_cast<double>(kFineOversample) + fine_period / 2.0, fine_period) - fine_period / 2.0;
                     m_d0 += peak;
                 }
                 if (!fine_valid) {
@@ -392,7 +403,220 @@ std::optional<FrameSyncResult> FrameSynchronizer::synchronize(std::span<const Sa
                                     static_cast<std::ptrdiff_t>(11 * N);
     result.preamble_offset = preamble > 0 ? preamble : 0;
     result.cfo_hz = cfo_est;
+
+    if (const auto sr = estimate_sample_rate(samples, result.preamble_offset, scratch)) {
+        result.sample_rate_ratio = sr->ratio;
+        result.sample_rate_error_ppm = sr->ppm_error;
+        result.sample_rate_drift_per_symbol = sr->drift_per_symbol;
+    }
     return result;
+}
+
+std::optional<FrameSynchronizer::SampleRateEstimate>
+FrameSynchronizer::estimate_sample_rate(std::span<const Sample> samples,
+                                        std::ptrdiff_t preamble_offset,
+                                        Scratch &scratch) const {
+    if (preamble_offset < 0 || sps_ == 0) {
+        return std::nullopt;
+    }
+
+    const std::size_t N = sps_;
+    const double total_samples = static_cast<double>(samples.size());
+    const double base = static_cast<double>(preamble_offset);
+    if (base + static_cast<double>(N) + 2.0 >= total_samples) {
+        return std::nullopt;
+    }
+
+    constexpr double kSearchRange = 2.5;
+    const double min_index = std::max(0.0, std::floor(base - kSearchRange - 1.0));
+    const double max_symbol = 7.0; // highest symbol inspected in kSymbolPairs
+    double max_index = base + (max_symbol + 1.0) * static_cast<double>(N) + kSearchRange + 2.0;
+    if (max_index > total_samples) {
+        max_index = total_samples;
+    }
+    const std::size_t buffer_start = static_cast<std::size_t>(min_index);
+    std::size_t buffer_end = static_cast<std::size_t>(std::ceil(max_index));
+    if (buffer_end + 2 > samples.size()) {
+        buffer_end = samples.size() > 2 ? samples.size() - 2 : 0;
+    }
+    const std::size_t buffer_length = (buffer_end + 2 > buffer_start) ? (buffer_end + 2 - buffer_start) : 0;
+
+    if (buffer_length == 0) {
+        return std::nullopt;
+    }
+
+    auto &sr_buffer = scratch.ensure_sr_samples(buffer_length);
+    for (std::size_t i = 0; i < buffer_length; ++i) {
+        const auto &sample = samples[buffer_start + i];
+        sr_buffer[i] = CDouble(static_cast<double>(sample.real()), static_cast<double>(sample.imag()));
+    }
+    const CDouble *sr_data = sr_buffer.data();
+    const std::size_t sr_size = sr_buffer.size();
+    const double buffer_start_d = static_cast<double>(buffer_start);
+
+    const CDouble *downchirp_ptr = downchirp_.data();
+    static constexpr std::array<int, 6> kShiftCandidates{{-3, -2, -1, 0, 1, 2}};
+    static constexpr int kShiftMin = kShiftCandidates.front();
+    static constexpr int kShiftMax = kShiftCandidates.back();
+    static constexpr std::size_t kShiftCount = kShiftCandidates.size();
+
+    const auto estimate_delta = [&](std::size_t symbol_index, double &delta_out) -> bool {
+        const double expected_start = base + static_cast<double>(symbol_index) * static_cast<double>(N);
+        if (expected_start - kSearchRange < 0.0 ||
+            expected_start + static_cast<double>(N) + kSearchRange + 1.0 >= total_samples) {
+            return false;
+        }
+
+        struct DechirpSlice {
+            std::complex<double> *main = nullptr;
+            std::complex<double> *next = nullptr;
+        };
+
+        auto &cache_main = scratch.ensure_sr_dechirp_main(kShiftCount * N);
+        auto &cache_next = scratch.ensure_sr_dechirp_next(kShiftCount * N);
+        std::array<DechirpSlice, kShiftCount> shift_views{};
+
+        for (std::size_t shift_idx = 0; shift_idx < kShiftCount; ++shift_idx) {
+            const int shift = kShiftCandidates[shift_idx];
+            const double start = expected_start + static_cast<double>(shift);
+            if (start < 0.0 || start + static_cast<double>(N) + 1.0 >= total_samples) {
+                return false;
+            }
+            const double rel = start - buffer_start_d;
+            if (rel < 0.0) {
+                return false;
+            }
+            const auto base_index = static_cast<std::size_t>(rel);
+            if (base_index + N >= sr_size) {
+                return false;
+            }
+
+            auto *main_ptr = cache_main.data() + shift_idx * N;
+            auto *next_ptr = cache_next.data() + shift_idx * N;
+            for (std::size_t n = 0; n < N; ++n) {
+                const std::size_t sample_index = base_index + n;
+                const std::size_t next_sample_index = sample_index + 1;
+                if (next_sample_index >= sr_size) {
+                    return false;
+                }
+                main_ptr[n] = sr_data[sample_index] * downchirp_ptr[n];
+                next_ptr[n] = sr_data[next_sample_index] * downchirp_ptr[n];
+            }
+            shift_views[shift_idx] = DechirpSlice{main_ptr, next_ptr};
+        }
+
+        std::unordered_map<long long, double> metric_cache;
+        metric_cache.reserve(128);
+        const auto evaluate_metric = [&](double delta, double &metric_out) -> bool {
+            const long long key = static_cast<long long>(std::llround(delta * 100.0));
+            auto it = metric_cache.find(key);
+            if (it != metric_cache.end()) {
+                metric_out = it->second;
+                return true;
+            }
+            const double cursor_begin = expected_start + delta;
+            if (cursor_begin < 0.0 || cursor_begin + static_cast<double>(N) + 1.0 >= total_samples) {
+                return false;
+            }
+            const double shift_floor = std::floor(delta);
+            const int shift = static_cast<int>(shift_floor);
+            if (shift < kShiftMin || shift > kShiftMax) {
+                return false;
+            }
+            const std::size_t shift_index = static_cast<std::size_t>(shift - kShiftMin);
+            auto frac = delta - shift_floor;
+            if (frac < 0.0) {
+                if (frac > -1e-9) {
+                    frac = 0.0;
+                } else {
+                    return false;
+                }
+            } else if (frac >= 1.0) {
+                if (frac < 1.0 + 1e-9) {
+                    frac = 1.0 - 1e-9;
+                } else {
+                    return false;
+                }
+            }
+            const double w0 = 1.0 - frac;
+            const double w1 = frac;
+            const auto *main_ptr = shift_views[shift_index].main;
+            const auto *next_ptr = shift_views[shift_index].next;
+            if (main_ptr == nullptr || next_ptr == nullptr) {
+                return false;
+            }
+
+            std::complex<double> acc{0.0, 0.0};
+            for (std::size_t n = 0; n < N; ++n) {
+                acc += w0 * main_ptr[n] + w1 * next_ptr[n];
+            }
+            metric_out = std::norm(acc);
+            metric_cache.emplace(key, metric_out);
+            return true;
+        };
+
+        constexpr double kCoarseStep = 0.5;
+        double best_delta = 0.0;
+        double best_metric = -1.0;
+        for (double delta = -kSearchRange; delta <= kSearchRange; delta += kCoarseStep) {
+            double metric = 0.0;
+            if (evaluate_metric(delta, metric) && metric > best_metric) {
+                best_metric = metric;
+                best_delta = delta;
+            }
+        }
+        if (best_metric < 0.0) {
+            return false;
+        }
+
+        const std::array<std::pair<double, double>, 2> refinements{{{0.25, 0.05}, {0.08, 0.01}}};
+        for (const auto &[range, step] : refinements) {
+            double local_best_delta = best_delta;
+            double local_best_metric = best_metric;
+            for (double delta = best_delta - range; delta <= best_delta + range; delta += step) {
+                double metric = 0.0;
+                if (evaluate_metric(delta, metric) && metric > local_best_metric) {
+                    local_best_metric = metric;
+                    local_best_delta = delta;
+                }
+            }
+            best_delta = local_best_delta;
+            best_metric = local_best_metric;
+        }
+
+        delta_out = best_delta;
+        return true;
+    };
+
+    static constexpr std::pair<std::size_t, std::size_t> kSymbolPairs[] = {
+        {1, 7},
+        {0, 6},
+    };
+
+    for (const auto &[first_symbol, last_symbol] : kSymbolPairs) {
+        if (last_symbol <= first_symbol) {
+            continue;
+        }
+        double delta_first = 0.0;
+        double delta_last = 0.0;
+        if (!estimate_delta(first_symbol, delta_first) ||
+            !estimate_delta(last_symbol, delta_last)) {
+            continue;
+        }
+        const double symbols_between = static_cast<double>(last_symbol - first_symbol);
+        const double drift_per_symbol = (delta_last - delta_first) / symbols_between;
+        const double ratio = 1.0 + drift_per_symbol / static_cast<double>(N);
+        if (ratio <= 0.0 || !std::isfinite(ratio)) {
+            continue;
+        }
+        SampleRateEstimate estimate;
+        estimate.ratio = ratio;
+        estimate.drift_per_symbol = drift_per_symbol;
+        estimate.ppm_error = (ratio - 1.0) * 1e6;
+        return estimate;
+    }
+
+    return std::nullopt;
 }
 
 #ifdef LORA_EMBEDDED_PROFILE

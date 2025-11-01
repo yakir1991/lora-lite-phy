@@ -137,14 +137,14 @@ def pick_top_failure_bin(results: Dict[str, Any]) -> Tuple[Tuple[int,int,int,str
 def run_retry(binary: Path, vec: Path, meta: Meta) -> Dict[str, Any]:
     # Executes the statement `cmd = [`.
     cmd = [
-        # Executes the statement `str(binary), '--sf', str(meta.sf), '--bw', str(meta.bw), '--fs', str(meta.fs),`.
         str(binary), '--sf', str(meta.sf), '--bw', str(meta.bw), '--fs', str(meta.fs),
-        # Executes the statement `'--ldro', '1' if meta.ldro else '0', '--sync-word', str(meta.sync_word),`.
-        '--ldro', '1' if meta.ldro else '0', '--sync-word', str(meta.sync_word),
-        # Executes the statement `'--streaming', '--hdr-cfo-sweep', '--hdr-cfo-range', '300', '--hdr-cfo-step', '25', str(vec),`.
-        '--streaming', '--hdr-cfo-sweep', '--hdr-cfo-range', '300', '--hdr-cfo-step', '25', str(vec),
-    # Closes the previously opened list indexing or literal.
     ]
+    if meta.ldro_mode is not None:
+        cmd += ['--ldro-mode', str(int(meta.ldro_mode))]
+    else:
+        cmd += ['--ldro', '1' if meta.ldro else '0']
+    cmd += ['--sync-word', str(meta.sync_word),
+            '--streaming', '--hdr-cfo-sweep', '--hdr-cfo-range', '300', '--hdr-cfo-step', '25', str(vec)]
     # Begins a conditional branch to check a condition.
     if meta.impl:
         # Executes the statement `cmd.extend(['--implicit-header', '--payload-len', str(meta.payload_len), '--cr', str(meta.cr)])`.

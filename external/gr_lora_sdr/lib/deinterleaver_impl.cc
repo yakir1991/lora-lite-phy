@@ -5,7 +5,109 @@
 #include <gnuradio/io_signature.h>
 #include <gnuradio/lora_sdr/utilities.h>
 
+#include <cstdint>
+#include <cstdlib>
+#include <fstream>
+#include <iomanip>
+#include <mutex>
+#include <sstream>
+
 #include "deinterleaver_impl.h"
+
+namespace {
+
+using gr::lora_sdr::LLR;
+
+std::ofstream &deinterleaver_trace_stream() {
+    static std::ofstream stream;
+    static std::string path_value;
+
+    const char *env_path = std::getenv("GR_LORA_TRACE_DEINTERLEAVER");
+    std::string requested_path = (env_path && env_path[0] != '\0') ? std::string(env_path) : std::string();
+
+    if (!requested_path.empty() && requested_path != path_value) {
+        if (stream.is_open()) {
+            stream.close();
+        }
+        path_value = requested_path;
+    }
+
+    if (!path_value.empty() && !stream.is_open()) {
+        stream.open(path_value, std::ios::out | std::ios::app);
+        stream << std::setprecision(6) << std::fixed;
+    }
+
+    return stream;
+}
+
+std::mutex &deinterleaver_trace_mutex() {
+    static std::mutex mtx;
+    return mtx;
+}
+
+uint64_t next_deinterleaver_trace_id() {
+    static uint64_t counter = 0;
+    return counter++;
+}
+
+template <typename Matrix>
+std::string matrix_to_string(const Matrix &matrix) {
+    std::ostringstream oss;
+    oss << '[';
+    for (std::size_t row = 0; row < matrix.size(); ++row) {
+        if (row != 0) {
+            oss << ',';
+        }
+        oss << '[';
+        for (std::size_t col = 0; col < matrix[row].size(); ++col) {
+            if (col != 0) {
+                oss << ',';
+            }
+            oss << matrix[row][col];
+        }
+        oss << ']';
+    }
+    oss << ']';
+    return oss.str();
+}
+
+void log_deinterleaver_trace(bool is_header,
+                             int sf,
+                             int sf_app,
+                             int cw_len,
+                             const std::vector<std::vector<bool>> &inter_bin,
+                             const std::vector<std::vector<bool>> &deinter_bin) {
+    auto &stream = deinterleaver_trace_stream();
+    if (!stream.is_open()) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(deinterleaver_trace_mutex());
+    const uint64_t id = next_deinterleaver_trace_id();
+    stream << "{\"id\":" << id << ",\"stage\":\"hard\",\"is_header\":"
+           << (is_header ? 1 : 0) << ",\"sf\":" << sf << ",\"sf_app\":" << sf_app
+           << ",\"cw_len\":" << cw_len << ",\"inter\":" << matrix_to_string(inter_bin)
+           << ",\"deinter\":" << matrix_to_string(deinter_bin) << "}\n";
+}
+
+void log_deinterleaver_trace(bool is_header,
+                             int sf,
+                             int sf_app,
+                             int cw_len,
+                             const std::vector<std::vector<LLR>> &inter_bin,
+                             const std::vector<std::vector<LLR>> &deinter_bin) {
+    auto &stream = deinterleaver_trace_stream();
+    if (!stream.is_open()) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(deinterleaver_trace_mutex());
+    const uint64_t id = next_deinterleaver_trace_id();
+    stream << "{\"id\":" << id << ",\"stage\":\"soft\",\"is_header\":"
+           << (is_header ? 1 : 0) << ",\"sf\":" << sf << ",\"sf_app\":" << sf_app
+           << ",\"cw_len\":" << cw_len << ",\"inter\":" << matrix_to_string(inter_bin)
+           << ",\"deinter\":" << matrix_to_string(deinter_bin) << "}\n";
+}
+
+} // namespace
 
 namespace gr {
     namespace lora_sdr {
@@ -92,6 +194,8 @@ namespace gr {
                         // std::cout << std::endl;
                     }
 
+                    log_deinterleaver_trace(m_is_header, m_sf, sf_app, cw_len, inter_bin, deinter_bin);
+
                     for (uint32_t i = 0; i < sf_app; i++) {
                         // Write only the cw_len bits over the 8 bits space available
                         memcpy(out2 + i * 8, deinter_bin[i].data(), cw_len * sizeof(LLR));
@@ -126,6 +230,8 @@ namespace gr {
                         }
                         // std::cout << std::endl;
                     }
+
+                    log_deinterleaver_trace(m_is_header, m_sf, sf_app, cw_len, inter_bin, deinter_bin);
 
                     // transform codewords from binary vector to dec
                     for (unsigned int i = 0; i < sf_app; i++) {

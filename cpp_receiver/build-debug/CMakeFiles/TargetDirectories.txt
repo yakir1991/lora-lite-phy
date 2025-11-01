@@ -1,0 +1,10 @@
+/home/aquay/lora-lite-phy/cpp_receiver/build-debug/CMakeFiles/lora_cpp_receiver.dir
+/home/aquay/lora-lite-phy/cpp_receiver/build-debug/CMakeFiles/run_stage_tests.dir
+/home/aquay/lora-lite-phy/cpp_receiver/build-debug/CMakeFiles/decode_cli.dir
+/home/aquay/lora-lite-phy/cpp_receiver/build-debug/CMakeFiles/sync_mags.dir
+/home/aquay/lora-lite-phy/cpp_receiver/build-debug/CMakeFiles/streaming_harness.dir
+/home/aquay/lora-lite-phy/cpp_receiver/build-debug/CMakeFiles/tx_rx_simulation.dir
+/home/aquay/lora-lite-phy/cpp_receiver/build-debug/CMakeFiles/socket_stream_client.dir
+/home/aquay/lora-lite-phy/cpp_receiver/build-debug/CMakeFiles/header_probe.dir
+/home/aquay/lora-lite-phy/cpp_receiver/build-debug/CMakeFiles/edit_cache.dir
+/home/aquay/lora-lite-phy/cpp_receiver/build-debug/CMakeFiles/rebuild_cache.dir

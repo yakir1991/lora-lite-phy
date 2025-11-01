@@ -377,7 +377,7 @@ int main(int argc, char **argv) {
     params.bandwidth_hz = cfg.bandwidth_hz;
     params.sample_rate_hz = cfg.sample_rate_hz;
     params.sync_word = cfg.sync_word;
-    params.ldro_enabled = false;
+    params.ldro_mode = lora::DecodeParams::LdroMode::Off;
 
     lora::Receiver receiver(params);
     const auto result = receiver.decode_samples(iq);

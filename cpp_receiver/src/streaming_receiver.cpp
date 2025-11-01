@@ -1,11 +1,15 @@
 #include "streaming_receiver.hpp"
 
 #include <algorithm>
+#include <array>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <vector>
+
+#include "sample_rate_resampler.hpp"
 
 // The streaming receiver keeps enough rolling state to decode arbitrarily long
 // IQ streams while emitting structured events (sync/header/payload bytes).
@@ -18,18 +22,24 @@
 namespace {
 
 std::vector<std::ptrdiff_t> build_header_offset_candidates(std::size_t sps) {
-    std::vector<std::ptrdiff_t> offsets{0};
+    std::vector<std::ptrdiff_t> offsets;
+    offsets.push_back(0);
     const double fractions[] = {1.0 / 64.0, 1.0 / 32.0, 1.0 / 16.0, 1.0 / 8.0, 1.0 / 4.0, 1.0 / 2.0, 1.0, 2.0};
+    std::vector<std::ptrdiff_t> steps;
+    steps.reserve(std::size(fractions));
     for (double frac : fractions) {
         const auto step = static_cast<std::ptrdiff_t>(std::llround(frac * static_cast<double>(sps)));
         if (step <= 0) {
             continue;
         }
+        steps.push_back(step);
+    }
+    std::sort(steps.begin(), steps.end());
+    steps.erase(std::unique(steps.begin(), steps.end()), steps.end());
+    for (auto step : steps) {
         offsets.push_back(step);
         offsets.push_back(-step);
     }
-    std::sort(offsets.begin(), offsets.end());
-    offsets.erase(std::unique(offsets.begin(), offsets.end()), offsets.end());
     return offsets;
 }
 
@@ -54,7 +64,11 @@ StreamingReceiver::StreamingReceiver(const DecodeParams &params)
     : params_(params),
       synchronizer_(params.sf, params.bandwidth_hz, params.sample_rate_hz),
       header_decoder_(params.sf, params.bandwidth_hz, params.sample_rate_hz),
-      payload_decoder_(params.sf, params.bandwidth_hz, params.sample_rate_hz) {
+      payload_decoder_(params.sf, params.bandwidth_hz, params.sample_rate_hz),
+      last_successful_sample_rate_ratio_(1.0),
+      last_ratio_valid_(false),
+      cfo_sweep_scale_(1.0),
+      easy_frame_streak_(0) {
     // Parameter sanity checks mirror those in the synchronizer/decoders to fail fast
     if (params.sf < 5 || params.sf > 12) {
         throw std::invalid_argument("Spreading factor out of supported range (5-12)");
@@ -91,12 +105,15 @@ StreamingReceiver::push_samples(std::span<const Sample> chunk) {
     const auto &buffer_before = synchronizer_.buffer();
     const std::size_t buffer_before_size = buffer_before.size();
     // Forward scratch-aware detection: reuses embedded buffers when available.
+    const auto sync_begin = std::chrono::steady_clock::now();
     const auto detection = synchronizer_.update(chunk);
+    const auto sync_end = std::chrono::steady_clock::now();
+    sync_time_us_acc_ += std::chrono::duration<double, std::micro>(sync_end - sync_begin).count();
     const auto &buffer = synchronizer_.buffer();
     const std::size_t buffer_after_size = buffer.size();
-    const std::size_t global_offset = synchronizer_.buffer_global_offset();
-
     const bool emit_payload_bytes = params_.emit_payload_bytes;
+    const bool payload_ldro = params_.ldro_enabled_for_payload();
+    const double resample_threshold_ratio = std::max(0.0, params_.sample_rate_resample_threshold_ppm) * 1e-6;
 
     // Keep `capture_` aligned with the synchronizer buffer by appending the same
     // newly-added tail (when possible), otherwise fall back to appending the raw chunk.
@@ -123,6 +140,29 @@ StreamingReceiver::push_samples(std::span<const Sample> chunk) {
         if (detection.has_value()) {
             pending_.emplace();
             pending_->sync = *detection;
+            pending_->ldro_enabled = payload_ldro;
+            if (params_.enable_sample_rate_correction) {
+                pending_->sync.sample_rate_ratio = params_.sample_rate_ratio;
+            } else {
+                if (pending_->sync.sample_rate_ratio <= 0.0) {
+                    if (last_ratio_valid_) {
+                        pending_->sync.sample_rate_ratio = last_successful_sample_rate_ratio_;
+                        pending_->used_cached_sample_rate = true;
+                    } else {
+                        pending_->sync.sample_rate_ratio = 1.0;
+                    }
+                } else if (last_ratio_valid_ &&
+                           std::abs(pending_->sync.sample_rate_ratio - last_successful_sample_rate_ratio_) < 1e-9) {
+                    pending_->used_cached_sample_rate = true;
+                }
+            }
+            pending_->initial_cfo_hz = pending_->sync.cfo_hz;
+            pending_->initial_sample_rate_ratio =
+                (pending_->sync.sample_rate_ratio > 0.0) ? pending_->sync.sample_rate_ratio : 1.0;
+            pending_->initial_sample_rate_error_ppm = pending_->sync.sample_rate_error_ppm;
+            pending_->initial_sample_rate_drift_per_symbol = pending_->sync.sample_rate_drift_per_symbol;
+            pending_->resample_active = false;
+            pending_->resample_ratio = (pending_->sync.sample_rate_ratio > 0.0) ? pending_->sync.sample_rate_ratio : 1.0;
             const std::size_t buffer_base = capture_.size() >= buffer_after_size ? capture_.size() - buffer_after_size : 0;
             pending_->preamble_offset = buffer_base + static_cast<std::size_t>(std::max<std::ptrdiff_t>(0, detection->preamble_offset));
             pending_->global_sample_index = capture_global_offset_ + pending_->preamble_offset;
@@ -170,7 +210,7 @@ StreamingReceiver::push_samples(std::span<const Sample> chunk) {
             // Use local sync aligned to preamble start
             frame.sync = make_local_sync(frame.sync, frame.preamble_offset);
             // Compute required samples from preamble to end of payload window
-            const bool ldro_enabled = params_.ldro_enabled;
+            const bool ldro_enabled = frame.ldro_enabled;
             const int payload_syms = compute_payload_symbol_count(*frame.header, ldro_enabled);
             if (payload_syms > 0) {
                 const std::size_t guard = frame.sync.p_ofs_est >= 0 ? static_cast<std::size_t>(frame.sync.p_ofs_est) : 0;
@@ -207,6 +247,32 @@ StreamingReceiver::push_samples(std::span<const Sample> chunk) {
             header_bits_span = {header_bits_storage.data(), header_bits_storage.size()};
     #endif
             const std::vector<Sample> view(capture_.begin() + frame.preamble_offset, capture_.end());
+            FrameSyncResult best_sync = make_local_sync(frame.sync, frame.preamble_offset);
+
+            const double sr_ratio = (frame.sync.sample_rate_ratio > 0.0) ? frame.sync.sample_rate_ratio : 1.0;
+            const bool resample_view = resample_threshold_ratio > 0.0 &&
+                                       std::abs(sr_ratio - 1.0) > resample_threshold_ratio;
+            std::vector<Sample> corrected_view;
+            const std::vector<Sample> *active_view = &view;
+            if (resample_view) {
+                SampleRateResampler resampler;
+                resampler.configure(sr_ratio);
+                const auto res_start = std::chrono::steady_clock::now();
+                corrected_view = resampler.resample(view);
+                const auto res_end = std::chrono::steady_clock::now();
+                resample_time_us_acc_ += std::chrono::duration<double, std::micro>(res_end - res_start).count();
+                active_view = &corrected_view;
+                auto scale_index = [&](std::ptrdiff_t value) -> std::ptrdiff_t {
+                    const double scaled = static_cast<double>(value) / sr_ratio;
+                    return static_cast<std::ptrdiff_t>(std::llround(scaled));
+                };
+                best_sync.p_ofs_est = scale_index(best_sync.p_ofs_est);
+                best_sync.sample_rate_ratio = 1.0;
+                best_sync.sample_rate_error_ppm = 0.0;
+                best_sync.sample_rate_drift_per_symbol = 0.0;
+            }
+            frame.resample_active = resample_view;
+            frame.resample_ratio = sr_ratio;
 
             // Optional: dump an IQ slice covering preamble through end-of-header and extra payload for diagnostics
             auto dump_header_iq = [&](const FrameSyncResult &sync_local,
@@ -248,7 +314,7 @@ StreamingReceiver::push_samples(std::span<const Sample> chunk) {
                         meta << "  \"cr\": " << (hdr_opt ? hdr_opt->cr : params_.implicit_cr) << ",\n";
                         meta << "  \"has_crc\": " << (hdr_opt ? (hdr_opt->has_crc ? 1 : 0) : (params_.implicit_has_crc ? 1 : 0)) << ",\n";
                         meta << "  \"impl_header\": " << (params_.implicit_header ? 1 : 0) << ",\n";
-                        meta << "  \"ldro_mode\": " << (params_.ldro_enabled ? 1 : 0) << ",\n";
+                        meta << "  \"ldro_mode\": " << static_cast<int>(params_.ldro_mode) << ",\n";
                         meta << "  \"sync_word\": " << static_cast<unsigned>(params_.sync_word) << ",\n";
                         meta << "  \"payload_len\": " << (hdr_opt ? hdr_opt->payload_length : params_.implicit_payload_length) << ",\n";
                         meta << "  \"cfo_used_hz\": " << sync_local.cfo_hz << ",\n";
@@ -274,16 +340,16 @@ StreamingReceiver::push_samples(std::span<const Sample> chunk) {
             };
 
             const auto candidates = build_header_offset_candidates(sps_);
-            FrameSyncResult best_sync = make_local_sync(frame.sync, frame.preamble_offset);
-            const double sweep_range = std::max(params_.header_cfo_range_hz,
-                                                std::max(200.0, std::abs(best_sync.cfo_hz) * 2.5));
+            double sweep_range = std::max(params_.header_cfo_range_hz,
+                                          std::max(200.0, std::abs(best_sync.cfo_hz) * 2.5));
             double sweep_step = params_.header_cfo_step_hz > 0.0
                                     ? std::min(params_.header_cfo_step_hz, sweep_range / 20.0)
                                     : sweep_range / 40.0;
             if (sweep_step <= 0.0) {
                 sweep_step = sweep_range / 40.0;
             }
-            sweep_step = std::max(2.0, sweep_step);
+            sweep_range = std::max(1.0, sweep_range * cfo_sweep_scale_);
+            sweep_step = std::max(2.0, sweep_step * cfo_sweep_scale_);
 
 
             std::optional<HeaderDecodeResult> header;
@@ -292,7 +358,10 @@ StreamingReceiver::push_samples(std::span<const Sample> chunk) {
             bool header_found = false;
 
             auto attempt_decode = [&](const FrameSyncResult &candidate_sync) -> bool {
-                auto hdr = header_decoder_.decode(view, candidate_sync, header_symbol_span, header_bits_span);
+                const auto hdr_start = std::chrono::steady_clock::now();
+                auto hdr = header_decoder_.decode(*active_view, candidate_sync, header_symbol_span, header_bits_span);
+                const auto hdr_end = std::chrono::steady_clock::now();
+                header_time_us_acc_ += std::chrono::duration<double, std::micro>(hdr_end - hdr_start).count();
                 if (hdr.has_value() && header_result_sane(*hdr)) {
                     frame.sync = candidate_sync;
                     header = std::move(hdr);
@@ -321,9 +390,11 @@ StreamingReceiver::push_samples(std::span<const Sample> chunk) {
 
                 for (double delta = sweep_step; delta <= sweep_range && !header_found; delta += sweep_step) {
                     for (double signed_delta : {+delta, -delta}) {
+                        ++frame.cfo_sweep_attempts;
                         FrameSyncResult cfo_trial = trial_sync;
                         cfo_trial.cfo_hz += signed_delta;
                         if (attempt_decode(cfo_trial)) {
+                            ++frame.cfo_sweep_successes;
                             dump_header_iq(frame.sync, &*header, cand, attempts);
                             header_found = true;
                             break;
@@ -360,7 +431,7 @@ StreamingReceiver::push_samples(std::span<const Sample> chunk) {
 
                 // Predict the number of payload symbols and compute total samples needed
                 // from the preamble start to cover the entire payload window.
-                const bool ldro_enabled = params_.ldro_enabled;
+                const bool ldro_enabled = frame.ldro_enabled;
                 const int payload_syms = compute_payload_symbol_count(*header, ldro_enabled);
                 if (payload_syms > 0) {
                     const std::size_t guard = frame.sync.p_ofs_est >= 0 ? static_cast<std::size_t>(frame.sync.p_ofs_est) : 0;
@@ -406,15 +477,39 @@ StreamingReceiver::push_samples(std::span<const Sample> chunk) {
                      frame.samples_needed,
                      capture_.size());
 #endif
-        const std::vector<Sample> view(capture_.begin() + frame.preamble_offset,
-                                       capture_.begin() + frame.preamble_offset + frame.samples_needed);
-    PayloadDecoder::MutableByteSpan payload_span;
-    PayloadDecoder::MutableIntSpan raw_symbol_span;
+        const std::size_t payload_window_end = frame.preamble_offset + frame.samples_needed;
+        std::size_t tail_guard = 0;
+        if (capture_.size() > payload_window_end) {
+            tail_guard = std::min<std::size_t>(sps_, capture_.size() - payload_window_end);
+        }
+        const auto view_end = capture_.begin() +
+                              static_cast<std::ptrdiff_t>(payload_window_end + tail_guard);
+        const std::vector<Sample> view(capture_.begin() + frame.preamble_offset, view_end);
+        const bool resample_payload_view = frame.resample_active &&
+                                           resample_threshold_ratio > 0.0 &&
+                                           std::abs(frame.resample_ratio - 1.0) > resample_threshold_ratio;
+        std::vector<Sample> corrected_view;
+        const std::vector<Sample> *active_view = &view;
+        FrameSyncResult payload_sync = frame.sync;
+        if (resample_payload_view) {
+            SampleRateResampler resampler;
+            resampler.configure(frame.resample_ratio);
+            const auto res_start = std::chrono::steady_clock::now();
+            corrected_view = resampler.resample(view);
+            const auto res_end = std::chrono::steady_clock::now();
+            resample_time_us_acc_ += std::chrono::duration<double, std::micro>(res_end - res_start).count();
+            active_view = &corrected_view;
+            payload_sync.sample_rate_ratio = 1.0;
+            payload_sync.sample_rate_error_ppm = 0.0;
+            payload_sync.sample_rate_drift_per_symbol = 0.0;
+        }
+        PayloadDecoder::MutableByteSpan payload_span;
+        PayloadDecoder::MutableIntSpan raw_symbol_span;
 #ifdef LORA_EMBEDDED_PROFILE
     static std::vector<unsigned char> payload_storage;
     static std::vector<int> raw_symbol_storage;
     payload_storage.resize(static_cast<std::size_t>(frame.header->payload_length));
-    const int symbol_count = payload_decoder_.compute_payload_symbol_count(*frame.header, params_.ldro_enabled);
+    const int symbol_count = payload_decoder_.compute_payload_symbol_count(*frame.header, frame.ldro_enabled);
     raw_symbol_storage.resize(symbol_count > 0 ? static_cast<std::size_t>(symbol_count) : 0);
     if (!payload_storage.empty()) {
         payload_span = {payload_storage.data(), payload_storage.size()};
@@ -423,7 +518,36 @@ StreamingReceiver::push_samples(std::span<const Sample> chunk) {
         raw_symbol_span = {raw_symbol_storage.data(), raw_symbol_storage.size()};
     }
 #endif
-    const auto payload = payload_decoder_.decode(view, frame.sync, *frame.header, params_.ldro_enabled, payload_span, raw_symbol_span);
+        const auto payload_start = std::chrono::steady_clock::now();
+        auto payload = payload_decoder_.decode(*active_view, payload_sync, *frame.header, frame.ldro_enabled, params_.soft_decoding, payload_span, raw_symbol_span);
+        const auto payload_end = std::chrono::steady_clock::now();
+        payload_time_us_acc_ += std::chrono::duration<double, std::micro>(payload_end - payload_start).count();
+
+            if (frame.header.has_value()) {
+                if (!payload.has_value() || !payload->crc_ok) {
+                    ++frame.payload_retry_attempts;
+                    const auto retry_start = std::chrono::steady_clock::now();
+                    auto recovered = search_payload_with_sample_rates(frame, view);
+                    const auto retry_end = std::chrono::steady_clock::now();
+                    retry_time_us_acc_ += std::chrono::duration<double, std::micro>(retry_end - retry_start).count();
+                    if (recovered.has_value()) {
+                        payload = std::move(recovered);
+                    }
+                } else if (frame.sync.sample_rate_ratio > 0.0 &&
+                           params_.sample_rate_resample_threshold_ppm > 0.0) {
+                    const double resample_thresh = params_.sample_rate_resample_threshold_ppm * 1e-6;
+                    if (std::abs(frame.sync.sample_rate_ratio - 1.0) > resample_thresh) {
+                        ++frame.payload_retry_attempts;
+                        const auto retry_start = std::chrono::steady_clock::now();
+                        auto recovered = search_payload_with_sample_rates(frame, view);
+                        const auto retry_end = std::chrono::steady_clock::now();
+                        retry_time_us_acc_ += std::chrono::duration<double, std::micro>(retry_end - retry_start).count();
+                        if (recovered.has_value()) {
+                            payload = std::move(recovered);
+                        }
+                    }
+                }
+        }
 
         FrameEvent ev;
         ev.global_sample_index = frame.global_sample_index + frame.samples_needed;
@@ -447,8 +571,35 @@ StreamingReceiver::push_samples(std::span<const Sample> chunk) {
             result.payload_crc_ok = payload->crc_ok;
             result.payload.assign(payload->byte_view.begin(), payload->byte_view.end());
             result.raw_payload_symbols.assign(payload->raw_symbol_view.begin(), payload->raw_symbol_view.end());
+            result.payload_symbol_bins.assign(payload->symbol_bin_view.begin(), payload->symbol_bin_view.end());
+            result.payload_degray_values.assign(payload->degray_view.begin(), payload->degray_view.end());
             result.p_ofs_est = frame.sync.p_ofs_est;
             result.header_payload_length = frame.header->payload_length;
+            if (frame.resample_active) {
+                result.sample_rate_ratio_used = frame.resample_ratio;
+            } else if (frame.sync.sample_rate_ratio > 0.0) {
+                result.sample_rate_ratio_used = frame.sync.sample_rate_ratio;
+            } else {
+                result.sample_rate_ratio_used = 1.0;
+            }
+            result.sr_scan_attempts = frame.sr_scan_attempts;
+            result.sr_scan_successes = frame.sr_scan_successes;
+            result.cfo_sweep_attempts = frame.cfo_sweep_attempts;
+            result.cfo_sweep_successes = frame.cfo_sweep_successes;
+            result.payload_retry_attempts = frame.payload_retry_attempts;
+            result.used_cached_sample_rate = frame.used_cached_sample_rate;
+            result.sync_time_us = sync_time_us_acc_;
+            result.header_time_us = header_time_us_acc_;
+            result.payload_time_us = payload_time_us_acc_;
+            result.resample_time_us = resample_time_us_acc_;
+            result.retry_time_us = retry_time_us_acc_;
+            result.ldro_used = frame.ldro_enabled;
+            result.cfo_initial_hz = frame.initial_cfo_hz;
+            result.cfo_final_hz = frame.sync.cfo_hz;
+            result.sample_rate_ratio_initial = frame.initial_sample_rate_ratio;
+            result.sample_rate_error_ppm = frame.sync.sample_rate_error_ppm;
+            result.sample_rate_error_initial_ppm = frame.initial_sample_rate_error_ppm;
+            result.sample_rate_drift_per_symbol = frame.sync.sample_rate_drift_per_symbol;
 
             ev.type = FrameEvent::Type::FrameDone;
             ev.result = std::move(result);
@@ -465,9 +616,29 @@ StreamingReceiver::push_samples(std::span<const Sample> chunk) {
         }
         events.push_back(ev);
 
+        if (ev.type == FrameEvent::Type::FrameDone && ev.result.has_value() && ev.result->success) {
+            last_successful_sample_rate_ratio_ = ev.result->sample_rate_ratio_used;
+            last_ratio_valid_ = true;
+            if (frame.cfo_sweep_successes == 0 && frame.sr_scan_successes == 0 && frame.payload_retry_attempts == 0) {
+                ++easy_frame_streak_;
+                cfo_sweep_scale_ = std::max(0.5, cfo_sweep_scale_ * 0.85);
+            } else {
+                easy_frame_streak_ = 0;
+                cfo_sweep_scale_ = std::min(2.0, cfo_sweep_scale_ * 1.2);
+            }
+        } else if (ev.type == FrameEvent::Type::FrameError) {
+            easy_frame_streak_ = 0;
+            cfo_sweep_scale_ = std::min(2.0, cfo_sweep_scale_ * 1.2);
+        }
+
         // Advance all buffers past this frame and clear the pending state.
         finalize_frame(frame.preamble_offset + frame.samples_needed);
         pending_.reset();
+        sync_time_us_acc_ = 0.0;
+        header_time_us_acc_ = 0.0;
+        payload_time_us_acc_ = 0.0;
+        resample_time_us_acc_ = 0.0;
+        retry_time_us_acc_ = 0.0;
     }
 
     return events;
@@ -479,6 +650,11 @@ void StreamingReceiver::reset() {
     capture_.clear();
     capture_global_offset_ = 0;
     pending_.reset();
+    sync_time_us_acc_ = 0.0;
+    header_time_us_acc_ = 0.0;
+    payload_time_us_acc_ = 0.0;
+    resample_time_us_acc_ = 0.0;
+    retry_time_us_acc_ = 0.0;
 }
 
 bool StreamingReceiver::header_ready(const PendingFrame &frame, const std::vector<Sample> &buffer) const {
@@ -516,6 +692,180 @@ std::size_t StreamingReceiver::payload_offset_samples() const {
 int StreamingReceiver::compute_payload_symbol_count(const HeaderDecodeResult &header, bool ldro_enabled) const {
     // Delegate to the payload decoder which encapsulates CR/SF/LDRO specifics.
     return payload_decoder_.compute_payload_symbol_count(header, ldro_enabled);
+}
+
+std::vector<double> StreamingReceiver::build_sample_rate_candidates(const PendingFrame &frame) const {
+    static constexpr std::array<double, 7> ppm_offsets{0.0, -50.0, +50.0, -75.0, +75.0, -100.0, +100.0};
+    std::vector<double> candidates;
+    candidates.reserve(ppm_offsets.size() + 4);
+
+    auto append_unique = [&](double ratio) {
+        if (ratio <= 0.0) {
+            return;
+        }
+        for (double existing : candidates) {
+            if (std::abs(existing - ratio) < 1e-9) {
+                return;
+            }
+        }
+        candidates.push_back(ratio);
+    };
+
+    const double base = (frame.sync.sample_rate_ratio > 0.0) ? frame.sync.sample_rate_ratio : 1.0;
+    append_unique(base);
+    append_unique(1.0);
+    if (last_ratio_valid_) {
+        append_unique(last_successful_sample_rate_ratio_);
+    }
+    if (std::abs(params_.sample_rate_ratio - 1.0) > 1e-9) {
+        append_unique(params_.sample_rate_ratio);
+    }
+    append_unique(frame.resample_ratio);
+
+    for (double ppm : ppm_offsets) {
+        const double ratio = base * (1.0 + ppm * 1e-6);
+        append_unique(ratio);
+    }
+
+    return candidates;
+}
+
+std::optional<PayloadDecodeResult> StreamingReceiver::search_payload_offsets(const std::vector<Sample> &view,
+                                                                            PendingFrame &frame,
+                                                                            FrameSyncResult &sync,
+                                                                            const HeaderDecodeResult &header) {
+    const auto offsets = build_header_offset_candidates(sps_);
+    const double base_cfo = sync.cfo_hz;
+    double sweep_range = std::max(params_.header_cfo_range_hz, std::max(200.0, std::abs(base_cfo) * 2.5));
+    double sweep_step = params_.header_cfo_step_hz > 0.0
+                            ? std::min(params_.header_cfo_step_hz, sweep_range / 20.0)
+                            : sweep_range / 40.0;
+    if (sweep_step <= 0.0) {
+        sweep_step = sweep_range / 40.0;
+    }
+    sweep_range = std::max(1.0, sweep_range * cfo_sweep_scale_);
+    sweep_step = std::max(2.0, sweep_step * cfo_sweep_scale_);
+
+    for (std::ptrdiff_t offset : offsets) {
+        FrameSyncResult trial_sync = sync;
+        trial_sync.p_ofs_est += offset;
+
+        const auto payload_start = std::chrono::steady_clock::now();
+        auto payload = payload_decoder_.decode(view, trial_sync, header, frame.ldro_enabled, params_.soft_decoding);
+        const auto payload_end = std::chrono::steady_clock::now();
+        payload_time_us_acc_ += std::chrono::duration<double, std::micro>(payload_end - payload_start).count();
+        if (payload.has_value() && payload->crc_ok) {
+            sync = trial_sync;
+            return payload;
+        }
+
+        for (double delta = sweep_step; delta <= sweep_range; delta += sweep_step) {
+            for (double signed_delta : {+delta, -delta}) {
+                ++frame.cfo_sweep_attempts;
+                FrameSyncResult cfo_trial = trial_sync;
+                cfo_trial.cfo_hz = sync.cfo_hz + signed_delta;
+                const auto payload_start = std::chrono::steady_clock::now();
+                payload = payload_decoder_.decode(view, cfo_trial, header, frame.ldro_enabled, params_.soft_decoding);
+                const auto payload_end = std::chrono::steady_clock::now();
+                payload_time_us_acc_ += std::chrono::duration<double, std::micro>(payload_end - payload_start).count();
+                if (payload.has_value() && payload->crc_ok) {
+                    ++frame.cfo_sweep_successes;
+                    sync = cfo_trial;
+                    return payload;
+                }
+            }
+        }
+    }
+
+    return std::nullopt;
+}
+
+std::optional<PayloadDecodeResult> StreamingReceiver::search_payload_with_sample_rates(PendingFrame &frame,
+                                                                                      const std::vector<Sample> &view) {
+    if (!frame.header.has_value()) {
+        return std::nullopt;
+    }
+
+    const auto candidates = build_sample_rate_candidates(frame);
+    const double current_ratio = (frame.sync.sample_rate_ratio > 0.0) ? frame.sync.sample_rate_ratio : 1.0;
+
+    for (double ratio : candidates) {
+        if (std::abs(ratio - current_ratio) < 1e-9) {
+            continue;
+        }
+        ++frame.sr_scan_attempts;
+
+        FrameSyncResult trial_sync = frame.sync;
+        trial_sync.sample_rate_ratio = ratio;
+        trial_sync.sample_rate_error_ppm = (ratio - 1.0) * 1e6;
+        trial_sync.sample_rate_drift_per_symbol = (ratio - 1.0) * static_cast<double>(sps_);
+
+        HeaderDecodeResult header_trial = *frame.header;
+        if (!header_trial.implicit_header) {
+            const auto hdr_start = std::chrono::steady_clock::now();
+            auto header_candidate = header_decoder_.decode(view, trial_sync);
+            const auto hdr_end = std::chrono::steady_clock::now();
+            header_time_us_acc_ += std::chrono::duration<double, std::micro>(hdr_end - hdr_start).count();
+            if (header_candidate.has_value() && header_result_sane(*header_candidate)) {
+                header_trial = *header_candidate;
+            }
+        }
+
+        const auto payload_start = std::chrono::steady_clock::now();
+        auto payload = payload_decoder_.decode(view, trial_sync, header_trial, frame.ldro_enabled, params_.soft_decoding);
+        const auto payload_end = std::chrono::steady_clock::now();
+        payload_time_us_acc_ += std::chrono::duration<double, std::micro>(payload_end - payload_start).count();
+        if (payload.has_value() && payload->crc_ok) {
+            ++frame.sr_scan_successes;
+            frame.used_cached_sample_rate = last_ratio_valid_ &&
+                                           std::abs(ratio - last_successful_sample_rate_ratio_) < 1e-9;
+            frame.sync = trial_sync;
+            frame.header = header_trial;
+            frame.resample_active = false;
+            frame.resample_ratio = ratio;
+            const int payload_syms = compute_payload_symbol_count(header_trial, frame.ldro_enabled);
+            if (payload_syms > 0) {
+                const std::size_t guard = trial_sync.p_ofs_est >= 0 ? static_cast<std::size_t>(trial_sync.p_ofs_est) : 0;
+                frame.samples_needed = guard + payload_offset_samples() + static_cast<std::size_t>(payload_syms) * sps_;
+                const std::size_t available = capture_.size() - frame.preamble_offset;
+                frame.samples_needed = std::min(frame.samples_needed, available);
+            }
+#ifndef NDEBUG
+            std::fprintf(stderr, "[sr-scan] ratio %.9f payload crc ok\n", ratio);
+#endif
+            if (frame.used_cached_sample_rate && std::abs(ratio - frame.sync.sample_rate_ratio) < 1e-9) {
+                frame.used_cached_sample_rate = true;
+            }
+            return payload;
+        }
+
+        auto recovered = search_payload_offsets(view, frame, trial_sync, header_trial);
+        if (recovered.has_value() && recovered->crc_ok) {
+            ++frame.sr_scan_successes;
+            frame.used_cached_sample_rate = last_ratio_valid_ &&
+                                           std::abs(ratio - last_successful_sample_rate_ratio_) < 1e-9;
+            frame.sync = trial_sync;
+            frame.header = header_trial;
+            frame.resample_active = false;
+            frame.resample_ratio = ratio;
+            const int payload_syms = compute_payload_symbol_count(header_trial, frame.ldro_enabled);
+            if (payload_syms > 0) {
+                const std::size_t guard = trial_sync.p_ofs_est >= 0 ? static_cast<std::size_t>(trial_sync.p_ofs_est) : 0;
+                frame.samples_needed = guard + payload_offset_samples() + static_cast<std::size_t>(payload_syms) * sps_;
+                const std::size_t available = capture_.size() - frame.preamble_offset;
+                frame.samples_needed = std::min(frame.samples_needed, available);
+            }
+#ifndef NDEBUG
+            std::fprintf(stderr, "[sr-scan] ratio %.9f payload recovered via search\n", ratio);
+#endif
+            return recovered;
+        }
+    }
+#ifndef NDEBUG
+    std::fprintf(stderr, "[sr-scan] no candidate succeeded for frame\n");
+#endif
+
+    return std::nullopt;
 }
 
 void StreamingReceiver::finalize_frame(std::size_t samples_consumed) {

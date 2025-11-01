@@ -26,19 +26,18 @@ GNUR_TRUTH = ROOT / 'results/gnur_truth.json'
 
 # Defines the function ldro_flag.
 def ldro_flag(meta: Dict[str, Any]) -> str:
-    # Executes the statement `mode = int(meta.get('ldro_mode', 0) or 0)`.
+    mode_val = meta.get('ldro_mode')
+    if mode_val is not None:
+        try:
+            return str(int(mode_val))
+        except Exception:
+            pass
+    if meta.get('ldro'):
+        return '1'
     mode = int(meta.get('ldro_mode', 0) or 0)
-    # Executes the statement `sf = int(meta.get('sf', 7))`.
     sf = int(meta.get('sf', 7))
-    # Begins a conditional branch to check a condition.
-    if mode == 1:
-        # Returns the computed value to the caller.
-        return '1'
-    # Begins a conditional branch to check a condition.
     if mode == 2 and sf >= 11:
-        # Returns the computed value to the caller.
         return '1'
-    # Returns the computed value to the caller.
     return '0'
 
 

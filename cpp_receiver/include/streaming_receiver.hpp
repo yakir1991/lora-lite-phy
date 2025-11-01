@@ -126,6 +126,23 @@ private:
 
         // Effective LDRO setting to use for this frame's payload decode.
         bool ldro_enabled = false;
+
+        // Whether the frame decoder should operate on a resampled view and the
+        // ratio (actual/nominal) used to generate it.
+        bool resample_active = false;
+        double resample_ratio = 1.0;
+
+        // Instrumentation counters.
+        int sr_scan_attempts = 0;
+        int sr_scan_successes = 0;
+        int cfo_sweep_attempts = 0;
+        int cfo_sweep_successes = 0;
+        int payload_retry_attempts = 0;
+        bool used_cached_sample_rate = false;
+        double initial_cfo_hz = 0.0;
+        double initial_sample_rate_ratio = 1.0;
+        double initial_sample_rate_error_ppm = 0.0;
+        double initial_sample_rate_drift_per_symbol = 0.0;
     };
 
     // The current frame under construction (if any)
@@ -133,6 +150,17 @@ private:
 
     // Cached convenience: samples per symbol under current params
     std::size_t sps_ = 0;
+
+    // Adaptive state
+    double last_successful_sample_rate_ratio_ = 1.0;
+    bool last_ratio_valid_ = false;
+    double cfo_sweep_scale_ = 1.0;
+    unsigned easy_frame_streak_ = 0;
+    double sync_time_us_acc_ = 0.0;
+    double header_time_us_acc_ = 0.0;
+    double payload_time_us_acc_ = 0.0;
+    double resample_time_us_acc_ = 0.0;
+    double retry_time_us_acc_ = 0.0;
 
     // True if enough samples exist in `buffer` to decode the header for `frame`
     [[nodiscard]] bool header_ready(const PendingFrame &frame, const std::vector<Sample> &buffer) const;
@@ -148,6 +176,14 @@ private:
 
     // Compute number of LoRa symbols the payload spans, given the decoded header
     [[nodiscard]] int compute_payload_symbol_count(const HeaderDecodeResult &header, bool ldro_enabled) const;
+
+    [[nodiscard]] std::vector<double> build_sample_rate_candidates(const PendingFrame &frame) const;
+    [[nodiscard]] std::optional<PayloadDecodeResult> search_payload_with_sample_rates(PendingFrame &frame,
+                                                                                      const std::vector<Sample> &view);
+    [[nodiscard]] std::optional<PayloadDecodeResult> search_payload_offsets(const std::vector<Sample> &view,
+                                                                            PendingFrame &frame,
+                                                                            FrameSyncResult &sync,
+                                                                            const HeaderDecodeResult &header);
 
     // Finish the current frame, emit terminal event, and advance the capture
     // buffer by `samples_consumed` samples past the frame end

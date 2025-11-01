@@ -1,0 +1,90 @@
+{
+  "summary": {
+    "total": 1,
+    "gnu_radio_success_rate": 100.0,
+    "cpp_success_rate": 100.0,
+    "payload_match_rate": 100.0,
+    "matches": 1
+  },
+  "results": [
+    {
+      "vector": "/home/aquay/lora-lite-phy/vectors/synthetic_impairments_air/syn_imp_1/tx_sf9_bw125000_cr3_crc1_impl0_ldro2_pay6.cf32",
+      "metadata": {
+        "sf": 9,
+        "bw": 125000,
+        "cr": 3,
+        "crc": true,
+        "impl_header": false,
+        "ldro_mode": 2,
+        "samp_rate": 500000,
+        "payload_len": 6,
+        "payload_hex": "cafebabeface",
+        "filename": "tx_sf9_bw125000_cr3_crc1_impl0_ldro2_pay6.cf32",
+        "channel": {
+          "sampling_offset_ppm": 10.0,
+          "cfo_hz": 120.0,
+          "multipath_taps": [
+            {
+              "real": 1.0,
+              "imag": 0.0
+            },
+            {
+              "real": 0.3,
+              "imag": -0.1
+            },
+            {
+              "real": 0.0,
+              "imag": 0.0
+            },
+            {
+              "real": 0.0,
+              "imag": 0.0
+            },
+            {
+              "real": 0.0,
+              "imag": 0.0
+            },
+            {
+              "real": 0.0,
+              "imag": 0.0
+            },
+            {
+              "real": 0.2,
+              "imag": 0.0
+            }
+          ],
+          "snr_db": 12.0,
+          "samples": {
+            "before": 84992,
+            "after": 84993
+          },
+          "sample_rate_hz": 500000
+        },
+        "source": {
+          "clean_dir": "/home/aquay/lora-lite-phy/vectors/synthetic_impairments/clean"
+        }
+      },
+      "gnu_radio": {
+        "status": "success",
+        "stdout": "\n--------Header--------\nPayload length: 12\nCRC presence:   1\nCoding rate:    3\nHeader checksum valid!\n\nrx msg: \u00ca\u00fe\u00ba\u00be\u00fa\u00ce\nCRC valid!\n\nDEBUG: Setting up receiver with:\n  - SF: 9, CR: 3, BW: 125000 Hz, Sample rate: 500000 Hz\n  - Sync words: [18], CRC: True, Implicit header: False\n  - LDRO mode: 2, Soft decoding: False\n  - Input samples: 84993\nFrame 0: 12 bytes, CRC valid\n  Hex: c3 8a c3 be c2 ba c2 be c3 ba c3 8e\n  Text: \u00ca\u00fe\u00ba\u00be\u00fa\u00ce\n",
+        "stderr": "",
+        "frames": [
+          {
+            "info": "12 bytes, CRC valid",
+            "hex": "c3 8a c3 be c2 ba c2 be c3 ba c3 8e",
+            "text": "\u00ca\u00fe\u00ba\u00be\u00fa\u00ce"
+          }
+        ]
+      },
+      "cpp_stream": {
+        "status": "success",
+        "stdout": "frame_synced=1 header_ok=1 payload_crc_ok=1 payload_len=12\npayload_hex=C38AC3BEC2BAC2BEC3BAC38E\n",
+        "stderr": "[stream] sync acquired: preamble_offset=0 global=0 buffer_size=24576 capture_size=24576 p_ofs=-24\n[stream] make_local_sync: original_p_ofs=-24 adjusted=-24 preamble_offset=0\n[stream] attempting header decode: preamble_offset=0 capture_size=45056 p_ofs_est_local=-24 (cand=0)\n[stream] header decoded: payload_len=12\n[stream] payload symbols=21 samples_needed=84505 guard=0 capture_size=45056\n[stream] attempting payload decode: samples_needed=84505 capture_size=84993\n[payload-crc] mismatch len=12\n[sr-scan] ratio 1.000010000 payload crc ok\n[stream] payload decode success (bytes=12)\n[stream] finalizing frame: consume=84505 capture_before=84993\n[stream] capture_after=488 global_offset=84505\n",
+        "payload_hex": "C38AC3BEC2BAC2BEC3BAC38E",
+        "binary": "/home/aquay/lora-lite-phy/cpp_receiver/build/decode_cli",
+        "cmd": "/home/aquay/lora-lite-phy/cpp_receiver/build/decode_cli --sf 9 --bw 125000 --fs 500000 --ldro 0 --streaming /home/aquay/lora-lite-phy/vectors/synthetic_impairments_air/syn_imp_1/tx_sf9_bw125000_cr3_crc1_impl0_ldro2_pay6.cf32 --ppm-offset 10.000000 --chunk 4096",
+        "attempt": "base"
+      }
+    }
+  ]
+}

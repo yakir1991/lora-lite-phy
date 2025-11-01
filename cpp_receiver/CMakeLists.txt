@@ -16,6 +16,7 @@ add_library(lora_cpp_receiver STATIC
     src/preamble_detector.cpp
     src/payload_decoder.cpp
     src/receiver.cpp
+    src/sample_rate_resampler.cpp
     src/streaming_receiver.cpp
     src/sync_word_detector.cpp
 )
@@ -72,7 +73,7 @@ endif()
 
 # If using vendored Liquid-DSP, add RPATH to executables so they can find libliquid.so at runtime
 if (DEFINED LIQUID_VENDOR_BUILD_DIR)
-    foreach(tgt IN ITEMS run_stage_tests decode_cli sync_mags streaming_harness tx_rx_simulation)
+    foreach(tgt IN ITEMS run_stage_tests decode_cli sync_mags streaming_harness tx_rx_simulation socket_stream_client header_probe)
         if (TARGET ${tgt})
             set_target_properties(${tgt} PROPERTIES BUILD_RPATH ${LIQUID_VENDOR_BUILD_DIR})
         endif()
@@ -127,6 +128,13 @@ target_link_libraries(streaming_harness PRIVATE lora_cpp_receiver)
 add_executable(tx_rx_simulation tools/tx_rx_simulation.cpp)
 target_link_libraries(tx_rx_simulation PRIVATE lora_cpp_receiver)
 
+add_executable(socket_stream_client tools/socket_stream_client.cpp)
+target_link_libraries(socket_stream_client PRIVATE lora_cpp_receiver)
+
+# Header probe tool: exercise header decode from synthetic raw symbols
+add_executable(header_probe tools/header_probe.cpp)
+target_link_libraries(header_probe PRIVATE lora_cpp_receiver)
+
 # Warnings on all targets, MSVC and GCC/Clang.
 if (MSVC)
     target_compile_options(lora_cpp_receiver PRIVATE /W4 /permissive-)
@@ -135,6 +143,7 @@ if (MSVC)
     target_compile_options(sync_mags PRIVATE /W4 /permissive-)
     target_compile_options(streaming_harness PRIVATE /W4 /permissive-)
     target_compile_options(tx_rx_simulation PRIVATE /W4 /permissive-)
+    target_compile_options(socket_stream_client PRIVATE /W4 /permissive-)
 else()
     target_compile_options(lora_cpp_receiver PRIVATE -Wall -Wextra -Wpedantic)
     target_compile_options(run_stage_tests PRIVATE -Wall -Wextra -Wpedantic)
@@ -142,4 +151,5 @@ else()
     target_compile_options(sync_mags PRIVATE -Wall -Wextra -Wpedantic)
     target_compile_options(streaming_harness PRIVATE -Wall -Wextra -Wpedantic)
     target_compile_options(tx_rx_simulation PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(socket_stream_client PRIVATE -Wall -Wextra -Wpedantic)
 endif()

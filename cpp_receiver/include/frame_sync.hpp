@@ -1,5 +1,7 @@
 #pragma once
 
+#include "fft_utils.hpp"
+
 #include <complex>
 #include <cstddef>
 #include <optional>
@@ -20,6 +22,12 @@ struct FrameSyncResult {
     // Estimated carrier frequency offset in Hz. Apply a complex exponential
     // rotation e^{-j2π f_cfo t} before demodulation to mitigate CFO.
     double cfo_hz = 0.0;
+    // Estimated sample-rate scaling (actual/nominal). 1.0 when unknown.
+    double sample_rate_ratio = 1.0;
+    // Estimated timing drift per symbol in samples relative to the nominal spacing.
+    double sample_rate_drift_per_symbol = 0.0;
+    // Sample-rate error in parts-per-million (positive when actual > nominal).
+    double sample_rate_error_ppm = 0.0;
 };
 
 // Batch frame synchronizer: searches a block of I/Q samples for a LoRa
@@ -39,9 +47,15 @@ public:
         std::vector<std::complex<double>> win_down;
         std::vector<std::complex<double>> spectrum_up;
         std::vector<std::complex<double>> spectrum_down;
-        std::vector<std::complex<double>> fine_segment;
-        std::vector<std::complex<double>> fine_spectrum;
         std::vector<double> phase_history;
+        std::vector<std::complex<double>> sr_samples;
+        std::vector<std::complex<double>> sr_dechirp_main;
+        std::vector<std::complex<double>> sr_dechirp_next;
+        std::vector<std::complex<float>> spectrum_up_float;
+        std::vector<std::complex<float>> spectrum_down_float;
+        std::vector<std::complex<float>> fine_segment_float;
+        lora::fft::Scratch coarse_fft_scratch;
+        lora::fft::Scratch fine_fft_scratch;
 
         // Ensure the up-chirp dechirp window is large enough and return mutable access.
         [[nodiscard]] std::vector<std::complex<double>> &ensure_win_up(std::size_t required) {
@@ -75,22 +89,6 @@ public:
             return spectrum_down;
         }
 
-        // Temporary storage used during fine CFO/timing refinement.
-        [[nodiscard]] std::vector<std::complex<double>> &ensure_fine_segment(std::size_t required) {
-            if (fine_segment.size() < required) {
-                fine_segment.resize(required);
-            }
-            return fine_segment;
-        }
-
-        // FFT buffer for the fine refinement stage.
-        [[nodiscard]] std::vector<std::complex<double>> &ensure_fine_spectrum(std::size_t required) {
-            if (fine_spectrum.size() < required) {
-                fine_spectrum.resize(required);
-            }
-            return fine_spectrum;
-        }
-
         // Phase-history scratch used by the preamble pattern checker (initialised to -1).
         [[nodiscard]] std::vector<double> &ensure_phase_history(std::size_t required) {
             if (phase_history.size() != required) {
@@ -99,6 +97,48 @@ public:
                 std::fill(phase_history.begin(), phase_history.end(), -1.0);
             }
             return phase_history;
+        }
+
+        [[nodiscard]] std::vector<std::complex<double>> &ensure_sr_samples(std::size_t required) {
+            if (sr_samples.size() < required) {
+                sr_samples.resize(required);
+            }
+            return sr_samples;
+        }
+
+        [[nodiscard]] std::vector<std::complex<double>> &ensure_sr_dechirp_main(std::size_t required) {
+            if (sr_dechirp_main.size() < required) {
+                sr_dechirp_main.resize(required);
+            }
+            return sr_dechirp_main;
+        }
+
+        [[nodiscard]] std::vector<std::complex<double>> &ensure_sr_dechirp_next(std::size_t required) {
+            if (sr_dechirp_next.size() < required) {
+                sr_dechirp_next.resize(required);
+            }
+            return sr_dechirp_next;
+        }
+
+        [[nodiscard]] std::vector<std::complex<float>> &ensure_spectrum_up_float(std::size_t required) {
+            if (spectrum_up_float.size() < required) {
+                spectrum_up_float.resize(required);
+            }
+            return spectrum_up_float;
+        }
+
+        [[nodiscard]] std::vector<std::complex<float>> &ensure_spectrum_down_float(std::size_t required) {
+            if (spectrum_down_float.size() < required) {
+                spectrum_down_float.resize(required);
+            }
+            return spectrum_down_float;
+        }
+
+        [[nodiscard]] std::vector<std::complex<float>> &ensure_fine_segment_float(std::size_t required) {
+            if (fine_segment_float.size() < required) {
+                fine_segment_float.resize(required);
+            }
+            return fine_segment_float;
         }
     };
 
@@ -128,6 +168,18 @@ public:
     [[nodiscard]] const std::vector<std::complex<double>> &downchirp() const { return downchirp_; }
 
 private:
+    struct SampleRateEstimate {
+        double ratio = 1.0;
+        // Drift per symbol expressed in samples (actual - nominal spacing).
+        double drift_per_symbol = 0.0;
+        // Equivalent error in ppm (positive when actual sample rate > nominal).
+        double ppm_error = 0.0;
+    };
+
+    [[nodiscard]] std::optional<SampleRateEstimate> estimate_sample_rate(std::span<const Sample> samples,
+                                                                         std::ptrdiff_t preamble_offset,
+                                                                         Scratch &scratch) const;
+
     // Configuration
     int sf_ = 7;
     int bandwidth_hz_ = 125000;
@@ -140,6 +192,8 @@ private:
     // Precomputed reference chirps for dechirping and matched filtering
     std::vector<std::complex<double>> upchirp_;
     std::vector<std::complex<double>> downchirp_;
+    std::vector<std::complex<float>> upchirp_f_;
+    std::vector<std::complex<float>> downchirp_f_;
 };
 
 // Streaming wrapper around `FrameSynchronizer` that maintains a rolling buffer

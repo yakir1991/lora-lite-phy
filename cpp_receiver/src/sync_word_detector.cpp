@@ -76,7 +76,7 @@ std::size_t SyncWordDetector::demod_symbol(const std::vector<Sample> &samples,
         throw std::out_of_range("SyncWordDetector: negative start index");
     }
     const std::size_t start = static_cast<std::size_t>(start_signed);
-    scratch.input.assign(sps_, std::complex<double>{});
+    scratch.input.resize(sps_);
 
     const double fs = static_cast<double>(sample_rate_hz_);
     const double Ts = 1.0 / fs;
@@ -92,23 +92,24 @@ std::size_t SyncWordDetector::demod_symbol(const std::vector<Sample> &samples,
     // to samples-per-symbol (sps) rather than picking a single sample per chip.
     const std::size_t chips = static_cast<std::size_t>(1) << static_cast<std::size_t>(sf_);
     const std::size_t os_factor = sps_ / chips;
-    std::vector<std::complex<double>> dec(chips, std::complex<double>{});
+    auto &dec = scratch.fft_buffer;
+    dec.assign(chips, std::complex<float>{});
     for (std::size_t chip = 0; chip < chips; ++chip) {
         const std::size_t base = chip * os_factor;
         std::complex<double> acc{0.0, 0.0};
         for (std::size_t j = 0; j < os_factor; ++j) {
             acc += scratch.input[base + j];
         }
-        dec[chip] = acc;
+        dec[chip] = std::complex<float>(static_cast<float>(acc.real()),
+                                        static_cast<float>(acc.imag()));
     }
 
-    std::vector<std::complex<double>> spec = dec;
-    lora::fft::transform_pow2(spec, /*inverse=*/true);
+    lora::fft::transform_pow2(dec, /*inverse=*/true, scratch.fft);
 
     std::size_t best_k = 0;
     double best_mag = 0.0;
-    for (std::size_t k = 0; k < spec.size(); ++k) {
-        const double mag = std::abs(spec[k]);
+    for (std::size_t k = 0; k < dec.size(); ++k) {
+        const double mag = std::abs(dec[k]);
         if (mag > best_mag) {
             best_mag = mag;
             best_k = k;
@@ -139,12 +140,12 @@ std::optional<SyncWordDetection> SyncWordDetector::analyze(const std::vector<Sam
     detection.symbol_bins.reserve(kPreambleSymCount + kSyncSymCount);
     detection.magnitudes.reserve(kPreambleSymCount + kSyncSymCount);
 
-    FFTScratch scratch;
-    scratch.input.reserve(sps_);
-    scratch.spectrum.reserve(sps_);
-
     const std::size_t chips_per_symbol = static_cast<std::size_t>(1) << static_cast<std::size_t>(sf_);
     const std::size_t tol = 2; // tolerance in bins (K-domain circular distance)
+
+    FFTScratch scratch;
+    scratch.input.reserve(sps_);
+    scratch.fft_buffer.reserve(chips_per_symbol);
 
     // First pass: collect raw preamble bins
     std::vector<std::size_t> pre_bins;

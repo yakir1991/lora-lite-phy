@@ -1,5 +1,6 @@
 #pragma once
 
+#include "fft_utils.hpp"
 #include "frame_sync.hpp"
 #include "header_decoder.hpp"
 
@@ -19,8 +20,13 @@ struct PayloadDecodeResult {
     std::vector<unsigned char> bytes; // Optional owning storage when spans not provided
     bool crc_ok = false;
     // Lightweight views exposing either the internal vectors or caller-provided buffers (if supplied).
-    std::span<const int> raw_symbol_view;
-    std::span<const unsigned char> byte_view;
+    std::span<const int> raw_symbol_view{};
+    std::span<const unsigned char> byte_view{};
+    // Symbol-to-bit diagnostics: pre-deinterleaver integer values before and after Gray decode.
+    std::vector<int> symbol_bins;      // Bin index after DE scaling but before Gray decode.
+    std::vector<int> degray_values;    // Gray-decoded integer feeding the interleaver.
+    std::span<const int> symbol_bin_view{};
+    std::span<const int> degray_view{};
 };
 
 class PayloadDecoder {
@@ -61,13 +67,15 @@ public:
         const std::vector<Sample> &samples,
         const FrameSyncResult &sync,
         const HeaderDecodeResult &header,
-        bool ldro_enabled) const;
+        bool ldro_enabled,
+        bool soft_decoding) const;
 
     [[nodiscard]] std::optional<PayloadDecodeResult> decode(
         const std::vector<Sample> &samples,
         const FrameSyncResult &sync,
         const HeaderDecodeResult &header,
         bool ldro_enabled,
+        bool soft_decoding,
         MutableByteSpan external_payload,
         MutableIntSpan external_raw_symbols) const;
 
@@ -84,26 +92,36 @@ private:
     std::size_t sps_ = 0;
 
     std::vector<std::complex<double>> downchirp_;
+    std::vector<std::complex<float>> downchirp_f_;
+    std::vector<std::complex<float>> downchirp_decimated_;
 
     // Scratch buffers reused across decode invocations to minimise dynamic allocations.
-    mutable std::vector<CDouble> symbol_buffer_;        // Holds one CFO-rotated, dechirped symbol at full sample rate.
-    mutable std::vector<CDouble> decimated_buffer_;     // Stores one-sample-per-chip view of the current symbol for FFT.
+    mutable std::vector<std::complex<float>> decimated_buffer_; // Stores one-sample-per-chip view of the current symbol for FFT.
     mutable std::vector<int> block_bits_buffer_;        // Temporary storage for raw bits within a single interleaving block.
     mutable std::vector<int> interleave_buffer_s_;      // Flattened `S` matrix before LoRa interleaver column rotations.
     mutable std::vector<int> interleave_buffer_c_;      // Flattened `C` matrix after rotations and row flips.
+    mutable std::vector<int> codeword_buffer_;          // Scratch buffer for per-row FEC decoding (Hamming codewords).
     mutable std::vector<int> payload_bits_buffer_;      // Accumulates payload/header bits prior to dewhitening.
     mutable std::vector<unsigned char> byte_buffer_;    // Holds packed payload bytes before copying into the result.
     mutable std::vector<int> degray_table_;             // Cached inverse-Gray lookup table reused across symbols.
     mutable int degray_bits_ = -1;                      // Tracks how many bits the cached degray table represents.
+    mutable std::vector<float> block_llr_buffer_;       // Soft metrics (LLR) for bits within one interleaver block.
+    mutable std::vector<float> interleave_buffer_s_llr_;
+    mutable std::vector<float> interleave_buffer_c_llr_;
+    mutable std::vector<float> codeword_llr_buffer_;
+    mutable std::vector<float> symbol_metric_buffer_;
+    mutable lora::fft::Scratch fft_scratch_;
 
     // Build (and cache) the inverse Gray mapping table for a given number of bits per symbol (SF - 2*DE).
     [[nodiscard]] const std::vector<int> &get_degray_table(int bits) const;
     // Read one byte from a bit vector starting at offset (LSB-first).
     [[nodiscard]] unsigned byte_from_bits(const std::vector<int> &bits, std::size_t offset) const;
     // Remove LoRa payload whitening using the configured mode.
-    void dewhiten_bits(std::vector<int> &bits) const;
+    void dewhiten_bits(std::vector<int> &bits, std::size_t bit_count) const;
     // Compute CRC16 over the first bit_count bits; returns 16 bits LSB-first.
     [[nodiscard]] std::array<int, 16> crc16_bits(const std::vector<int> &bits, std::size_t bit_count) const;
+    [[nodiscard]] std::array<int, 8> encode_codeword_from_data(int data_bits, int parity_bits) const;
+    [[nodiscard]] bool decode_codeword_soft(const float *llr, int parity_bits, std::array<int, 8> &decoded_codeword) const;
 };
 
 } // namespace lora

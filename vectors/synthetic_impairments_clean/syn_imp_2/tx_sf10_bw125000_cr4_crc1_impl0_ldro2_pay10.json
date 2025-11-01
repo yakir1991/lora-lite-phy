@@ -1,0 +1,63 @@
+{
+  "sf": 10,
+  "bw": 125000,
+  "cr": 4,
+  "crc": true,
+  "impl_header": false,
+  "ldro_mode": 2,
+  "samp_rate": 500000,
+  "payload_len": 10,
+  "payload_hex": "00112233445566778899",
+  "filename": "tx_sf10_bw125000_cr4_crc1_impl0_ldro2_pay10.cf32",
+  "channel": {
+    "sampling_offset_ppm": 18.0,
+    "cfo_hz": 80.0,
+    "cfo_drift_hz": 1.5,
+    "multipath_taps": [
+      {
+        "real": 1.0,
+        "imag": 0.0
+      },
+      {
+        "real": 0.2,
+        "imag": -0.07
+      },
+      {
+        "real": 0.0,
+        "imag": 0.0
+      },
+      {
+        "real": 0.0,
+        "imag": 0.0
+      },
+      {
+        "real": 0.0,
+        "imag": 0.0
+      },
+      {
+        "real": 0.0,
+        "imag": 0.0
+      },
+      {
+        "real": 0.0,
+        "imag": 0.0
+      },
+      {
+        "real": 0.12,
+        "imag": 0.0
+      }
+    ],
+    "rayleigh_fading": {
+      "doppler_hz": 2.5
+    },
+    "snr_db": 6.0,
+    "samples": {
+      "before": 182272,
+      "after": 182275
+    },
+    "sample_rate_hz": 500000
+  },
+  "source": {
+    "clean_dir": "/home/aquay/lora-lite-phy/vectors/synthetic_impairments/clean"
+  }
+}

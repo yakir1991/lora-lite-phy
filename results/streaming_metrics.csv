@@ -1,0 +1,10 @@
+vector,sf,bw_hz,fs_hz,cr,ldro,implicit,crc,chunk_size,throttle_us,chunks,avg_chunk_us,total_chunk_ms,sr_hint_ratio,sr_used_ratio,success,payload_len,payload_bytes
+vectors/synthetic_impairments_air/syn_imp_1/tx_sf9_bw125000_cr3_crc1_impl0_ldro2_pay6.cf32,9,125000,500000,3,0,0,1,4096,0,21,3185.06,66.89,1.000010000,1.000010000,1,12,0
+vectors/synthetic_impairments_air/syn_imp_1/tx_sf9_bw125000_cr3_crc1_impl0_ldro2_pay6.cf32,9,125000,500000,3,0,0,1,4096,1000,21,3151.37,66.18,1.000010000,1.000010000,1,12,0
+vectors/synthetic_impairments_air/syn_imp_1/tx_sf9_bw125000_cr3_crc1_impl0_ldro2_pay6.cf32,9,125000,500000,3,0,0,1,4096,5000,21,3195.86,67.11,1.000010000,1.000010000,1,12,0
+vectors/synthetic_impairments_air/syn_imp_2/tx_sf10_bw125000_cr4_crc1_impl0_ldro2_pay10.cf32,10,125000,500000,4,0,0,1,4096,0,45,3067.76,138.05,1.000018000,1.000018000,1,12,0
+vectors/synthetic_impairments_air/syn_imp_2/tx_sf10_bw125000_cr4_crc1_impl0_ldro2_pay10.cf32,10,125000,500000,4,0,0,1,4096,1000,45,3141.52,141.37,1.000018000,1.000018000,1,12,0
+vectors/synthetic_impairments_air/syn_imp_2/tx_sf10_bw125000_cr4_crc1_impl0_ldro2_pay10.cf32,10,125000,500000,4,0,0,1,4096,5000,45,3242.54,145.91,1.000018000,1.000018000,1,12,0
+vectors/synthetic_impairments_air/syn_imp_3/tx_sf8_bw250000_cr2_crc1_impl0_ldro2_pay11.cf32,8,250000,1000000,2,0,0,1,4096,0,13,3811.46,49.55,1.000022000,1.000022000,1,15,0
+vectors/synthetic_impairments_air/syn_imp_3/tx_sf8_bw250000_cr2_crc1_impl0_ldro2_pay11.cf32,8,250000,1000000,2,0,0,1,4096,1000,13,3689.62,47.97,1.000022000,1.000022000,1,15,0
+vectors/synthetic_impairments_air/syn_imp_3/tx_sf8_bw250000_cr2_crc1_impl0_ldro2_pay11.cf32,8,250000,1000000,2,0,0,1,4096,5000,13,4043.36,52.56,1.000022000,1.000022000,1,15,0

@@ -1,0 +1,40 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.13.2" xml:lang="en-US">
+  <compounddef id="include_2gnuradio_2lora__sdr_2api_8h" kind="file" language="C++">
+    <compoundname>include/gnuradio/lora_sdr/api.h</compoundname>
+    <includes local="no">gnuradio/attributes.h</includes>
+    <incdepgraph>
+      <node id="1">
+        <label>api.h</label>
+        <link refid="include_2gnuradio_2lora__sdr_2api_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>gnuradio/attributes.h</label>
+      </node>
+    </incdepgraph>
+    <sectiondef kind="define">
+      <memberdef kind="define" id="include_2gnuradio_2lora__sdr_2api_8h_1a7f43a70ead7390c8125a3e3273e64b8c" prot="public" static="no">
+        <name>LORA_SDR_API</name>
+        <initializer>__GR_ATTR_IMPORT</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/aquay/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/api.h" line="19" column="10" bodyfile="/home/aquay/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/api.h" bodystart="19" bodyend="-1"/>
+        <referencedby refid="classgr_1_1lora__sdr_1_1experimental_1_1vector__source_1a2ca9ef491ea47065259281d78562c0f4">gr::lora_sdr::experimental::vector_source::empty</referencedby>
+        <referencedby refid="classgr_1_1lora__sdr_1_1experimental_1_1liquid__fft__block_1a30d2412761ec332c7352cd606f775acf">gr::lora_sdr::experimental::liquid_fft_block::process</referencedby>
+        <referencedby refid="classgr_1_1lora__sdr_1_1experimental_1_1peak__detector__block_1af006fe6d3a4fc6841a15e79cd2a5df74">gr::lora_sdr::experimental::peak_detector_block::process</referencedby>
+        <referencedby refid="classgr_1_1lora__sdr_1_1experimental_1_1window__block_1af9877147a032c15fe2bb17e7066894c0">gr::lora_sdr::experimental::window_block::process</referencedby>
+      </memberdef>
+    </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/aquay/lora-lite-phy/external/gr_lora_sdr/include/gnuradio/lora_sdr/api.h"/>
+  </compounddef>
+</doxygen>

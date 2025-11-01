@@ -1,7 +1,9 @@
 #pragma once
 
+#include "fft_utils.hpp"
 #include "frame_sync.hpp"
 
+#include <array>
 #include <complex>
 #include <cstddef>
 #include <optional>
@@ -63,6 +65,12 @@ public:
                                                            MutableIntSpan header_symbols,
                                                            MutableIntSpan header_bits) const;
 
+    static std::array<int, 8> encode_low_sf_symbols(int sf, int cr, bool has_crc, int payload_len);
+
+    [[nodiscard]] std::optional<HeaderDecodeResult> decode_from_raw_symbols(const std::array<int, 8> &raw_symbols) const;
+    [[nodiscard]] std::optional<HeaderDecodeResult> decode_from_raw_symbols(const std::array<int, 8> &raw_symbols,
+                                                                           MutableIntSpan header_bits) const;
+
     [[nodiscard]] std::size_t symbol_span_samples() const;
 
 private:
@@ -73,9 +81,14 @@ private:
     std::size_t sps_ = 0;
 
     std::vector<std::complex<double>> downchirp_;
+    mutable lora::fft::Scratch fft_scratch_;
 
     // Compute LoRa header CRC5 from the first three header nibbles.
     static int compute_header_crc(int n0, int n1, int n2);
+
+    [[nodiscard]] std::optional<HeaderDecodeResult> decode_from_raw_symbols_internal(const std::array<int, 8> &raw_symbols,
+                                                                                    MutableIntSpan header_bits) const;
+
 };
 
 } // namespace lora
