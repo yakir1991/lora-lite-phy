@@ -1,1 +1,0 @@
-/usr/bin/c++ -g CMakeFiles/tx_rx_simulation.dir/tools/tx_rx_simulation.cpp.o -o tx_rx_simulation  -Wl,-rpath,/home/aquay/lora-lite-phy/cpp_receiver/../external/liquid-dsp/build liblora_cpp_receiver.a /home/aquay/lora-lite-phy/cpp_receiver/../external/liquid-dsp/build/libliquid.so 

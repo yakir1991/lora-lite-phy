@@ -1,1 +1,0 @@
-/usr/bin/c++ -g CMakeFiles/decode_cli.dir/tools/decode_cli.cpp.o -o decode_cli  -Wl,-rpath,/home/aquay/lora-lite-phy/cpp_receiver/../external/liquid-dsp/build liblora_cpp_receiver.a /home/aquay/lora-lite-phy/cpp_receiver/../external/liquid-dsp/build/libliquid.so 

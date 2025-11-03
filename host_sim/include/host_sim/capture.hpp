@@ -1,0 +1,22 @@
+#pragma once
+
+#include <complex>
+#include <filesystem>
+#include <vector>
+
+namespace host_sim
+{
+
+std::vector<std::complex<float>> load_cf32(const std::filesystem::path& file_path);
+
+struct CaptureStats
+{
+    std::size_t sample_count{0};
+    float min_magnitude{0.0F};
+    float max_magnitude{0.0F};
+    float mean_power{0.0F};
+};
+
+CaptureStats analyse_capture(const std::vector<std::complex<float>>& samples);
+
+} // namespace host_sim

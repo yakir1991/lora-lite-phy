@@ -1,1 +1,0 @@
-/usr/bin/c++ -g CMakeFiles/run_stage_tests.dir/tests/run_stage_tests.cpp.o -o run_stage_tests  -Wl,-rpath,/home/aquay/lora-lite-phy/cpp_receiver/../external/liquid-dsp/build liblora_cpp_receiver.a /home/aquay/lora-lite-phy/cpp_receiver/../external/liquid-dsp/build/libliquid.so 

@@ -1,1 +1,0 @@
-/usr/bin/c++ -g CMakeFiles/socket_stream_client.dir/tools/socket_stream_client.cpp.o -o socket_stream_client  -Wl,-rpath,/home/aquay/lora-lite-phy/cpp_receiver/../external/liquid-dsp/build liblora_cpp_receiver.a /home/aquay/lora-lite-phy/cpp_receiver/../external/liquid-dsp/build/libliquid.so 

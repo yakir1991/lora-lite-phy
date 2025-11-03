@@ -1,4 +1,0 @@
-{"id":3,"stage":"hard","is_header":1,"cr_app":4,"cw_len":8,"bits":[0,0,0,1,0,1,1,1],"syndrome":0,"decoded":8}
-{"id":4,"stage":"hard","is_header":1,"cr_app":4,"cw_len":8,"bits":[0,0,0,0,0,0,0,0],"syndrome":0,"decoded":0}
-{"id":5,"stage":"hard","is_header":1,"cr_app":4,"cw_len":8,"bits":[1,0,0,1,1,1,0,0],"syndrome":0,"decoded":9}
-{"id":6,"stage":"hard","is_header":1,"cr_app":4,"cw_len":8,"bits":[0,0,0,1,0,1,1,1],"syndrome":0,"decoded":8}
