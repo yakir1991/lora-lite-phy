@@ -132,6 +132,7 @@ struct Options
     std::optional<std::filesystem::path> dump_iq;
     std::optional<std::filesystem::path> compare_root;
     std::optional<std::filesystem::path> dump_stages;
+    std::optional<std::filesystem::path> dump_payload;
     std::optional<std::filesystem::path> summary_output;
 };
 
@@ -195,6 +196,7 @@ void print_usage(const char* binary)
               << " [--dump-iq <file.cf32>]"
               << " [--compare-root <path/prefix>]"
               << " [--dump-stages <path/prefix>]"
+              << " [--dump-payload <file.bin>]"
               << " [--summary <file.json>]"
               << "\n";
 }
@@ -220,6 +222,8 @@ Options parse_arguments(int argc, char** argv)
             opts.compare_root = std::filesystem::path{argv[++i]};
         } else if (arg == "--dump-stages" && i + 1 < argc) {
             opts.dump_stages = std::filesystem::path{argv[++i]};
+        } else if (arg == "--dump-payload" && i + 1 < argc) {
+            opts.dump_payload = std::filesystem::path{argv[++i]};
         } else if (arg == "--summary" && i + 1 < argc) {
             opts.summary_output = std::filesystem::path{argv[++i]};
         } else if (arg == "--help" || arg == "-h") {
@@ -1011,20 +1015,39 @@ int main(int argc, char** argv)
                     }
                 }
 
-                std::vector<uint8_t> payload_bytes;
-                payload_bytes.reserve(payload_nibbles.size() / 2);
-                for (std::size_t i = 0; i + 1 < payload_nibbles.size(); i += 2) {
-                    uint8_t byte = static_cast<uint8_t>(((payload_nibbles[i] & 0xF) << 4) |
-                                                         (payload_nibbles[i + 1] & 0xF));
-                    payload_bytes.push_back(byte);
-                }
-                if (payload_bytes.size() > expected_payload_len + (expected_crc ? 2 : 0)) {
-                    payload_bytes.resize(expected_payload_len + (expected_crc ? 2 : 0));
-                }
-
+                // Dewhiten nibbles first, then pack into bytes (matching GNU Radio's approach)
+                // In gr-lora_sdr dewhitening_impl.cc:
+                //   low_nib = in[2*i] ^ (whitening_seq[offset] & 0x0F);
+                //   high_nib = in[2*i+1] ^ (whitening_seq[offset] >> 4);
+                //   byte = high_nib << 4 | low_nib;
+                // Note: nibble order is: [0]=low_nib, [1]=high_nib
                 host_sim::WhiteningSequencer seq;
-                auto unwhitened = seq.undo(payload_bytes);
-                std::cout << "Payload bytes (whitened):";
+                auto whitening = seq.sequence(payload_nibbles.size() / 2);
+                
+                std::vector<uint8_t> unwhitened;
+                unwhitened.reserve(payload_nibbles.size() / 2);
+                for (std::size_t i = 0; i + 1 < payload_nibbles.size(); i += 2) {
+                    std::size_t byte_idx = i / 2;
+                    // GNU Radio convention: first nibble is low_nib, second is high_nib
+                    // Note: CRC bytes are NOT dewhitened (matching GNU Radio behavior)
+                    uint8_t low_nib, high_nib;
+                    if (byte_idx < expected_payload_len) {
+                        // Payload bytes: apply dewhitening
+                        uint8_t w = (byte_idx < whitening.size()) ? whitening[byte_idx] : 0;
+                        low_nib = (payload_nibbles[i] & 0xF) ^ (w & 0x0F);
+                        high_nib = (payload_nibbles[i + 1] & 0xF) ^ ((w >> 4) & 0x0F);
+                    } else {
+                        // CRC bytes: no dewhitening
+                        low_nib = (payload_nibbles[i] & 0xF);
+                        high_nib = (payload_nibbles[i + 1] & 0xF);
+                    }
+                    uint8_t byte = static_cast<uint8_t>((high_nib << 4) | low_nib);
+                    unwhitened.push_back(byte);
+                }
+                if (unwhitened.size() > expected_payload_len + (expected_crc ? 2 : 0)) {
+                    unwhitened.resize(expected_payload_len + (expected_crc ? 2 : 0));
+                }
+                std::cout << "Payload bytes (dewhitened):";
                 for (std::size_t i = 0; i < std::min<std::size_t>(unwhitened.size(), expected_payload_len); ++i) {
                     std::cout << ' ' << std::hex << std::setw(2) << std::setfill('0')
                               << static_cast<int>(unwhitened[i]) << std::dec;
@@ -1054,17 +1077,43 @@ int main(int argc, char** argv)
                 }
 
                 if (expected_crc && unwhitened.size() >= expected_payload_len + 2) {
-                    std::vector<uint8_t> payload_no_crc(unwhitened.begin(),
-                                                        unwhitened.begin() + expected_payload_len);
-                    const uint16_t computed_crc = compute_lora_crc(payload_no_crc);
-                    const uint8_t crc_lsb = unwhitened[expected_payload_len];
-                    const uint8_t crc_msb = unwhitened[expected_payload_len + 1];
-                    const uint16_t decoded_crc = static_cast<uint16_t>(crc_msb) << 8 |
-                                                 static_cast<uint16_t>(crc_lsb);
+                    // GNU Radio CRC verification algorithm:
+                    // 1. Compute CRC on first (payload_len - 2) bytes
+                    // 2. XOR with last 2 payload bytes
+                    // 3. Compare with received CRC (little-endian)
+                    std::vector<uint8_t> crc_data(unwhitened.begin(),
+                                                  unwhitened.begin() + expected_payload_len - 2);
+                    uint16_t computed_crc = compute_lora_crc(crc_data);
+                    // XOR with last 2 payload bytes
+                    if (expected_payload_len >= 2) {
+                        computed_crc ^= unwhitened[expected_payload_len - 1];  // last byte
+                        computed_crc ^= static_cast<uint16_t>(unwhitened[expected_payload_len - 2]) << 8;  // second-to-last byte
+                    }
+                    const uint8_t crc_byte0 = unwhitened[expected_payload_len];
+                    const uint8_t crc_byte1 = unwhitened[expected_payload_len + 1];
+                    const uint16_t decoded_crc = static_cast<uint16_t>(crc_byte0) |
+                                                 (static_cast<uint16_t>(crc_byte1) << 8);
+                    const bool crc_ok = (computed_crc == decoded_crc);
                     std::cout << "[payload] CRC decoded=0x" << std::hex << std::setw(4)
                               << std::setfill('0') << decoded_crc
                               << " computed=0x" << std::setw(4) << computed_crc
-                              << std::dec << "\n";
+                              << std::dec << (crc_ok ? " OK" : " MISMATCH") << "\n";
+                }
+
+                // Dump decoded payload bytes to file if requested
+                if (options.dump_payload && expected_payload_len > 0) {
+                    std::ofstream payload_file(*options.dump_payload, std::ios::binary);
+                    if (payload_file) {
+                        std::size_t bytes_to_write = std::min<std::size_t>(
+                            unwhitened.size(), expected_payload_len);
+                        payload_file.write(reinterpret_cast<const char*>(unwhitened.data()),
+                                           static_cast<std::streamsize>(bytes_to_write));
+                        std::cout << "[dump-payload] wrote " << bytes_to_write
+                                  << " bytes to " << options.dump_payload->string() << "\n";
+                    } else {
+                        std::cerr << "[dump-payload] failed to open "
+                                  << options.dump_payload->string() << "\n";
+                    }
                 }
 
                 if (options.dump_stages && have_stage_outputs) {
