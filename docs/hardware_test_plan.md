@@ -103,8 +103,45 @@ A host-side Python script (`tools/ota_param_sweep.py`) orchestrates:
 
 **Goal:** Find the decode threshold (lowest SNR that still decodes) for each SF.
 
-### Setup
-Same conducted path. Vary attenuation by stacking 10/20/30 dB attenuators.
+### 3a — Software AWGN Injection (completed 2026-03-21)
+
+Inject calibrated AWGN noise into real OTA golden captures and measure decode
+success rate. This characterises decoder robustness without requiring RF
+attenuators.
+
+**Tool:** `tools/sim_snr_sweep.py`
+**Method:** For each SNR level, add complex Gaussian noise scaled to achieve
+target SNR relative to the capture's signal power. Run 10 independent trials
+per point (random noise seed each time).
+
+#### Results (10 trials per point, 1 dB steps)
+
+| SF | BW | CR | PER=0% Floor | PER=10% Onset | PER=100% Ceiling |
+|----|----|----|-------------|---------------|------------------|
+| 7 | 125k | 4/7 | +4 dB | +3 dB (cliff) | +3 dB |
+| 9 | 125k | 4/5 | +6 dB | +5 dB (cliff) | +5 dB |
+| 12 | 125k | 4/5 | -15 dB | -16 dB | -24 dB |
+
+**Key observations:**
+- **SF7 and SF9 have sharp cliffs** — 10/10 → 0/10 within 1 dB. No graceful
+  degradation; the preamble detection / alignment fails abruptly.
+- **SF12 degrades gracefully** — PER rises from 0% at -15 dB to 100% at -24 dB
+  (~9 dB transition zone). The 4096-bin FFT provides enough processing gain for
+  partial recovery even in heavy noise.
+- **SF12 is ~22 dB more robust than SF7** in injected noise tolerance, tracking
+  the theoretical processing gain difference: $10 \log_{10}(4096/128) \approx 15$ dB
+  plus FEC and spreading gain.
+
+**Note:** SNR values are *injected* noise relative to existing capture power.
+Original captures already contain HackRF receiver noise, so absolute decode
+thresholds are better (lower) than these numbers suggest. A hardware attenuator
+sweep (Phase 3b) would measure true absolute sensitivity.
+
+Full per-point data: `build/snr_sweep/snr_sweep_summary.md`
+
+### 3b — Hardware Attenuator Sweep (not yet attempted)
+
+**Setup:** Conducted RF path with stacked SMA attenuators.
 
 | Atten (dB) | Combination |
 |------------|-------------|
@@ -216,7 +253,8 @@ arduino/
     rfm95_param_sweep.ino     ← Serial-controlled TX
 tools/
   ota_param_sweep.py          ← Orchestrator script
-  ota_sensitivity_sweep.py    ← SNR sweep
+  ota_sensitivity_sweep.py    ← SNR sweep (HW attenuator)
+  sim_snr_sweep.py            ← SNR sweep (SW noise injection)
   ota_archive_captures.py     ← Golden capture recorder
 build/
   ota_sweep_results/          ← Sweep output (JSON + MD)
@@ -241,6 +279,6 @@ docs/
 |-------|--------|-------|
 | Phase 1 | ✅ Done | 4/4 OTA packets decoded (2026-03-03) |
 | Phase 2 | ✅ Done | SF7–SF12, BW125/250, CR5–8 all decode; BW500 known limitation at 2 MSPS (2026-03-21) |
-| Phase 3 | ⚠️ Inconclusive | Devices too close — TX power doesn't affect SNR; need attenuators (2026-03-21) |
+| Phase 3 | ✅ Software done | SW AWGN sweep: SF7 cliff at +4 dB, SF9 at +6 dB, SF12 gradual to -24 dB; HW attenuator sweep pending (2026-03-21) |
 | Phase 4 | ✅ Done | 11 golden OTA captures archived, 27/27 CTests pass (2026-03-21) |
 | Phase 5 | ✅ Done | 7/11 byte-identical interop with GNU Radio; SF≥9 GR buffer limitation (2026-03-21) |
