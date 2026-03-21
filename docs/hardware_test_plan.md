@@ -149,12 +149,29 @@ All 11 CTest targets are registered with label `ota` and use `PASS_REGULAR_EXPRE
 - Metadata: `ldro=true` for SF11/SF12 at BW125k (symbol time > 16 ms)
 - SFO estimation: inter-symbol phase-difference drift with t-stat significance gate
 
+### Wider coverage sweep (2026-03-21)
+
+Additional OTA combinations tested (not archived as golden captures):
+
+| Config | Result |
+|--------|--------|
+| SF7/BW500/CR5 | ❌ CRC MISMATCH — os=4, SFD quarter-symbol offset not handled (known limitation) |
+| SF8/BW125/CR7 | ✅ CRC OK |
+| SF9/BW125/CR7 | ✅ CRC OK |
+| SF8/BW250/CR5 | ✅ CRC OK |
+| SF9/BW250/CR5 | ✅ CRC OK |
+| SF11/BW125/CR5 | ✅ CRC OK |
+| SF7/BW125/CR8 | ✅ CRC OK |
+| SF10/BW125/CR7 | ✅ CRC OK |
+
+**7/8 pass.** BW500 limitation: at 2 MSPS capture rate, oversampling=4. The SFD
+re-demod path (which handles the 0.25-symbol offset) is only enabled for os>4.
+Workaround: capture at 4 MSPS for BW500.
+
 ### Not yet captured
 
 | Config | Reason |
 |--------|--------|
-| SF7/BW125/CR6 | Not tested in param sweep |
-| SF7/BW500/CR5 | Not tested yet |
 | Low-SNR variants | Need conducted path with attenuators |
 
 ---
@@ -223,7 +240,7 @@ docs/
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Phase 1 | ✅ Done | 4/4 OTA packets decoded (2026-03-03) |
-| Phase 2 | ✅ Done | SF7–SF12 all decode; SF10–12 fixed via SFO estimation + metadata fixes (2026-03-21) |
+| Phase 2 | ✅ Done | SF7–SF12, BW125/250, CR5–8 all decode; BW500 known limitation at 2 MSPS (2026-03-21) |
 | Phase 3 | ⚠️ Inconclusive | Devices too close — TX power doesn't affect SNR; need attenuators (2026-03-21) |
 | Phase 4 | ✅ Done | 11 golden OTA captures archived, 27/27 CTests pass (2026-03-21) |
 | Phase 5 | ✅ Done | 7/11 byte-identical interop with GNU Radio; SF≥9 GR buffer limitation (2026-03-21) |
