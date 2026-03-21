@@ -12,15 +12,15 @@ reproducibility and avoid regulatory issues.
 | RX / capture | HackRF One (2 MSPS) |
 | RF path | SMA cables + attenuator stack |
 | Decode | `lora_replay` (host decoder) |
-| Reference | GNU Radio `gr-lora_sdr` (conda `gr310`) |
+  | Reference | GNU Radio `gr-lora_sdr` (conda `gr310`) |
 
-Attenuators available: **10 dB**, **20 dB**, **30 dB** (stackable to 60 dB max).
+  Attenuators available: **10 dB**, **20 dB**, **30 dB** (stackable to 60 dB max).
 
----
+  ---
 
-## Phase 1 — Smoke / Sanity (manual, ~10 min)
+  ## Phase 1 — Smoke / Sanity (manual, ~10 min)
 
-**Goal:** Confirm the entire TX → capture → decode chain still works end-to-end
+  **Goal:** Confirm the entire TX → capture → decode chain still works end-to-end
 after code changes.
 
 ### Setup
@@ -128,22 +128,34 @@ For each SF ∈ {7, 9, 12}:
 
 **Goal:** Capture a golden set of OTA IQ files for offline regression testing.
 
-### Captures to record
+### Archived captures (`host_sim/data/ota/`)
 
-| File | SF | BW | CR | Atten | Packets |
-|------|-----|-----|-----|-------|---------|
-| `ota_sf7_bw125_cr1.cf32` | 7 | 125k | 4/5 | 50 dB | 5 |
-| `ota_sf7_bw125_cr2.cf32` | 7 | 125k | 4/6 | 50 dB | 5 |
-| `ota_sf9_bw125_cr1.cf32` | 9 | 125k | 4/5 | 50 dB | 3 |
-| `ota_sf12_bw125_cr1.cf32` | 12 | 125k | 4/5 | 50 dB | 2 |
-| `ota_sf7_bw250_cr1.cf32` | 7 | 250k | 4/5 | 50 dB | 5 |
-| `ota_sf7_bw125_cr1_lowsnr.cf32` | 7 | 125k | 4/5 | 60 dB | 5 |
+| File | SF | BW | CR | Payload | CTest | Status |
+|------|-----|-----|-----|---------|-------|--------|
+| `packet_0.cf32` … `packet_3.cf32` | 7 | 125k | 4/5 | LoRa Test #520–#523 | `ota_rfm95_packet_0`…`3` | ✅ |
+| `sf7_bw250_cr5.cf32` | 7 | 250k | 4/5 | LoRa Test #2 | `ota_golden_sf7_bw250_cr5` | ✅ |
+| `sf7_bw125_cr7.cf32` | 7 | 125k | 4/7 | LoRa Test #6 | `ota_golden_sf7_bw125_cr7` | ✅ |
+| `sf8_bw125_cr5.cf32` | 8 | 125k | 4/5 | LoRa Test #4 | `ota_golden_sf8_bw125_cr5` | ✅ |
+| `sf9_bw125_cr5.cf32` | 9 | 125k | 4/5 | LoRa Test #5 | `ota_golden_sf9_bw125_cr5` | ✅ |
+| `sf10_bw125_cr5.cf32` | 10 | 125k | 4/5 | LoRa Test #74 | `ota_golden_sf10_bw125_cr5` | ✅ |
+| `sf11_bw125_cr5.cf32` | 11 | 125k | 4/5 | LoRa Test #77 | `ota_golden_sf11_bw125_cr5` | ✅ |
+| `sf12_bw125_cr5.cf32` | 12 | 125k | 4/5 | LoRa Test #79 | `ota_golden_sf12_bw125_cr5` | ✅ |
 
-These captures become CTest fixtures (offline decode, no hardware needed):
-```cmake
-add_test(NAME ota_sf7_bw125_cr1_decode
-    COMMAND lora_replay --iq ${OTA_DATA}/ota_sf7_bw125_cr1.cf32 ...)
-```
+Each capture has a corresponding `*_meta.json` with SF/BW/CR/sample_rate.
+All 11 CTest targets are registered with label `ota` and use `PASS_REGULAR_EXPRESSION`.
+
+**Fixes applied for SF10–12 (2026-03-21):**
+- Metadata: `payload_len=0` (auto-detect from header in explicit mode)
+- Metadata: `ldro=true` for SF11/SF12 at BW125k (symbol time > 16 ms)
+- SFO estimation: inter-symbol phase-difference drift with t-stat significance gate
+
+### Not yet captured
+
+| Config | Reason |
+|--------|--------|
+| SF7/BW125/CR6 | Not tested in param sweep |
+| SF7/BW500/CR5 | Not tested yet |
+| Low-SNR variants | Need conducted path with attenuators |
 
 ---
 
@@ -158,6 +170,19 @@ For each capture from Phase 4:
 
 **Pass criteria:** 100% byte match on all captures that both decoders successfully
 detect as packets.
+
+### Results (2026-03-21)
+
+| Capture | Our Decoder | GNU Radio | Match |
+|---------|-------------|-----------|-------|
+| packet_0–3 (SF7/BW125/CR5) | ✅ CRC OK | ✅ byte-exact | ✅ |
+| sf7_bw250_cr5 | ✅ CRC OK | ✅ byte-exact | ✅ |
+| sf7_bw125_cr7 | ✅ CRC OK | ✅ byte-exact | ✅ |
+| sf8_bw125_cr5 | ✅ CRC OK | ✅ byte-exact | ✅ |
+| sf9_bw125_cr5 | ✅ CRC OK | ⚠️ GR buffer error | N/A |
+
+**7/8 byte-identical.** SF9 failure is a known gr-lora_sdr buffer limitation at 16× oversampling.
+See `build/interop_report.md` for full details.
 
 ---
 
@@ -182,18 +207,18 @@ docs/
 
 ## Prerequisites
 
-- [ ] ESP32+RFM95W wired and verified (Phase 1 smoke test)
-- [ ] HackRF One connected (`hackrf_info` returns serial)
-- [ ] `lora_replay` built (`ninja -C build`)
-- [ ] GNU Radio available (`conda run -n gr310 python -c "from gnuradio import lora_sdr"`)
-- [ ] SMA cables + attenuators assembled
+- [x] ESP32+RFM95W wired and verified (Phase 1 smoke test)
+- [x] HackRF One connected (`hackrf_info` returns serial a32868dc36620d47)
+- [x] `lora_replay` built (`ninja -C build`)
+- [x] GNU Radio available (`conda run -n gr310`, lora_sdr in `gr_lora_sdr/install/`)
+- [ ] SMA cables + attenuators assembled (OTA spring-antenna used so far)
 
 ## Current State
 
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Phase 1 | ✅ Done | 4/4 OTA packets decoded (2026-03-03) |
-| Phase 2 | ⬜ Not started | Need param-sweep Arduino sketch + script |
-| Phase 3 | ⬜ Not started | Needs Phase 2 infrastructure |
-| Phase 4 | ⬜ Not started | Needs Phase 2 captures |
-| Phase 5 | ⬜ Not started | Needs Phase 4 captures |
+| Phase 2 | ✅ Done | SF7–SF12 all decode; SF10–12 fixed via SFO estimation + metadata fixes (2026-03-21) |
+| Phase 3 | ⚠️ Inconclusive | Devices too close — TX power doesn't affect SNR; need attenuators (2026-03-21) |
+| Phase 4 | ✅ Done | 11 golden OTA captures archived, 27/27 CTests pass (2026-03-21) |
+| Phase 5 | ✅ Done | 7/8 byte-identical interop with GNU Radio; SF10–12 interop pending (2026-03-21) |
