@@ -1,0 +1,27 @@
+{
+  "capture": "sf7_bw500_cr2_implicithdr_nocrc_baseline.cf32",
+  "metadata": {
+    "sf": 7,
+    "bw": 500000,
+    "sample_rate": 1000000,
+    "cr": 2,
+    "payload_len": 32,
+    "preamble_len": 8,
+    "has_crc": false
+  },
+  "stats": {
+    "sample_count": 30413,
+    "min_magnitude": 0.00753363,
+    "max_magnitude": 4.48889,
+    "mean_power": 1.82442
+  },
+  "reference_mismatches": 0,
+  "stage_mismatches": 0,
+  "whitening_roundtrip_ok": true,
+  "packet_error_rate": 0.000000,
+  "bit_error_rate": 0.000000,
+  "deadline_miss_count": 0,
+  "tracking_failure": false,
+  "preview_symbols": [0, 0, 0, 0, 0, 0, 0, 0, 8, 16, 8, 16, 49, 73, 89, 101, 9, 101, 61, 125, 108, 23, 48, 118, 11, 97, 30, 11, 39, 5, 72, 45],
+  "stage_instrumentation": []
+}

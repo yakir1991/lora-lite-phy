@@ -1,0 +1,27 @@
+{
+  "capture": "build/receiver_vs_gnuradio/sf5_bw125_cr1_vector16_baseline.cf32",
+  "metadata": {
+    "sf": 5,
+    "bw": 125000,
+    "sample_rate": 500000,
+    "cr": 1,
+    "payload_len": 16,
+    "preamble_len": 8,
+    "has_crc": true
+  },
+  "stats": {
+    "sample_count": 200000,
+    "min_magnitude": 0.00216499,
+    "max_magnitude": 4.48646,
+    "mean_power": 1.7468
+  },
+  "reference_mismatches": 0,
+  "stage_mismatches": 0,
+  "whitening_roundtrip_ok": true,
+  "packet_error_rate": 0.000000,
+  "bit_error_rate": 0.000000,
+  "deadline_miss_count": 0,
+  "tracking_failure": false,
+  "preview_symbols": [0, 0, 0, 0, 0, 0, 8, 16, 24, 26, 17, 5, 25, 25, 21, 29, 29, 9, 19, 5, 19, 11, 29, 8, 31, 15, 14, 17, 8, 25, 14, 7],
+  "stage_instrumentation": []
+}

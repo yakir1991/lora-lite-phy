@@ -2,25 +2,20 @@
   {
     "capture": "tx_rx_sf10_bw250000_cr4_snrp0p0.cf32",
     "metrics": {
-      "reference_mismatches": {
-        "value": 0
-      },
-      "stage_mismatches": {
-        "value": 0
-      },
-      "whitening_roundtrip_ok": {
-        "value": true
-      },
+      "reference_mismatches": 0,
+      "stage_mismatches": 0,
+      "whitening_roundtrip_ok": true,
       "symbols": {
-        "value": 256
+        "value": 0,
+        "mode": "exact"
       },
       "stage_timing_avg_ns": {
-        "value": 97966.0703125,
+        "value": 0.0,
         "tolerance": 0.15,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
-        "value": 123314,
+        "value": 0.0,
         "tolerance": 0.4,
         "mode": "relative"
       }
@@ -29,25 +24,20 @@
   {
     "capture": "tx_rx_sf5_bw125000_cr1_snrm5p0.cf32",
     "metrics": {
-      "reference_mismatches": {
-        "value": 0
-      },
-      "stage_mismatches": {
-        "value": 0
-      },
-      "whitening_roundtrip_ok": {
-        "value": true
-      },
+      "reference_mismatches": 0,
+      "stage_mismatches": 0,
+      "whitening_roundtrip_ok": true,
       "symbols": {
-        "value": 256
+        "value": 0,
+        "mode": "exact"
       },
       "stage_timing_avg_ns": {
-        "value": 2733.55078125,
+        "value": 0.0,
         "tolerance": 0.15,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
-        "value": 2778,
+        "value": 0.0,
         "tolerance": 0.4,
         "mode": "relative"
       }
@@ -56,25 +46,20 @@
   {
     "capture": "tx_rx_sf5_bw125000_cr2_snrm5p0.cf32",
     "metrics": {
-      "reference_mismatches": {
-        "value": 0
-      },
-      "stage_mismatches": {
-        "value": 0
-      },
-      "whitening_roundtrip_ok": {
-        "value": true
-      },
+      "reference_mismatches": 0,
+      "stage_mismatches": 0,
+      "whitening_roundtrip_ok": true,
       "symbols": {
-        "value": 256
+        "value": 0,
+        "mode": "exact"
       },
       "stage_timing_avg_ns": {
-        "value": 3037.015625,
+        "value": 0.0,
         "tolerance": 0.15,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
-        "value": 3399,
+        "value": 0.0,
         "tolerance": 0.4,
         "mode": "relative"
       }
@@ -83,17 +68,12 @@
   {
     "capture": "tx_rx_sf6_bw125000_cr1_snrm5p0.cf32",
     "metrics": {
-      "reference_mismatches": {
-        "value": 0
-      },
-      "stage_mismatches": {
-        "value": 0
-      },
-      "whitening_roundtrip_ok": {
-        "value": true
-      },
+      "reference_mismatches": 0,
+      "stage_mismatches": 0,
+      "whitening_roundtrip_ok": true,
       "symbols": {
-        "value": 0
+        "value": 0,
+        "mode": "exact"
       },
       "stage_timing_avg_ns": {
         "value": 0.0,
@@ -110,17 +90,12 @@
   {
     "capture": "tx_rx_sf6_bw125000_cr2_snrm5p0.cf32",
     "metrics": {
-      "reference_mismatches": {
-        "value": 0
-      },
-      "stage_mismatches": {
-        "value": 0
-      },
-      "whitening_roundtrip_ok": {
-        "value": true
-      },
+      "reference_mismatches": 0,
+      "stage_mismatches": 0,
+      "whitening_roundtrip_ok": true,
       "symbols": {
-        "value": 0
+        "value": 0,
+        "mode": "exact"
       },
       "stage_timing_avg_ns": {
         "value": 0.0,
@@ -137,25 +112,20 @@
   {
     "capture": "tx_rx_sf7_bw125000_cr1_snrm5p0.cf32",
     "metrics": {
-      "reference_mismatches": {
-        "value": 0
-      },
-      "stage_mismatches": {
-        "value": 0
-      },
-      "whitening_roundtrip_ok": {
-        "value": true
-      },
+      "reference_mismatches": 0,
+      "stage_mismatches": 0,
+      "whitening_roundtrip_ok": true,
       "symbols": {
-        "value": 256
+        "value": 256,
+        "mode": "exact"
       },
       "stage_timing_avg_ns": {
-        "value": 10757.8046875,
+        "value": 1497.8046875,
         "tolerance": 0.15,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
-        "value": 10826,
+        "value": 1458,
         "tolerance": 0.4,
         "mode": "relative"
       }
@@ -164,25 +134,20 @@
   {
     "capture": "tx_rx_sf7_bw125000_cr1_snrm5p0_short.cf32",
     "metrics": {
-      "reference_mismatches": {
-        "value": 0
-      },
-      "stage_mismatches": {
-        "value": 0
-      },
-      "whitening_roundtrip_ok": {
-        "value": true
-      },
+      "reference_mismatches": 0,
+      "stage_mismatches": 0,
+      "whitening_roundtrip_ok": true,
       "symbols": {
-        "value": 256
+        "value": 0,
+        "mode": "exact"
       },
       "stage_timing_avg_ns": {
-        "value": 11119.18359375,
+        "value": 0.0,
         "tolerance": 0.15,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
-        "value": 12358,
+        "value": 0.0,
         "tolerance": 0.4,
         "mode": "relative"
       }
@@ -191,25 +156,42 @@
   {
     "capture": "tx_rx_sf7_bw125000_cr2_snrm5p0.cf32",
     "metrics": {
-      "reference_mismatches": {
-        "value": 0
-      },
-      "stage_mismatches": {
-        "value": 0
-      },
-      "whitening_roundtrip_ok": {
-        "value": true
-      },
+      "reference_mismatches": 0,
+      "stage_mismatches": 0,
+      "whitening_roundtrip_ok": true,
       "symbols": {
-        "value": 256
+        "value": 0,
+        "mode": "exact"
       },
       "stage_timing_avg_ns": {
-        "value": 10318.86328125,
+        "value": 0.0,
         "tolerance": 0.15,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
-        "value": 10484,
+        "value": 0.0,
+        "tolerance": 0.4,
+        "mode": "relative"
+      }
+    }
+  },
+  {
+    "capture": "tx_rx_sf7_bw125000_cr2_snrm5p0_short.cf32",
+    "metrics": {
+      "reference_mismatches": 0,
+      "stage_mismatches": 0,
+      "whitening_roundtrip_ok": true,
+      "symbols": {
+        "value": 0,
+        "mode": "exact"
+      },
+      "stage_timing_avg_ns": {
+        "value": 0.0,
+        "tolerance": 0.15,
+        "mode": "relative"
+      },
+      "stage_timing_p95_ns": {
+        "value": 0.0,
         "tolerance": 0.4,
         "mode": "relative"
       }
@@ -218,25 +200,20 @@
   {
     "capture": "tx_rx_sf9_bw125000_cr3_snrm2p0.cf32",
     "metrics": {
-      "reference_mismatches": {
-        "value": 0
-      },
-      "stage_mismatches": {
-        "value": 0
-      },
-      "whitening_roundtrip_ok": {
-        "value": true
-      },
+      "reference_mismatches": 0,
+      "stage_mismatches": 0,
+      "whitening_roundtrip_ok": true,
       "symbols": {
-        "value": 256
+        "value": 0,
+        "mode": "exact"
       },
       "stage_timing_avg_ns": {
-        "value": 45887.67578125,
+        "value": 0.0,
         "tolerance": 0.15,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
-        "value": 53252,
+        "value": 0.0,
         "tolerance": 0.4,
         "mode": "relative"
       }
@@ -245,25 +222,20 @@
   {
     "capture": "tx_rx_sf9_bw125000_cr3_snrm2p0_short.cf32",
     "metrics": {
-      "reference_mismatches": {
-        "value": 0
-      },
-      "stage_mismatches": {
-        "value": 0
-      },
-      "whitening_roundtrip_ok": {
-        "value": true
-      },
+      "reference_mismatches": 0,
+      "stage_mismatches": 0,
+      "whitening_roundtrip_ok": true,
       "symbols": {
-        "value": 256
+        "value": 0,
+        "mode": "exact"
       },
       "stage_timing_avg_ns": {
-        "value": 45045.48828125,
+        "value": 0.0,
         "tolerance": 0.15,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
-        "value": 50604,
+        "value": 0.0,
         "tolerance": 0.4,
         "mode": "relative"
       }

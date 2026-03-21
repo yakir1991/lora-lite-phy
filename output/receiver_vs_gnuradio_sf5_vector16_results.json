@@ -1,0 +1,222 @@
+[
+  {
+    "capture": "sf5_bw125_cr1_vector16",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 200000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.6613146019999476,
+      "user_s": 3.18,
+      "sys_s": 0.27,
+      "payload_bytes": 0,
+      "resources": {
+        "max_rss_kb": 72676.0,
+        "cpu_percent": 208.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.11014225099995656,
+      "user_s": 0.1,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 6120.0,
+        "cpu_percent": 92.0
+      },
+      "summary": {
+        "user_s_reported": 0.1,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 92.0,
+        "max_rss_kb": 6120.0,
+        "capture": "build/receiver_vs_gnuradio/sf5_bw125_cr1_vector16_baseline.cf32",
+        "metadata": {
+          "sf": 5,
+          "bw": 125000,
+          "sample_rate": 500000,
+          "cr": 1,
+          "payload_len": 16,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 200000,
+          "min_magnitude": 0.00216499,
+          "max_magnitude": 4.48646,
+          "mean_power": 1.7468
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          24,
+          26,
+          17,
+          5,
+          25,
+          25,
+          21,
+          29,
+          29,
+          9,
+          19,
+          5,
+          19,
+          11,
+          29,
+          8,
+          31,
+          15,
+          14,
+          17,
+          8,
+          25,
+          14,
+          7
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "115081d7112407239cc6663fca105a56103796"
+      }
+    },
+    "payload": {
+      "expected_hex": "",
+      "standalone_hex": "115081d7112407239cc6663fca105a56103796"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sf5_bw125_cr1_vector16",
+    "profile": "combo_field",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": -12.0,
+      "sto_samples": -32,
+      "sfo_ppm": 8.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 200002,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.696405819000006,
+      "user_s": 3.32,
+      "sys_s": 0.16,
+      "payload_bytes": 0,
+      "resources": {
+        "max_rss_kb": 72356.0,
+        "cpu_percent": 205.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.06869557300001361,
+      "user_s": 0.06,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 5276.0,
+        "cpu_percent": 92.0
+      },
+      "summary": {
+        "user_s_reported": 0.06,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 92.0,
+        "max_rss_kb": 5276.0,
+        "capture": "build/receiver_vs_gnuradio/sf5_bw125_cr1_vector16_combo_field.cf32",
+        "metadata": {
+          "sf": 5,
+          "bw": 125000,
+          "sample_rate": 500000,
+          "cr": 1,
+          "payload_len": 16,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 200002,
+          "min_magnitude": 0,
+          "max_magnitude": 3.95768,
+          "mean_power": 1.39158
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          9,
+          17,
+          21,
+          25,
+          18,
+          6,
+          26,
+          26,
+          22,
+          29,
+          30,
+          10,
+          20,
+          6,
+          20,
+          12,
+          29,
+          9,
+          31,
+          16,
+          15,
+          18,
+          9,
+          26,
+          15
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "2037837d4b"
+      }
+    },
+    "payload": {
+      "expected_hex": "",
+      "standalone_hex": "2037837d4b"
+    },
+    "payload_match": false
+  }
+]

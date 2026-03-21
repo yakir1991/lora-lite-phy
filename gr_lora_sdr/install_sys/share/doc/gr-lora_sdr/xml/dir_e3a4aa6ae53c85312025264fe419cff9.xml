@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.1" xml:lang="en-US">
+  <compounddef id="dir_e3a4aa6ae53c85312025264fe419cff9" kind="dir">
+    <compoundname>install</compoundname>
+    <innerdir refid="dir_5c761713bf5d0875d267b95dac50e2aa">include</innerdir>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/yakirqaq/projects/lora-lite-phy/gr_lora_sdr/install/"/>
+  </compounddef>
+</doxygen>

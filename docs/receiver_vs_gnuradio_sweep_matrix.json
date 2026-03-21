@@ -1,0 +1,658 @@
+{
+  "captures": [
+    {
+      "name": "sweep_sf7_bw125k_cr1",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf7_bw125k_cr1.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf7_bw125k_cr1.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 500000
+    },
+    {
+      "name": "sweep_sf7_bw125k_cr2",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf7_bw125k_cr2.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf7_bw125k_cr2.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 500000
+    },
+    {
+      "name": "sweep_sf7_bw125k_cr3",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf7_bw125k_cr3.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf7_bw125k_cr3.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 500000
+    },
+    {
+      "name": "sweep_sf7_bw125k_cr4",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf7_bw125k_cr4.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf7_bw125k_cr4.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 500000
+    },
+    {
+      "name": "sweep_sf7_bw250k_cr1",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf7_bw250k_cr1.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf7_bw250k_cr1.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 1000000
+    },
+    {
+      "name": "sweep_sf7_bw250k_cr2",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf7_bw250k_cr2.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf7_bw250k_cr2.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 1000000
+    },
+    {
+      "name": "sweep_sf7_bw250k_cr3",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf7_bw250k_cr3.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf7_bw250k_cr3.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 1000000
+    },
+    {
+      "name": "sweep_sf7_bw250k_cr4",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf7_bw250k_cr4.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf7_bw250k_cr4.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 1000000
+    },
+    {
+      "name": "sweep_sf7_bw500k_cr1",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf7_bw500k_cr1.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf7_bw500k_cr1.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 2000000
+    },
+    {
+      "name": "sweep_sf7_bw500k_cr2",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf7_bw500k_cr2.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf7_bw500k_cr2.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 2000000
+    },
+    {
+      "name": "sweep_sf7_bw500k_cr3",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf7_bw500k_cr3.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf7_bw500k_cr3.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 2000000
+    },
+    {
+      "name": "sweep_sf7_bw500k_cr4",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf7_bw500k_cr4.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf7_bw500k_cr4.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 2000000
+    },
+    {
+      "name": "sweep_sf8_bw125k_cr1",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf8_bw125k_cr1.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf8_bw125k_cr1.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 500000
+    },
+    {
+      "name": "sweep_sf8_bw125k_cr2",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf8_bw125k_cr2.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf8_bw125k_cr2.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 500000
+    },
+    {
+      "name": "sweep_sf8_bw125k_cr3",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf8_bw125k_cr3.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf8_bw125k_cr3.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 500000
+    },
+    {
+      "name": "sweep_sf8_bw125k_cr4",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf8_bw125k_cr4.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf8_bw125k_cr4.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 500000
+    },
+    {
+      "name": "sweep_sf8_bw250k_cr1",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf8_bw250k_cr1.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf8_bw250k_cr1.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 1000000
+    },
+    {
+      "name": "sweep_sf8_bw250k_cr2",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf8_bw250k_cr2.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf8_bw250k_cr2.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 1000000
+    },
+    {
+      "name": "sweep_sf8_bw250k_cr3",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf8_bw250k_cr3.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf8_bw250k_cr3.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 1000000
+    },
+    {
+      "name": "sweep_sf8_bw250k_cr4",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf8_bw250k_cr4.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf8_bw250k_cr4.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 1000000
+    },
+    {
+      "name": "sweep_sf8_bw500k_cr1",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf8_bw500k_cr1.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf8_bw500k_cr1.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 2000000
+    },
+    {
+      "name": "sweep_sf8_bw500k_cr2",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf8_bw500k_cr2.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf8_bw500k_cr2.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 2000000
+    },
+    {
+      "name": "sweep_sf8_bw500k_cr3",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf8_bw500k_cr3.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf8_bw500k_cr3.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 2000000
+    },
+    {
+      "name": "sweep_sf8_bw500k_cr4",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf8_bw500k_cr4.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf8_bw500k_cr4.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 2000000
+    },
+    {
+      "name": "sweep_sf9_bw125k_cr1",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf9_bw125k_cr1.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf9_bw125k_cr1.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 500000
+    },
+    {
+      "name": "sweep_sf9_bw125k_cr2",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf9_bw125k_cr2.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf9_bw125k_cr2.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 500000
+    },
+    {
+      "name": "sweep_sf9_bw125k_cr3",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf9_bw125k_cr3.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf9_bw125k_cr3.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 500000
+    },
+    {
+      "name": "sweep_sf9_bw125k_cr4",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf9_bw125k_cr4.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf9_bw125k_cr4.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 500000
+    },
+    {
+      "name": "sweep_sf9_bw250k_cr1",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf9_bw250k_cr1.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf9_bw250k_cr1.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 1000000
+    },
+    {
+      "name": "sweep_sf9_bw250k_cr2",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf9_bw250k_cr2.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf9_bw250k_cr2.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 1000000
+    },
+    {
+      "name": "sweep_sf9_bw250k_cr3",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf9_bw250k_cr3.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf9_bw250k_cr3.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 1000000
+    },
+    {
+      "name": "sweep_sf9_bw250k_cr4",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf9_bw250k_cr4.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf9_bw250k_cr4.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 1000000
+    },
+    {
+      "name": "sweep_sf9_bw500k_cr1",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf9_bw500k_cr1.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf9_bw500k_cr1.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 2000000
+    },
+    {
+      "name": "sweep_sf9_bw500k_cr2",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf9_bw500k_cr2.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf9_bw500k_cr2.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 2000000
+    },
+    {
+      "name": "sweep_sf9_bw500k_cr3",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf9_bw500k_cr3.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf9_bw500k_cr3.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 2000000
+    },
+    {
+      "name": "sweep_sf9_bw500k_cr4",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf9_bw500k_cr4.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf9_bw500k_cr4.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 2000000
+    },
+    {
+      "name": "sweep_sf10_bw125k_cr1",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf10_bw125k_cr1.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf10_bw125k_cr1.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf10_bw125k_cr2",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf10_bw125k_cr2.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf10_bw125k_cr2.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf10_bw125k_cr3",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf10_bw125k_cr3.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf10_bw125k_cr3.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf10_bw125k_cr4",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf10_bw125k_cr4.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf10_bw125k_cr4.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf10_bw250k_cr1",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf10_bw250k_cr1.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf10_bw250k_cr1.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf10_bw250k_cr2",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf10_bw250k_cr2.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf10_bw250k_cr2.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf10_bw250k_cr3",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf10_bw250k_cr3.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf10_bw250k_cr3.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf10_bw250k_cr4",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf10_bw250k_cr4.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf10_bw250k_cr4.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf10_bw500k_cr1",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf10_bw500k_cr1.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf10_bw500k_cr1.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf10_bw500k_cr2",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf10_bw500k_cr2.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf10_bw500k_cr2.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf10_bw500k_cr3",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf10_bw500k_cr3.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf10_bw500k_cr3.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf10_bw500k_cr4",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf10_bw500k_cr4.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf10_bw500k_cr4.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf11_bw125k_cr1",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf11_bw125k_cr1.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf11_bw125k_cr1.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf11_bw125k_cr2",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf11_bw125k_cr2.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf11_bw125k_cr2.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf11_bw125k_cr3",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf11_bw125k_cr3.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf11_bw125k_cr3.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf11_bw125k_cr4",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf11_bw125k_cr4.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf11_bw125k_cr4.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf11_bw250k_cr1",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf11_bw250k_cr1.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf11_bw250k_cr1.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf11_bw250k_cr2",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf11_bw250k_cr2.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf11_bw250k_cr2.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf11_bw250k_cr3",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf11_bw250k_cr3.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf11_bw250k_cr3.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf11_bw250k_cr4",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf11_bw250k_cr4.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf11_bw250k_cr4.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf11_bw500k_cr1",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf11_bw500k_cr1.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf11_bw500k_cr1.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf11_bw500k_cr2",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf11_bw500k_cr2.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf11_bw500k_cr2.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf11_bw500k_cr3",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf11_bw500k_cr3.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf11_bw500k_cr3.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf11_bw500k_cr4",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf11_bw500k_cr4.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf11_bw500k_cr4.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf12_bw125k_cr1",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf12_bw125k_cr1.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf12_bw125k_cr1.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf12_bw125k_cr2",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf12_bw125k_cr2.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf12_bw125k_cr2.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf12_bw125k_cr3",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf12_bw125k_cr3.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf12_bw125k_cr3.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf12_bw125k_cr4",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf12_bw125k_cr4.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf12_bw125k_cr4.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf12_bw250k_cr1",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf12_bw250k_cr1.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf12_bw250k_cr1.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf12_bw250k_cr2",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf12_bw250k_cr2.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf12_bw250k_cr2.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf12_bw250k_cr3",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf12_bw250k_cr3.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf12_bw250k_cr3.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf12_bw250k_cr4",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf12_bw250k_cr4.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf12_bw250k_cr4.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf12_bw500k_cr1",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf12_bw500k_cr1.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf12_bw500k_cr1.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf12_bw500k_cr2",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf12_bw500k_cr2.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf12_bw500k_cr2.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf12_bw500k_cr3",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf12_bw500k_cr3.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf12_bw500k_cr3.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    },
+    {
+      "name": "sweep_sf12_bw500k_cr4",
+      "capture": "gr_lora_sdr/data/generated/sweep_sf12_bw500k_cr4.cf32",
+      "metadata": "gr_lora_sdr/data/generated/sweep_sf12_bw500k_cr4.json",
+      "profiles": [
+        "baseline"
+      ],
+      "max_samples": 0
+    }
+  ],
+  "impairment_profiles": [
+    {
+      "label": "baseline",
+      "description": "Reference condition without impairments"
+    }
+  ]
+}

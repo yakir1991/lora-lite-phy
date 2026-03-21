@@ -1,0 +1,272 @@
+[
+  {
+    "capture": "tx_rx_sf10_bw250000_cr4_snrp0p0.cf32",
+    "metrics": {
+      "reference_mismatches": {
+        "value": 0
+      },
+      "stage_mismatches": {
+        "value": 0
+      },
+      "whitening_roundtrip_ok": {
+        "value": true
+      },
+      "symbols": {
+        "value": 0
+      },
+      "stage_timing_avg_ns": {
+        "value": 0.0,
+        "tolerance": 0.3,
+        "mode": "relative"
+      },
+      "stage_timing_p95_ns": {
+        "value": 0.0,
+        "tolerance": 0.6,
+        "mode": "relative"
+      }
+    }
+  },
+  {
+    "capture": "tx_rx_sf5_bw125000_cr1_snrm5p0.cf32",
+    "metrics": {
+      "reference_mismatches": {
+        "value": 0
+      },
+      "stage_mismatches": {
+        "value": 0
+      },
+      "whitening_roundtrip_ok": {
+        "value": true
+      },
+      "symbols": {
+        "value": 0
+      },
+      "stage_timing_avg_ns": {
+        "value": 0.0,
+        "tolerance": 0.3,
+        "mode": "relative"
+      },
+      "stage_timing_p95_ns": {
+        "value": 0.0,
+        "tolerance": 0.6,
+        "mode": "relative"
+      }
+    }
+  },
+  {
+    "capture": "tx_rx_sf5_bw125000_cr2_snrm5p0.cf32",
+    "metrics": {
+      "reference_mismatches": {
+        "value": 0
+      },
+      "stage_mismatches": {
+        "value": 0
+      },
+      "whitening_roundtrip_ok": {
+        "value": true
+      },
+      "symbols": {
+        "value": 0
+      },
+      "stage_timing_avg_ns": {
+        "value": 0.0,
+        "tolerance": 0.3,
+        "mode": "relative"
+      },
+      "stage_timing_p95_ns": {
+        "value": 0.0,
+        "tolerance": 0.6,
+        "mode": "relative"
+      }
+    }
+  },
+  {
+    "capture": "tx_rx_sf6_bw125000_cr1_snrm5p0.cf32",
+    "metrics": {
+      "reference_mismatches": {
+        "value": 0
+      },
+      "stage_mismatches": {
+        "value": 0
+      },
+      "whitening_roundtrip_ok": {
+        "value": true
+      },
+      "symbols": {
+        "value": 0
+      },
+      "stage_timing_avg_ns": {
+        "value": 0.0,
+        "tolerance": 0.3,
+        "mode": "relative"
+      },
+      "stage_timing_p95_ns": {
+        "value": 0.0,
+        "tolerance": 0.6,
+        "mode": "relative"
+      }
+    }
+  },
+  {
+    "capture": "tx_rx_sf6_bw125000_cr2_snrm5p0.cf32",
+    "metrics": {
+      "reference_mismatches": {
+        "value": 0
+      },
+      "stage_mismatches": {
+        "value": 0
+      },
+      "whitening_roundtrip_ok": {
+        "value": true
+      },
+      "symbols": {
+        "value": 0
+      },
+      "stage_timing_avg_ns": {
+        "value": 0.0,
+        "tolerance": 0.3,
+        "mode": "relative"
+      },
+      "stage_timing_p95_ns": {
+        "value": 0.0,
+        "tolerance": 0.6,
+        "mode": "relative"
+      }
+    }
+  },
+  {
+    "capture": "tx_rx_sf7_bw125000_cr1_snrm5p0.cf32",
+    "metrics": {
+      "reference_mismatches": {
+        "value": 0
+      },
+      "stage_mismatches": {
+        "value": 0
+      },
+      "whitening_roundtrip_ok": {
+        "value": true
+      },
+      "symbols": {
+        "value": 0
+      },
+      "stage_timing_avg_ns": {
+        "value": 0.0,
+        "tolerance": 0.3,
+        "mode": "relative"
+      },
+      "stage_timing_p95_ns": {
+        "value": 0.0,
+        "tolerance": 0.6,
+        "mode": "relative"
+      }
+    }
+  },
+  {
+    "capture": "tx_rx_sf7_bw125000_cr1_snrm5p0_short.cf32",
+    "metrics": {
+      "reference_mismatches": {
+        "value": 0
+      },
+      "stage_mismatches": {
+        "value": 0
+      },
+      "whitening_roundtrip_ok": {
+        "value": true
+      },
+      "symbols": {
+        "value": 0
+      },
+      "stage_timing_avg_ns": {
+        "value": 0.0,
+        "tolerance": 0.3,
+        "mode": "relative"
+      },
+      "stage_timing_p95_ns": {
+        "value": 0.0,
+        "tolerance": 0.6,
+        "mode": "relative"
+      }
+    }
+  },
+  {
+    "capture": "tx_rx_sf7_bw125000_cr2_snrm5p0.cf32",
+    "metrics": {
+      "reference_mismatches": {
+        "value": 0
+      },
+      "stage_mismatches": {
+        "value": 0
+      },
+      "whitening_roundtrip_ok": {
+        "value": true
+      },
+      "symbols": {
+        "value": 0
+      },
+      "stage_timing_avg_ns": {
+        "value": 0.0,
+        "tolerance": 0.3,
+        "mode": "relative"
+      },
+      "stage_timing_p95_ns": {
+        "value": 0.0,
+        "tolerance": 0.6,
+        "mode": "relative"
+      }
+    }
+  },
+  {
+    "capture": "tx_rx_sf9_bw125000_cr3_snrm2p0.cf32",
+    "metrics": {
+      "reference_mismatches": {
+        "value": 0
+      },
+      "stage_mismatches": {
+        "value": 0
+      },
+      "whitening_roundtrip_ok": {
+        "value": true
+      },
+      "symbols": {
+        "value": 0
+      },
+      "stage_timing_avg_ns": {
+        "value": 0.0,
+        "tolerance": 0.3,
+        "mode": "relative"
+      },
+      "stage_timing_p95_ns": {
+        "value": 0.0,
+        "tolerance": 0.6,
+        "mode": "relative"
+      }
+    }
+  },
+  {
+    "capture": "tx_rx_sf9_bw125000_cr3_snrm2p0_short.cf32",
+    "metrics": {
+      "reference_mismatches": {
+        "value": 0
+      },
+      "stage_mismatches": {
+        "value": 0
+      },
+      "whitening_roundtrip_ok": {
+        "value": true
+      },
+      "symbols": {
+        "value": 0
+      },
+      "stage_timing_avg_ns": {
+        "value": 0.0,
+        "tolerance": 0.3,
+        "mode": "relative"
+      },
+      "stage_timing_p95_ns": {
+        "value": 0.0,
+        "tolerance": 0.6,
+        "mode": "relative"
+      }
+    }
+  }
+]

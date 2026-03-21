@@ -1,0 +1,15 @@
+{
+  "sf": 9,
+  "bw": 125000,
+  "cr": 3,
+  "snr_db": -2.0,
+  "sample_rate": 500000,
+  "payload_len": 16,
+  "preamble_len": 8,
+  "duration_secs": 0.5,
+  "capture_file": "tx_rx_sf9_bw125000_cr3_snrm2p0_short.cf32",
+  "samples_per_symbol": 2048,
+  "cr_index": 3,
+  "snr_db_override_db": 2.0,
+  "description": "Simulated capture exported from apps/simulation/flowgraph/tx_rx_simulation.py (LoRa SDR reference, SF9/CR4/8)."
+}

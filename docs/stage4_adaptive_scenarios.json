@@ -1,0 +1,93 @@
+{
+  "rt_speed": 1.0,
+  "scenarios": [
+    {
+      "name": "sf_switch_low_to_high",
+      "steps": [
+        {
+          "capture": "tx_rx_sf7_bw125000_cr1_snrm5p0_short.cf32",
+          "metadata": "../gr_lora_sdr/data/generated/tx_rx_sf7_bw125000_cr1_snrm5p0_short.json",
+          "impair": {},
+          "rt": {
+            "tolerance_ns": 1000
+          },
+          "expect_fallback": false
+        },
+        {
+          "capture": "tx_rx_sf9_bw125000_cr3_snrm2p0_short.cf32",
+          "metadata": "../gr_lora_sdr/data/generated/tx_rx_sf9_bw125000_cr3_snrm2p0_short.json",
+          "impair": {},
+          "rt": {
+            "tolerance_ns": 2000
+          },
+          "expect_fallback": false
+        }
+      ]
+    },
+    {
+      "name": "sf5_collision_fallback",
+      "steps": [
+        {
+          "capture": "tx_rx_sf5_bw125000_cr1_snrm5p0.cf32",
+          "impair": {
+            "cfo_ppm": 20.0,
+            "sfo_ppm": -15.0,
+            "awgn_snr_db": -3.0,
+            "burst": {
+              "period": 32,
+              "duration": 24,
+              "snr_db": -3.0
+            },
+            "collision": {
+              "prob": 0.5,
+              "scale": 1.25,
+              "waveform": "docs/stage4_waveforms/interference_sf9_short.cf32"
+            }
+          },
+          "rt": {
+            "tolerance_ns": 500
+          },
+          "expect_fallback": true
+        }
+      ]
+    },
+    {
+      "name": "sf10_collision_rt_stress",
+      "steps": [
+        {
+          "capture": "tx_rx_sf10_bw250000_cr4_snrp0p0.cf32",
+          "metadata": "../gr_lora_sdr/data/generated/tx_rx_sf10_bw250000_cr4_snrp0p0.json",
+          "impair": {},
+          "rt": {
+            "tolerance_ns": 1500
+          },
+          "expect_fallback": false
+        },
+        {
+          "capture": "tx_rx_sf10_bw250000_cr4_snrp0p0.cf32",
+          "metadata": "../gr_lora_sdr/data/generated/tx_rx_sf10_bw250000_cr4_snrp0p0.json",
+          "impair": {
+            "cfo_ppm": -30.0,
+            "sfo_ppm": 25.0,
+            "awgn_snr_db": -6.0,
+            "burst": {
+              "period": 20,
+              "duration": 16,
+              "snr_db": -6.0
+            },
+            "collision": {
+              "prob": 0.65,
+              "scale": 1.5,
+              "waveform": "docs/stage4_waveforms/interference_sf7_short.cf32"
+            }
+          },
+          "rt": {
+            "tolerance_ns": 400,
+            "max_events": 32
+          },
+          "expect_fallback": true
+        }
+      ]
+    }
+  ]
+}

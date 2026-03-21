@@ -1,0 +1,4 @@
+file_source :info: set_min_output_buffer on block 3 to 16384
+[mem] flowgraph-built: 93416 kB
+[mem] after-run: 98420 kB
+[mem] after-payload-read: 98420 kB

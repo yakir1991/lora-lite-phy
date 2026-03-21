@@ -1,0 +1,586 @@
+{
+  "total": 96,
+  "exact_match": 60,
+  "partial_match": 0,
+  "host_only": 36,
+  "gr_only": 0,
+  "both_empty": 0,
+  "details": [
+    {
+      "capture": "sweep_sf10_bw125k_cr1",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf10_bw125k_cr2",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf10_bw125k_cr3",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf10_bw125k_cr4",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf10_bw250k_cr1",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf10_bw250k_cr2",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf10_bw250k_cr3",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf10_bw250k_cr4",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf10_bw500k_cr1",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf10_bw500k_cr2",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf10_bw500k_cr3",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf10_bw500k_cr4",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf11_bw125k_cr1",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf11_bw125k_cr2",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf11_bw125k_cr3",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf11_bw125k_cr4",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf11_bw250k_cr1",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf11_bw250k_cr2",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf11_bw250k_cr3",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf11_bw250k_cr4",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf11_bw500k_cr1",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf11_bw500k_cr2",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf11_bw500k_cr3",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf11_bw500k_cr4",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf12_bw125k_cr1",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf12_bw125k_cr2",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf12_bw125k_cr3",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf12_bw125k_cr4",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf12_bw250k_cr1",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf12_bw250k_cr2",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf12_bw250k_cr3",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf12_bw250k_cr4",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf12_bw500k_cr1",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf12_bw500k_cr2",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf12_bw500k_cr3",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf12_bw500k_cr4",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf5_bw125k_cr1",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf5_bw125k_cr2",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf5_bw125k_cr3",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf5_bw125k_cr4",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf5_bw250k_cr1",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf5_bw250k_cr2",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf5_bw250k_cr3",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf5_bw250k_cr4",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf5_bw500k_cr1",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf5_bw500k_cr2",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf5_bw500k_cr3",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf5_bw500k_cr4",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf6_bw125k_cr1",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf6_bw125k_cr2",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf6_bw125k_cr3",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf6_bw125k_cr4",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf6_bw250k_cr1",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf6_bw250k_cr2",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf6_bw250k_cr3",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf6_bw250k_cr4",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf6_bw500k_cr1",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf6_bw500k_cr2",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf6_bw500k_cr3",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf6_bw500k_cr4",
+      "host_len": 32,
+      "gr_len": 0,
+      "status": "host_only"
+    },
+    {
+      "capture": "sweep_sf7_bw125k_cr1",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf7_bw125k_cr2",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf7_bw125k_cr3",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf7_bw125k_cr4",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf7_bw250k_cr1",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf7_bw250k_cr2",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf7_bw250k_cr3",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf7_bw250k_cr4",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf7_bw500k_cr1",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf7_bw500k_cr2",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf7_bw500k_cr3",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf7_bw500k_cr4",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf8_bw125k_cr1",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf8_bw125k_cr2",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf8_bw125k_cr3",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf8_bw125k_cr4",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf8_bw250k_cr1",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf8_bw250k_cr2",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf8_bw250k_cr3",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf8_bw250k_cr4",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf8_bw500k_cr1",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf8_bw500k_cr2",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf8_bw500k_cr3",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf8_bw500k_cr4",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf9_bw125k_cr1",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf9_bw125k_cr2",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf9_bw125k_cr3",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf9_bw125k_cr4",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf9_bw250k_cr1",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf9_bw250k_cr2",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf9_bw250k_cr3",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf9_bw250k_cr4",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf9_bw500k_cr1",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf9_bw500k_cr2",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf9_bw500k_cr3",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    },
+    {
+      "capture": "sweep_sf9_bw500k_cr4",
+      "host_len": 32,
+      "gr_len": 32,
+      "status": "exact_match"
+    }
+  ]
+}

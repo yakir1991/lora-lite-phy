@@ -71,10 +71,10 @@ int parse_int(const std::string& token, int default_value)
 
 bool parse_bool(const std::string& token, bool default_value)
 {
-    if (token == "true" || token == "True") {
+    if (token == "true" || token == "True" || token == "1") {
         return true;
     }
-    if (token == "false" || token == "False") {
+    if (token == "false" || token == "False" || token == "0") {
         return false;
     }
     return default_value;

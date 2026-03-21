@@ -1,0 +1,7864 @@
+[
+  {
+    "capture": "sweep_sf7_bw125k_cr1",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.3397559619988897,
+      "user_s": 3.04,
+      "sys_s": 0.23,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72616.0,
+        "cpu_percent": 73.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.2521747079954366,
+      "user_s": 0.26,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 8408.0,
+        "cpu_percent": 106.0
+      },
+      "summary": {
+        "user_s_reported": 0.26,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 106.0,
+        "max_rss_kb": 8408.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf7_bw125k_cr1_baseline.cf32",
+        "metadata": {
+          "sf": 7,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 1,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35063,
+          "mean_power": 0.794739
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          58,
+          16,
+          1,
+          45,
+          125,
+          109,
+          81,
+          69,
+          65,
+          105,
+          43,
+          77,
+          26,
+          106,
+          13,
+          44,
+          5,
+          125,
+          89,
+          60,
+          97,
+          75,
+          67,
+          67
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "73007138636119d7a3dfb5f88afb02457bb43381b103cbf12e71e6e93810238f62824cf7f47b"
+      }
+    },
+    "payload": {
+      "expected_hex": "e8694af141e6b9efe53d9b77877bc1ad72902d6657b927aeb8943cb407d36531",
+      "standalone_hex": "73007138636119d7a3dfb5f88afb02457bb43381b103cbf12e71e6e93810238f62824cf7f47b"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf7_bw125k_cr2",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2697902910003904,
+      "user_s": 3.12,
+      "sys_s": 0.13,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72720.0,
+        "cpu_percent": 256.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.2539585470003658,
+      "user_s": 0.27,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 8480.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 0.27,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 8480.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf7_bw125k_cr2_baseline.cf32",
+        "metadata": {
+          "sf": 7,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 2,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.3504,
+          "mean_power": 0.815253
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          58,
+          16,
+          1,
+          33,
+          101,
+          109,
+          85,
+          121,
+          77,
+          113,
+          115,
+          49,
+          48,
+          40,
+          88,
+          67,
+          105,
+          126,
+          76,
+          56,
+          103,
+          42,
+          25,
+          2
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "b98baff9f0e1c2923f267d5cbd188690f0dc285068c39601d44264"
+      }
+    },
+    "payload": {
+      "expected_hex": "28e61f7a4ea40c294eaf75a00355159f0c5cbd0fa8064d8c3aa4a2f8adc027cc",
+      "standalone_hex": "b98baff9f0e1c2923f267d5cbd188690f0dc285068c39601d44264"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf7_bw125k_cr3",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2761152859966387,
+      "user_s": 3.05,
+      "sys_s": 0.16,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72656.0,
+        "cpu_percent": 252.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.2520032499960507,
+      "user_s": 0.25,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 8428.0,
+        "cpu_percent": 104.0
+      },
+      "summary": {
+        "user_s_reported": 0.25,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 104.0,
+        "max_rss_kb": 8428.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf7_bw125k_cr3_baseline.cf32",
+        "metadata": {
+          "sf": 7,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 3,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35038,
+          "mean_power": 0.835822
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          58,
+          16,
+          61,
+          81,
+          121,
+          109,
+          45,
+          101,
+          65,
+          113,
+          75,
+          29,
+          51,
+          15,
+          27,
+          99,
+          31,
+          7,
+          108,
+          96,
+          127,
+          77,
+          73,
+          96
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "2115b93b46c2c3c21d833515cf0a46089aefdb4e086b9663ad008b6a6288bd75de85a8c020c90f625121"
+      }
+    },
+    "payload": {
+      "expected_hex": "2229bd67c4dbc35dc81bb9dae08cde545d6111e3d09618c820f7ad12d46decb5",
+      "standalone_hex": "2115b93b46c2c3c21d833515cf0a46089aefdb4e086b9663ad008b6a6288bd75de85a8c020c90f625121"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf7_bw125k_cr4",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.283379120999598,
+      "user_s": 3.1,
+      "sys_s": 0.12,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72604.0,
+        "cpu_percent": 251.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.24993375100166304,
+      "user_s": 0.25,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 8404.0,
+        "cpu_percent": 105.0
+      },
+      "summary": {
+        "user_s_reported": 0.25,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 105.0,
+        "max_rss_kb": 8404.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf7_bw125k_cr4_baseline.cf32",
+        "metadata": {
+          "sf": 7,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 4,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35038,
+          "mean_power": 0.845947
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          58,
+          16,
+          1,
+          93,
+          125,
+          81,
+          41,
+          121,
+          61,
+          109,
+          15,
+          101,
+          75,
+          85,
+          73,
+          113,
+          99,
+          3,
+          61,
+          42,
+          19,
+          125,
+          32,
+          118
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "93edfc20c6e14229aa56133487b32fdd5bc76027a0ee1d7494"
+      }
+    },
+    "payload": {
+      "expected_hex": "be802114b357f773e1e5c04e6fbb78fa0d91717f7df1b96c3dd94998373303ce",
+      "standalone_hex": "93edfc20c6e14229aa56133487b32fdd5bc76027a0ee1d7494"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf7_bw250k_cr1",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2983027759983088,
+      "user_s": 3.09,
+      "sys_s": 0.2,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72560.0,
+        "cpu_percent": 253.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.4864762079960201,
+      "user_s": 0.51,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 12360.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 0.51,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 12360.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf7_bw250k_cr1_baseline.cf32",
+        "metadata": {
+          "sf": 7,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 1,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35088,
+          "mean_power": 0.78955
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          58,
+          16,
+          1,
+          45,
+          125,
+          109,
+          81,
+          69,
+          65,
+          105,
+          56,
+          91,
+          41,
+          115,
+          82,
+          97,
+          68,
+          23,
+          69,
+          20,
+          122,
+          118,
+          104,
+          35
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "d23f961ad12fa2d50785f96f960130e474d7c1c052783b43457fe684e18736576d32b238c2ecdb"
+      }
+    },
+    "payload": {
+      "expected_hex": "914da1111021cc24a0385f759e8484571f0a76f908e124d796b66d4e2827f20f",
+      "standalone_hex": "d23f961ad12fa2d50785f96f960130e474d7c1c052783b43457fe684e18736576d32b238c2ecdb"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf7_bw250k_cr2",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2746414139983244,
+      "user_s": 3.12,
+      "sys_s": 0.12,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72348.0,
+        "cpu_percent": 255.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.48099679200095125,
+      "user_s": 0.52,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 12464.0,
+        "cpu_percent": 108.0
+      },
+      "summary": {
+        "user_s_reported": 0.52,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 108.0,
+        "max_rss_kb": 12464.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf7_bw250k_cr2_baseline.cf32",
+        "metadata": {
+          "sf": 7,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 2,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.34993,
+          "mean_power": 0.811052
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          58,
+          16,
+          1,
+          33,
+          101,
+          109,
+          85,
+          121,
+          77,
+          113,
+          109,
+          11,
+          6,
+          93,
+          84,
+          74,
+          43,
+          124,
+          85,
+          60,
+          86,
+          103,
+          99,
+          65
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "1de31c02fc4545b1f9ef6b8dfbb861439c9c0bc2032dd336c53783"
+      }
+    },
+    "payload": {
+      "expected_hex": "cb80d26e4d26dd1247bb37146a1325615c7bd1f8cdeeddce08fa9c474ab66458",
+      "standalone_hex": "1de31c02fc4545b1f9ef6b8dfbb861439c9c0bc2032dd336c53783"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf7_bw250k_cr3",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2840204679960152,
+      "user_s": 3.07,
+      "sys_s": 0.17,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72700.0,
+        "cpu_percent": 253.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.48809418500604806,
+      "user_s": 0.53,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 12388.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 0.53,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 12388.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf7_bw250k_cr3_baseline.cf32",
+        "metadata": {
+          "sf": 7,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 3,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35086,
+          "mean_power": 0.830604
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          58,
+          16,
+          61,
+          81,
+          121,
+          109,
+          45,
+          101,
+          65,
+          113,
+          109,
+          64,
+          0,
+          81,
+          77,
+          123,
+          76,
+          90,
+          68,
+          25,
+          28,
+          107,
+          113,
+          26
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "d35948cad0a26125d2ad077ee4e5294542d9c96f39c0a0c0eb75ac32ce23de43"
+      }
+    },
+    "payload": {
+      "expected_hex": "ede6dc86c821d8f4f9dd11c4f9e2499e6e13dd98155af367ef69190516b6365c",
+      "standalone_hex": "d35948cad0a26125d2ad077ee4e5294542d9c96f39c0a0c0eb75ac32ce23de43"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf7_bw250k_cr4",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2775312080048025,
+      "user_s": 3.09,
+      "sys_s": 0.14,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72392.0,
+        "cpu_percent": 253.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.4809402340033557,
+      "user_s": 0.53,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 12456.0,
+        "cpu_percent": 110.0
+      },
+      "summary": {
+        "user_s_reported": 0.53,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 110.0,
+        "max_rss_kb": 12456.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf7_bw250k_cr4_baseline.cf32",
+        "metadata": {
+          "sf": 7,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 4,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.34616,
+          "mean_power": 0.845944
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          58,
+          16,
+          1,
+          93,
+          125,
+          81,
+          41,
+          121,
+          61,
+          109,
+          81,
+          91,
+          91,
+          15,
+          87,
+          45,
+          113,
+          119,
+          108,
+          10,
+          6,
+          65,
+          84,
+          111
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "fffeece9f1e0c2850b163e5fbc69e1e2d79d1a3568d0b15190110215181022579f0c3970"
+      }
+    },
+    "payload": {
+      "expected_hex": "1508f8312386a0a0eff4541337e5955e4b019ae71618ac27f89bef6047084c59",
+      "standalone_hex": "fffeece9f1e0c2850b163e5fbc69e1e2d79d1a3568d0b15190110215181022579f0c3970"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf7_bw500k_cr1",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.283695848993375,
+      "user_s": 3.1,
+      "sys_s": 0.21,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72524.0,
+        "cpu_percent": 259.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.9303995619993657,
+      "user_s": 1.02,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 20136.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 1.02,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 20136.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf7_bw500k_cr1_baseline.cf32",
+        "metadata": {
+          "sf": 7,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 1,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35038,
+          "mean_power": 0.789863
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          58,
+          16,
+          1,
+          45,
+          125,
+          109,
+          81,
+          69,
+          65,
+          105,
+          100,
+          46,
+          74,
+          124,
+          127,
+          64,
+          11,
+          65,
+          66,
+          105,
+          107,
+          81,
+          98,
+          62
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "761a174c4ebac9850b17ff6929e3b19c8d3dfe6faa8086fab7ffe4e0f9d9b250"
+      }
+    },
+    "payload": {
+      "expected_hex": "85f8327e56dbb11e961d0fd52d52b707ac8b22e7f5b3aa4c755c0e8760f50457",
+      "standalone_hex": "761a174c4ebac9850b17ff6929e3b19c8d3dfe6faa8086fab7ffe4e0f9d9b250"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf7_bw500k_cr2",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2926657360003446,
+      "user_s": 3.05,
+      "sys_s": 0.25,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72444.0,
+        "cpu_percent": 256.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.9356391459950828,
+      "user_s": 1.02,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 20144.0,
+        "cpu_percent": 110.0
+      },
+      "summary": {
+        "user_s_reported": 1.02,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 110.0,
+        "max_rss_kb": 20144.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf7_bw500k_cr2_baseline.cf32",
+        "metadata": {
+          "sf": 7,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 2,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35076,
+          "mean_power": 0.810987
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          58,
+          16,
+          1,
+          33,
+          101,
+          109,
+          85,
+          121,
+          77,
+          113,
+          39,
+          76,
+          119,
+          61,
+          36,
+          52,
+          84,
+          27,
+          30,
+          99,
+          81,
+          44,
+          65,
+          112
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "fffefc988697a4914d262f2edb0ef5c1b18d1f652ac4e272f30126735b17"
+      }
+    },
+    "payload": {
+      "expected_hex": "74d182bd936ef2c1c3148a0bc62bdaf63bc8f8cf047b6c526d6f499deb0e1ddc",
+      "standalone_hex": "fffefc988697a4914d262f2edb0ef5c1b18d1f652ac4e272f30126735b17"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf7_bw500k_cr3",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2932462379976641,
+      "user_s": 3.18,
+      "sys_s": 0.15,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72700.0,
+        "cpu_percent": 258.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.632752059995255,
+      "user_s": 0.69,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 19372.0,
+        "cpu_percent": 110.0
+      },
+      "summary": {
+        "user_s_reported": 0.69,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 110.0,
+        "max_rss_kb": 19372.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf7_bw500k_cr3_baseline.cf32",
+        "metadata": {
+          "sf": 7,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 3,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35088,
+          "mean_power": 0.830153
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          78,
+          54,
+          61,
+          81,
+          121,
+          109,
+          45,
+          101,
+          65,
+          113,
+          27,
+          15,
+          37,
+          1,
+          57,
+          19,
+          23,
+          5,
+          28,
+          72,
+          97,
+          93,
+          49
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "fcccfd"
+      }
+    },
+    "payload": {
+      "expected_hex": "02bfcafac5b3a3a1d9268dd4286074fb94744200a52187200dfb8e6de4d5f978",
+      "standalone_hex": "fcccfd"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf7_bw500k_cr4",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.3148641400039196,
+      "user_s": 3.15,
+      "sys_s": 0.2,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72672.0,
+        "cpu_percent": 255.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.9437821239989717,
+      "user_s": 1.01,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 19228.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 1.01,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 19228.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf7_bw500k_cr4_baseline.cf32",
+        "metadata": {
+          "sf": 7,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 4,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35088,
+          "mean_power": 0.843935
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          58,
+          16,
+          1,
+          93,
+          125,
+          81,
+          41,
+          121,
+          61,
+          109,
+          70,
+          57,
+          106,
+          47,
+          65,
+          88,
+          34,
+          23,
+          108,
+          127,
+          1,
+          117,
+          44,
+          81
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "d6c124e90890997e06cdf5b6d151a0b12cbd688fe874cab4"
+      }
+    },
+    "payload": {
+      "expected_hex": "6c539933e36008755d47dd89a0857c154e0eee19bcb18c2c128a9f19d2e40a08",
+      "standalone_hex": "d6c124e90890997e06cdf5b6d151a0b12cbd688fe874cab4"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf8_bw125k_cr1",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2783099160005804,
+      "user_s": 3.1,
+      "sys_s": 0.11,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72412.0,
+        "cpu_percent": 252.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.2932505420030793,
+      "user_s": 0.3,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 8444.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 0.3,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 8444.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf8_bw125k_cr1_baseline.cf32",
+        "metadata": {
+          "sf": 8,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 1,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.34585,
+          "mean_power": 0.784508
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          126,
+          60,
+          157,
+          113,
+          225,
+          205,
+          173,
+          141,
+          249,
+          209,
+          196,
+          140,
+          15,
+          62,
+          204,
+          49,
+          55,
+          143,
+          7,
+          103,
+          191,
+          0,
+          156,
+          239
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "ffeefdf9f1f1d2940a063f5ead68e1f2d68c1a2579c1a14191110214080132568f0d3970f2d58913254b862f5c"
+      }
+    },
+    "payload": {
+      "expected_hex": "989756dc74afe9999d1363bea1bfd8f529b9f5433702483218c84d18c14f520e",
+      "standalone_hex": "ffeefdf9f1f1d2940a063f5ead68e1f2d68c1a2579c1a14191110214080132568f0d3970f2d58913254b862f5c"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf8_bw125k_cr2",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2778174370032502,
+      "user_s": 3.1,
+      "sys_s": 0.14,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72344.0,
+        "cpu_percent": 253.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.2852922620004392,
+      "user_s": 0.3,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 8460.0,
+        "cpu_percent": 106.0
+      },
+      "summary": {
+        "user_s_reported": 0.3,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 106.0,
+        "max_rss_kb": 8460.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf8_bw125k_cr2_baseline.cf32",
+        "metadata": {
+          "sf": 8,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 2,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35088,
+          "mean_power": 0.805331
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          126,
+          60,
+          225,
+          129,
+          249,
+          209,
+          169,
+          241,
+          153,
+          225,
+          130,
+          124,
+          252,
+          181,
+          54,
+          207,
+          127,
+          226,
+          131,
+          12,
+          96,
+          105,
+          12,
+          76
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "c71bcd947bc7bb8b8d3c573cbc57e539e49d64e2001e5d194c6a6081d87c6f8b8f"
+      }
+    },
+    "payload": {
+      "expected_hex": "c35e3a5167af463eaeea88c3e604854bc903525f1bb0dc2a6ffa2dd44526862d",
+      "standalone_hex": "c71bcd947bc7bb8b8d3c573cbc57e539e49d64e2001e5d194c6a6081d87c6f8b8f"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf8_bw125k_cr3",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2716604779998306,
+      "user_s": 3.05,
+      "sys_s": 0.12,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72484.0,
+        "cpu_percent": 250.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.2854627979977522,
+      "user_s": 0.31,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 7504.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 0.31,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 7504.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf8_bw125k_cr3_baseline.cf32",
+        "metadata": {
+          "sf": 8,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 3,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.3507,
+          "mean_power": 0.825672
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          126,
+          60,
+          29,
+          77,
+          217,
+          205,
+          81,
+          201,
+          133,
+          225,
+          25,
+          76,
+          20,
+          152,
+          193,
+          184,
+          225,
+          104,
+          114,
+          23,
+          176,
+          247,
+          219,
+          182
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "96173e4142e6c2a11cb47784681065aec6d6b83985d7a0f0193e3dd6ac05239c0b3a009b63c818bcdf58c4"
+      }
+    },
+    "payload": {
+      "expected_hex": "1d4eca259e33b270646964618bcd8e05a2d49f3b841300ad8949f2f8bef0fcc4",
+      "standalone_hex": "96173e4142e6c2a11cb47784681065aec6d6b83985d7a0f0193e3dd6ac05239c0b3a009b63c818bcdf58c4"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf8_bw125k_cr4",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.304587402002653,
+      "user_s": 3.11,
+      "sys_s": 0.1,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72348.0,
+        "cpu_percent": 247.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.2875726290003513,
+      "user_s": 0.31,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 7660.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 0.31,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 7660.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf8_bw125k_cr4_baseline.cf32",
+        "metadata": {
+          "sf": 8,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 4,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35056,
+          "mean_power": 0.845972
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          126,
+          60,
+          157,
+          65,
+          225,
+          173,
+          85,
+          245,
+          121,
+          33,
+          72,
+          223,
+          141,
+          34,
+          72,
+          224,
+          159,
+          79,
+          144,
+          30,
+          236,
+          147,
+          14,
+          213
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "c7da0470f2a07752894595bac4d9dd1914667e355bfe2b17ad1723de77a736582e163c512f64a86c77e85145f2c50e6888930306fcf6dd8b"
+      }
+    },
+    "payload": {
+      "expected_hex": "f0e0f0ee7d430f626405d21419f5b4b81d5ef3b2988c756f02675a5ae74e5e7f",
+      "standalone_hex": "c7da0470f2a07752894595bac4d9dd1914667e355bfe2b17ad1723de77a736582e163c512f64a86c77e85145f2c50e6888930306fcf6dd8b"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf8_bw250k_cr1",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.289991302000999,
+      "user_s": 3.11,
+      "sys_s": 0.15,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72492.0,
+        "cpu_percent": 253.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.5091973900052835,
+      "user_s": 0.54,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 11688.0,
+        "cpu_percent": 108.0
+      },
+      "summary": {
+        "user_s_reported": 0.54,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 108.0,
+        "max_rss_kb": 11688.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf8_bw250k_cr1_baseline.cf32",
+        "metadata": {
+          "sf": 8,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 1,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35056,
+          "mean_power": 0.778229
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          126,
+          60,
+          225,
+          141,
+          221,
+          209,
+          161,
+          137,
+          133,
+          45,
+          85,
+          113,
+          70,
+          59,
+          132,
+          96,
+          193,
+          31,
+          2,
+          127,
+          44,
+          135,
+          120,
+          241
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "6f8b0be3434439f26d043e8f9ba211914b827ab5d56c9b4fccc14e8008112347"
+      }
+    },
+    "payload": {
+      "expected_hex": "97a301c033a9dad5ee007ceae8f240baab1e6b6b803cebbe698745a0e097448e",
+      "standalone_hex": "6f8b0be3434439f26d043e8f9ba211914b827ab5d56c9b4fccc14e8008112347"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf8_bw250k_cr2",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2762131220006268,
+      "user_s": 3.13,
+      "sys_s": 0.12,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72340.0,
+        "cpu_percent": 255.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.5119072669986053,
+      "user_s": 0.53,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 11552.0,
+        "cpu_percent": 107.0
+      },
+      "summary": {
+        "user_s_reported": 0.53,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 107.0,
+        "max_rss_kb": 11552.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf8_bw250k_cr2_baseline.cf32",
+        "metadata": {
+          "sf": 8,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 2,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35019,
+          "mean_power": 0.804999
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          126,
+          60,
+          157,
+          129,
+          197,
+          205,
+          169,
+          241,
+          153,
+          29,
+          205,
+          211,
+          133,
+          137,
+          13,
+          53,
+          149,
+          55,
+          196,
+          79,
+          68,
+          124,
+          238,
+          7
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "36dda7e5d49408a2cb79c9f1d8e368ce71a8e7c3aec1b3f028085d00ef7f3f4cca923e31e2c489"
+      }
+    },
+    "payload": {
+      "expected_hex": "7e599972f47afd0498983473b6fdb8f9c3f29e2a3fd8d75ee427943dcb5910bf",
+      "standalone_hex": "36dda7e5d49408a2cb79c9f1d8e368ce71a8e7c3aec1b3f028085d00ef7f3f4cca923e31e2c489"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf8_bw250k_cr3",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.280154770000081,
+      "user_s": 3.07,
+      "sys_s": 0.16,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72664.0,
+        "cpu_percent": 253.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.5094808780049789,
+      "user_s": 0.54,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 11528.0,
+        "cpu_percent": 15.0
+      },
+      "summary": {
+        "user_s_reported": 0.54,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 15.0,
+        "max_rss_kb": 11528.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf8_bw250k_cr3_baseline.cf32",
+        "metadata": {
+          "sf": 8,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 3,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35087,
+          "mean_power": 0.819914
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          126,
+          60,
+          29,
+          77,
+          217,
+          205,
+          81,
+          201,
+          133,
+          225,
+          253,
+          113,
+          131,
+          139,
+          91,
+          223,
+          237,
+          211,
+          24,
+          145,
+          47,
+          224,
+          188,
+          136
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "dbcbd8e994b6b4c46e602b1b8a38f18480cb5e345bc3a062f16761525e37"
+      }
+    },
+    "payload": {
+      "expected_hex": "5d3b5051e6ecf963951defece387084a47f816c51dff5df97b2bd1835c1e98c7",
+      "standalone_hex": "dbcbd8e994b6b4c46e602b1b8a38f18480cb5e345bc3a062f16761525e37"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf8_bw250k_cr4",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2751041120063746,
+      "user_s": 3.06,
+      "sys_s": 0.16,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72372.0,
+        "cpu_percent": 252.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.5098210130017833,
+      "user_s": 0.53,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 11552.0,
+        "cpu_percent": 107.0
+      },
+      "summary": {
+        "user_s_reported": 0.53,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 107.0,
+        "max_rss_kb": 11552.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf8_bw250k_cr4_baseline.cf32",
+        "metadata": {
+          "sf": 8,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 4,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35081,
+          "mean_power": 0.835557
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          126,
+          60,
+          157,
+          189,
+          221,
+          173,
+          85,
+          245,
+          5,
+          221,
+          104,
+          82,
+          12,
+          192,
+          118,
+          32,
+          202,
+          164,
+          230,
+          20,
+          32,
+          194,
+          0,
+          114
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "85f676dff9b1d0b182108d382746"
+      }
+    },
+    "payload": {
+      "expected_hex": "966c88efa7d0fae6ad98d687b6501e58a08369c3ab1fb4e5816e05000b9ae7c9",
+      "standalone_hex": "85f676dff9b1d0b182108d382746"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf8_bw500k_cr1",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.3063639730025898,
+      "user_s": 3.07,
+      "sys_s": 0.19,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72840.0,
+        "cpu_percent": 250.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.9518136660044547,
+      "user_s": 1.02,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 20188.0,
+        "cpu_percent": 108.0
+      },
+      "summary": {
+        "user_s_reported": 1.02,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 108.0,
+        "max_rss_kb": 20188.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf8_bw500k_cr1_baseline.cf32",
+        "metadata": {
+          "sf": 8,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 1,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35056,
+          "mean_power": 0.778276
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          126,
+          60,
+          225,
+          113,
+          221,
+          205,
+          173,
+          137,
+          133,
+          209,
+          123,
+          244,
+          88,
+          140,
+          46,
+          117,
+          51,
+          254,
+          67,
+          140,
+          205,
+          38,
+          26,
+          83
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "bad704a9150af83c911c85a434b0bd23c68d1a3416c278bd17353338c3fc3266"
+      }
+    },
+    "payload": {
+      "expected_hex": "2d4b1c05f11a6f944cfce49c5245b6c4e4bfa818074ea10a522c612afc67dbbb",
+      "standalone_hex": "bad704a9150af83c911c85a434b0bd23c68d1a3416c278bd17353338c3fc3266"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf8_bw500k_cr2",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.3094980560053955,
+      "user_s": 3.17,
+      "sys_s": 0.15,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72364.0,
+        "cpu_percent": 254.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.9512170079979114,
+      "user_s": 1.03,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 20300.0,
+        "cpu_percent": 108.0
+      },
+      "summary": {
+        "user_s_reported": 1.03,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 108.0,
+        "max_rss_kb": 20300.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf8_bw500k_cr2_baseline.cf32",
+        "metadata": {
+          "sf": 8,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 2,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35088,
+          "mean_power": 0.800112
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          126,
+          60,
+          157,
+          125,
+          249,
+          209,
+          169,
+          245,
+          153,
+          29,
+          133,
+          130,
+          133,
+          222,
+          102,
+          205,
+          143,
+          200,
+          252,
+          207,
+          163,
+          69,
+          233,
+          64
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "16c17d648d8f7fbc2733286cf1486c8aef14832df959746345013f9bfa2428afe20f38"
+      }
+    },
+    "payload": {
+      "expected_hex": "d0e930d9ede18d04ce8ff29b3e942dfdf4b3d7d00db785ce9033a1b46cb7f0fc",
+      "standalone_hex": "16c17d648d8f7fbc2733286cf1486c8aef14832df959746345013f9bfa2428afe20f38"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf8_bw500k_cr3",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.317655590006325,
+      "user_s": 3.14,
+      "sys_s": 0.17,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72392.0,
+        "cpu_percent": 251.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.9543655880042934,
+      "user_s": 1.03,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 20156.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 1.03,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 20156.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf8_bw500k_cr3_baseline.cf32",
+        "metadata": {
+          "sf": 8,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 3,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35078,
+          "mean_power": 0.819746
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          126,
+          60,
+          97,
+          177,
+          217,
+          205,
+          81,
+          205,
+          133,
+          29,
+          244,
+          174,
+          248,
+          80,
+          84,
+          204,
+          10,
+          55,
+          145,
+          109,
+          131,
+          23,
+          233,
+          185
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "ddccceebc3e2d2a628070e7fbc78f1e3e49f1a155ae08071a033012639232056"
+      }
+    },
+    "payload": {
+      "expected_hex": "de559d7f04756ff3bfc76ca9b5438d418b5df5aeac45fb02334495ba95645292",
+      "standalone_hex": "ddccceebc3e2d2a628070e7fbc78f1e3e49f1a155ae08071a033012639232056"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf8_bw500k_cr4",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.310714036000718,
+      "user_s": 3.14,
+      "sys_s": 0.15,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72696.0,
+        "cpu_percent": 252.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.9390445980025106,
+      "user_s": 1.02,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 20200.0,
+        "cpu_percent": 110.0
+      },
+      "summary": {
+        "user_s_reported": 1.02,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 110.0,
+        "max_rss_kb": 20200.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf8_bw500k_cr4_baseline.cf32",
+        "metadata": {
+          "sf": 8,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 4,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35088,
+          "mean_power": 0.835717
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          126,
+          60,
+          157,
+          65,
+          225,
+          173,
+          85,
+          245,
+          121,
+          33,
+          92,
+          84,
+          24,
+          14,
+          242,
+          112,
+          128,
+          112,
+          16,
+          118,
+          166,
+          226,
+          172,
+          64
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "38826de5e1e942430d9737e7fb115baf"
+      }
+    },
+    "payload": {
+      "expected_hex": "10c7042e5787adf4e1e203cb0e45b3d78ba946f9f926e462ca556bee5ad2ce53",
+      "standalone_hex": "38826de5e1e942430d9737e7fb115baf"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf9_bw125k_cr1",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2551271880001877,
+      "user_s": 3.05,
+      "sys_s": 0.17,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72624.0,
+        "cpu_percent": 257.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.49399704599636607,
+      "user_s": 0.54,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 8484.0,
+        "cpu_percent": 110.0
+      },
+      "summary": {
+        "user_s_reported": 0.54,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 110.0,
+        "max_rss_kb": 8484.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf9_bw125k_cr1_baseline.cf32",
+        "metadata": {
+          "sf": 9,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 1,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.34923,
+          "mean_power": 0.763879
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          224,
+          16,
+          349,
+          333,
+          477,
+          401,
+          333,
+          273,
+          265,
+          417,
+          482,
+          446,
+          271,
+          60,
+          0,
+          62,
+          159,
+          446,
+          130,
+          488,
+          24,
+          186,
+          177,
+          146
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "feefede8f1f1d2850b173e5fbc68f0e3c79c1a3568d0b1519001"
+      }
+    },
+    "payload": {
+      "expected_hex": "a317fa31f3dd09891832c9e7fda3e3037046533e8594080f87c619663d12fd7c",
+      "standalone_hex": "feefede8f1f1d2850b173e5fbc68f0e3c79c1a3568d0b1519001"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf9_bw125k_cr2",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2468586460017832,
+      "user_s": 3.07,
+      "sys_s": 0.1,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72832.0,
+        "cpu_percent": 254.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.5019474910004647,
+      "user_s": 0.54,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 8404.0,
+        "cpu_percent": 110.0
+      },
+      "summary": {
+        "user_s_reported": 0.54,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 110.0,
+        "max_rss_kb": 8404.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf9_bw125k_cr2_baseline.cf32",
+        "metadata": {
+          "sf": 9,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 2,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.34281,
+          "mean_power": 0.804736
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          224,
+          16,
+          93,
+          189,
+          441,
+          433,
+          345,
+          485,
+          305,
+          317,
+          106,
+          405,
+          508,
+          302,
+          339,
+          155,
+          310,
+          243,
+          67,
+          492,
+          70,
+          86,
+          215,
+          474
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "f70c792aac3b2e723cb057ae858d8f0554556c6f5ab5d9249f86a492e686975893acc61f953b7e"
+      }
+    },
+    "payload": {
+      "expected_hex": "5af707d7681db120922906270dc3a4fa6868949559dc04b0a09b5836410be445",
+      "standalone_hex": "f70c792aac3b2e723cb057ae858d8f0554556c6f5ab5d9249f86a492e686975893acc61f953b7e"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf9_bw125k_cr3",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2349377729988191,
+      "user_s": 3.06,
+      "sys_s": 0.11,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72396.0,
+        "cpu_percent": 257.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.49650725899846293,
+      "user_s": 0.55,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 8424.0,
+        "cpu_percent": 111.0
+      },
+      "summary": {
+        "user_s_reported": 0.55,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 111.0,
+        "max_rss_kb": 8424.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf9_bw125k_cr3_baseline.cf32",
+        "metadata": {
+          "sf": 9,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 3,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.34993,
+          "mean_power": 0.805115
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          224,
+          16,
+          221,
+          141,
+          485,
+          429,
+          173,
+          405,
+          501,
+          317,
+          313,
+          511,
+          414,
+          135,
+          276,
+          390,
+          507,
+          264,
+          74,
+          69,
+          201,
+          49,
+          506,
+          247
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "53c3a6220e07c2a0bc804f9dccf8a5466bd4df8eec8a3cd495f86bd356cf4082fff47794c2390e566939962ec6393076"
+      }
+    },
+    "payload": {
+      "expected_hex": "065e3168d52058e3b3a3ed112c2e46220347e4c20e3630364c3c7f4ff8bc0582",
+      "standalone_hex": "53c3a6220e07c2a0bc804f9dccf8a5466bd4df8eec8a3cd495f86bd356cf4082fff47794c2390e566939962ec6393076"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf9_bw125k_cr4",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2578281999958563,
+      "user_s": 3.09,
+      "sys_s": 0.12,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72692.0,
+        "cpu_percent": 256.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.490264145002584,
+      "user_s": 0.53,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 8520.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 0.53,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 8520.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf9_bw125k_cr4_baseline.cf32",
+        "metadata": {
+          "sf": 9,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 4,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35087,
+          "mean_power": 0.846184
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          224,
+          16,
+          161,
+          257,
+          417,
+          337,
+          169,
+          489,
+          241,
+          65,
+          211,
+          486,
+          506,
+          64,
+          441,
+          154,
+          95,
+          163,
+          373,
+          267,
+          492,
+          4,
+          332,
+          267
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "1089fc5726a6dbf2d73c0d7d7b12c2ebe70e"
+      }
+    },
+    "payload": {
+      "expected_hex": "6047cacdc14cf9624f452157fc569835d02b4216dafc171aeacaf3141d9605a2",
+      "standalone_hex": "1089fc5726a6dbf2d73c0d7d7b12c2ebe70e"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf9_bw250k_cr1",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2715881739932229,
+      "user_s": 3.01,
+      "sys_s": 0.19,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72692.0,
+        "cpu_percent": 252.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.7149016129988013,
+      "user_s": 0.78,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 12364.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 0.78,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 12364.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf9_bw250k_cr1_baseline.cf32",
+        "metadata": {
+          "sf": 9,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 1,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35087,
+          "mean_power": 0.764086
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          224,
+          16,
+          93,
+          205,
+          417,
+          429,
+          337,
+          281,
+          269,
+          161,
+          248,
+          53,
+          88,
+          448,
+          428,
+          107,
+          263,
+          478,
+          215,
+          62,
+          366,
+          452,
+          460,
+          332
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "ac8e1c4479f3420d47332e5ebc40d5e3826a960a5762c51b4201b31c183891327a748511f777756f578633b13f37eb164cafecbd4186f67c13be0064a0047e6c8c913714"
+      }
+    },
+    "payload": {
+      "expected_hex": "50facfbe875a199ac3d83e0471126c0b458ac5e9534e1db2f79feaf6902de297",
+      "standalone_hex": "ac8e1c4479f3420d47332e5ebc40d5e3826a960a5762c51b4201b31c183891327a748511f777756f578633b13f37eb164cafecbd4186f67c13be0064a0047e6c8c913714"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf9_bw250k_cr2",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2759109459948377,
+      "user_s": 3.11,
+      "sys_s": 0.12,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72352.0,
+        "cpu_percent": 253.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.7214706759987166,
+      "user_s": 0.78,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 12416.0,
+        "cpu_percent": 108.0
+      },
+      "summary": {
+        "user_s_reported": 0.78,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 108.0,
+        "max_rss_kb": 12416.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf9_bw250k_cr2_baseline.cf32",
+        "metadata": {
+          "sf": 9,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 2,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35065,
+          "mean_power": 0.784624
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          224,
+          16,
+          349,
+          321,
+          389,
+          401,
+          345,
+          485,
+          309,
+          193,
+          221,
+          200,
+          329,
+          73,
+          336,
+          160,
+          372,
+          40,
+          72,
+          140,
+          454,
+          48,
+          497,
+          311
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "adb899a9459d52909479608e507ae1e3c68d7267ad1f07d795c1035a0817f975"
+      }
+    },
+    "payload": {
+      "expected_hex": "e72cdc2d8baa4b46a12189a67e93c91a690f39b67186fa425585f56249b13e46",
+      "standalone_hex": "adb899a9459d52909479608e507ae1e3c68d7267ad1f07d795c1035a0817f975"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf9_bw250k_cr3",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2826179539988516,
+      "user_s": 3.12,
+      "sys_s": 0.09,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72364.0,
+        "cpu_percent": 250.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.7207311780002783,
+      "user_s": 0.78,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 12432.0,
+        "cpu_percent": 108.0
+      },
+      "summary": {
+        "user_s_reported": 0.78,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 108.0,
+        "max_rss_kb": 12432.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf9_bw250k_cr3_baseline.cf32",
+        "metadata": {
+          "sf": 9,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 3,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35087,
+          "mean_power": 0.805107
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          224,
+          16,
+          477,
+          369,
+          485,
+          401,
+          161,
+          405,
+          269,
+          193,
+          381,
+          338,
+          473,
+          252,
+          436,
+          265,
+          423,
+          138,
+          13,
+          454,
+          321,
+          81,
+          16,
+          56
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "a5db8d094f1c896b45395f775571f1e3c68d"
+      }
+    },
+    "payload": {
+      "expected_hex": "b744f456b6f432e00be035c19624f49e00ff66f34c87b2fcc23ab27d3872787f",
+      "standalone_hex": "a5db8d094f1c896b45395f775571f1e3c68d"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf9_bw250k_cr4",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2792484870005865,
+      "user_s": 3.08,
+      "sys_s": 0.13,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72368.0,
+        "cpu_percent": 252.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 0.7179019039976993,
+      "user_s": 0.78,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 12428.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 0.78,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 12428.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf9_bw250k_cr4_baseline.cf32",
+        "metadata": {
+          "sf": 9,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 4,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.34854,
+          "mean_power": 0.825629
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          224,
+          16,
+          93,
+          257,
+          417,
+          365,
+          181,
+          485,
+          241,
+          65,
+          465,
+          394,
+          226,
+          441,
+          93,
+          227,
+          410,
+          472,
+          256,
+          235,
+          324,
+          116,
+          75,
+          467
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "753ff2495944c18bc8ca6bb3bcc42b7aa5febff61c11dbee589b7d44181123d78f4f67"
+      }
+    },
+    "payload": {
+      "expected_hex": "f09ac86bf5cdec2399201f4bbfd7b80f988019210a5575fff98024cf6d774e18",
+      "standalone_hex": "753ff2495944c18bc8ca6bb3bcc42b7aa5febff61c11dbee589b7d44181123d78f4f67"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf9_bw500k_cr1",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.3160044100004598,
+      "user_s": 3.16,
+      "sys_s": 0.12,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72516.0,
+        "cpu_percent": 250.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 1.1697920969963889,
+      "user_s": 1.26,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 20212.0,
+        "cpu_percent": 108.0
+      },
+      "summary": {
+        "user_s_reported": 1.26,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 108.0,
+        "max_rss_kb": 20212.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf9_bw500k_cr1_baseline.cf32",
+        "metadata": {
+          "sf": 9,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 1,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35087,
+          "mean_power": 0.764038
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          224,
+          16,
+          93,
+          305,
+          417,
+          397,
+          333,
+          285,
+          497,
+          417,
+          312,
+          234,
+          337,
+          319,
+          355,
+          379,
+          500,
+          101,
+          344,
+          253,
+          129,
+          155,
+          253,
+          113
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "48ca7c28de28743255df071fb4b43e2c7008"
+      }
+    },
+    "payload": {
+      "expected_hex": "f894458a95ba73e1c38dc93c9c603684fda2c64029d39226a13b5d3be2c77494",
+      "standalone_hex": "48ca7c28de28743255df071fb4b43e2c7008"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf9_bw500k_cr2",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.3211584919990855,
+      "user_s": 3.12,
+      "sys_s": 0.16,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72364.0,
+        "cpu_percent": 249.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 1.1691093370027374,
+      "user_s": 1.27,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 20172.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 1.27,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 20172.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf9_bw500k_cr2_baseline.cf32",
+        "metadata": {
+          "sf": 9,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 2,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35042,
+          "mean_power": 0.784764
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          224,
+          16,
+          93,
+          317,
+          441,
+          397,
+          329,
+          481,
+          461,
+          449,
+          97,
+          217,
+          67,
+          493,
+          107,
+          279,
+          424,
+          40,
+          399,
+          303,
+          363,
+          416,
+          427,
+          203
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "dfdfcddaf3e3c2a62b373f4f8f5ac2c0e4af1a256ad29043a1011104081123478f0f"
+      }
+    },
+    "payload": {
+      "expected_hex": "f8f098d10a63129facbdd869635a2f324e279ce0e7f8b200f6591f9ee82ffdd1",
+      "standalone_hex": "dfdfcddaf3e3c2a62b373f4f8f5ac2c0e4af1a256ad29043a1011104081123478f0f"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf9_bw500k_cr3",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2916729070057045,
+      "user_s": 3.15,
+      "sys_s": 0.15,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72480.0,
+        "cpu_percent": 74.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 1.1704506959940773,
+      "user_s": 1.26,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 20212.0,
+        "cpu_percent": 108.0
+      },
+      "summary": {
+        "user_s_reported": 1.26,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 108.0,
+        "max_rss_kb": 20212.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf9_bw500k_cr3_baseline.cf32",
+        "metadata": {
+          "sf": 9,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 3,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35088,
+          "mean_power": 0.805178
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          224,
+          16,
+          477,
+          241,
+          473,
+          397,
+          189,
+          413,
+          265,
+          193,
+          71,
+          21,
+          274,
+          350,
+          198,
+          461,
+          436,
+          264,
+          446,
+          474,
+          380,
+          10,
+          458,
+          168
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "92c88a1ec5db10e00e845008ea773123c68d52766cd020a7762f2ff9d5c46656c371153cb92dca07e7"
+      }
+    },
+    "payload": {
+      "expected_hex": "99bf538244ef3045734323b4a7127751117894067168d0bc34d4efa30aa0a1bb",
+      "standalone_hex": "92c88a1ec5db10e00e845008ea773123c68d52766cd020a7762f2ff9d5c46656c371153cb92dca07e7"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf9_bw500k_cr4",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.29023559900088,
+      "user_s": 3.19,
+      "sys_s": 0.07,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72396.0,
+        "cpu_percent": 253.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 1.163376882999728,
+      "user_s": 1.25,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 20208.0,
+        "cpu_percent": 108.0
+      },
+      "summary": {
+        "user_s_reported": 1.25,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 108.0,
+        "max_rss_kb": 20208.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf9_bw500k_cr4_baseline.cf32",
+        "metadata": {
+          "sf": 9,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 4,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35063,
+          "mean_power": 0.825472
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          224,
+          16,
+          161,
+          129,
+          477,
+          369,
+          165,
+          485,
+          241,
+          445,
+          47,
+          431,
+          282,
+          208,
+          170,
+          419,
+          454,
+          191,
+          409,
+          186,
+          350,
+          243,
+          431,
+          181
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "04848e8345568577b6172f5ebc48c4f2826bc6db639cff44e622ddae6cd1b5e537"
+      }
+    },
+    "payload": {
+      "expected_hex": "8a17e0cfef4d1c1beb3362b6bac9009bb39b422cdc60d0f837fbe79d037ae68b",
+      "standalone_hex": "04848e8345568577b6172f5ebc48c4f2826bc6db639cff44e622ddae6cd1b5e537"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf10_bw125k_cr1",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2756453629990574,
+      "user_s": 3.08,
+      "sys_s": 0.13,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72504.0,
+        "cpu_percent": 252.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 1.2987227020057617,
+      "user_s": 1.41,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 8676.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 1.41,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 8676.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf10_bw125k_cr1_baseline.cf32",
+        "metadata": {
+          "sf": 10,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 1,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35036,
+          "mean_power": 0.764321
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          518,
+          942,
+          989,
+          333,
+          797,
+          785,
+          701,
+          545,
+          529,
+          833,
+          741,
+          117,
+          318,
+          455,
+          516,
+          615,
+          1005,
+          509,
+          979,
+          899,
+          251,
+          814,
+          415,
+          964
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "e85a9041bf27d16cafb513eb"
+      }
+    },
+    "payload": {
+      "expected_hex": "f43c01c6f84711b1b785868bcbd89333a2827ce4ff6c1c87f4dc0414595f9911",
+      "standalone_hex": "e85a9041bf27d16cafb513eb"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf10_bw125k_cr2",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2659965799975907,
+      "user_s": 3.1,
+      "sys_s": 0.09,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72676.0,
+        "cpu_percent": 253.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 1.3137900389992865,
+      "user_s": 1.42,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 8284.0,
+        "cpu_percent": 108.0
+      },
+      "summary": {
+        "user_s_reported": 1.42,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 108.0,
+        "max_rss_kb": 8284.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf10_bw125k_cr2_baseline.cf32",
+        "metadata": {
+          "sf": 10,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 2,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.349,
+          "mean_power": 0.774924
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          518,
+          942,
+          289,
+          701,
+          965,
+          817,
+          665,
+          977,
+          621,
+          125,
+          153,
+          305,
+          784,
+          133,
+          164,
+          836,
+          776,
+          184,
+          665,
+          524,
+          465,
+          427,
+          746,
+          638
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "e57d70ca1f8c26f31b30c0298c99e3491b5882c5f17d0c81482a17759b"
+      }
+    },
+    "payload": {
+      "expected_hex": "69dbe448ccf14811e9ff6d6c42edf9cdefc51d638a5f8cf496b0ceb812b9c218",
+      "standalone_hex": "e57d70ca1f8c26f31b30c0298c99e3491b5882c5f17d0c81482a17759b"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf10_bw125k_cr3",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2680760869989172,
+      "user_s": 3.07,
+      "sys_s": 0.14,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72656.0,
+        "cpu_percent": 253.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 1.2878986630021245,
+      "user_s": 1.41,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 8232.0,
+        "cpu_percent": 110.0
+      },
+      "summary": {
+        "user_s_reported": 1.41,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 110.0,
+        "max_rss_kb": 8232.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf10_bw125k_cr3_baseline.cf32",
+        "metadata": {
+          "sf": 10,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 3,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35085,
+          "mean_power": 0.845851
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          518,
+          942,
+          929,
+          753,
+          985,
+          817,
+          321,
+          809,
+          537,
+          633,
+          608,
+          481,
+          997,
+          953,
+          688,
+          285,
+          270,
+          760,
+          934,
+          305,
+          860,
+          857,
+          475,
+          194
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "b5eb77e4d14f521c67"
+      }
+    },
+    "payload": {
+      "expected_hex": "7a5afcacab408db3883981d74b08a7256e0210ebbeb4e4ce25938d6356976a97",
+      "standalone_hex": "b5eb77e4d14f521c67"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf10_bw125k_cr4",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.240236104997166,
+      "user_s": 3.04,
+      "sys_s": 0.13,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72532.0,
+        "cpu_percent": 256.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 1.2819378780041006,
+      "user_s": 1.42,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 8436.0,
+        "cpu_percent": 110.0
+      },
+      "summary": {
+        "user_s_reported": 1.42,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 110.0,
+        "max_rss_kb": 8436.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf10_bw125k_cr4_baseline.cf32",
+        "metadata": {
+          "sf": 10,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 4,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35073,
+          "mean_power": 0.845976
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          518,
+          942,
+          477,
+          641,
+          865,
+          753,
+          325,
+          969,
+          21,
+          133,
+          324,
+          671,
+          568,
+          28,
+          923,
+          871,
+          311,
+          276,
+          974,
+          179,
+          760,
+          912,
+          441,
+          967
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "68a1a5a1080c8d5f3e1b2366956cb231af7e9dc22212c93f3b010204081132568e1c295cd0139a27b27e42c84fe1e56caf14bfd0b48f2b54f91bb33a850d66b32439bc28abb089c29e3b"
+      }
+    },
+    "payload": {
+      "expected_hex": "ac5ff338efff57a26ab22c143c7a1f47ef5d60535bac540c45fbb70617c1c775",
+      "standalone_hex": "68a1a5a1080c8d5f3e1b2366956cb231af7e9dc22212c93f3b010204081132568e1c295cd0139a27b27e42c84fe1e56caf14bfd0b48f2b54f91bb33a850d66b32439bc28abb089c29e3b"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf10_bw250k_cr1",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2643464870052412,
+      "user_s": 3.03,
+      "sys_s": 0.16,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72464.0,
+        "cpu_percent": 253.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 1.4992760110035306,
+      "user_s": 1.66,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 11524.0,
+        "cpu_percent": 110.0
+      },
+      "summary": {
+        "user_s_reported": 1.66,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 110.0,
+        "max_rss_kb": 11524.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf10_bw250k_cr1_baseline.cf32",
+        "metadata": {
+          "sf": 10,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 1,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.34995,
+          "mean_power": 0.764227
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          518,
+          942,
+          477,
+          433,
+          865,
+          877,
+          669,
+          573,
+          529,
+          833,
+          512,
+          640,
+          347,
+          121,
+          363,
+          410,
+          583,
+          574,
+          260,
+          16,
+          101,
+          681,
+          784,
+          507
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "dfedfcf8f0f0f19618362f7e8f59e3e2e6be3b1569d2b153910212341b0220669f2e1843e2d489131658971c6fb8"
+      }
+    },
+    "payload": {
+      "expected_hex": "8415b0bcb896fb5b9d2718fb25c2cff056df33c52ef57d542e6be1d89ed95251",
+      "standalone_hex": "dfedfcf8f0f0f19618362f7e8f59e3e2e6be3b1569d2b153910212341b0220669f2e1843e2d489131658971c6fb8"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf10_bw250k_cr2",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2719772670025122,
+      "user_s": 3.06,
+      "sys_s": 0.14,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72380.0,
+        "cpu_percent": 252.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 1.5135640799999237,
+      "user_s": 1.65,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 12128.0,
+        "cpu_percent": 110.0
+      },
+      "summary": {
+        "user_s_reported": 1.65,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 110.0,
+        "max_rss_kb": 12128.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf10_bw250k_cr2_baseline.cf32",
+        "metadata": {
+          "sf": 10,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 2,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35068,
+          "mean_power": 0.774869
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          518,
+          942,
+          733,
+          445,
+          837,
+          849,
+          645,
+          969,
+          913,
+          897,
+          707,
+          794,
+          154,
+          824,
+          295,
+          448,
+          304,
+          282,
+          440,
+          522,
+          820,
+          566,
+          770,
+          412
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "099a21e129ac3821e59b7e45f42bc7a25da1e60a423e6e59c38086fa2f03d6af8de187992bd249d26d6066d6a4be41c6434e1cc01bdbd9eae6745147"
+      }
+    },
+    "payload": {
+      "expected_hex": "11a5bfba3b21230350987b2914327f0524984e70cdcaebbd7d1e09487b7c23bc",
+      "standalone_hex": "099a21e129ac3821e59b7e45f42bc7a25da1e60a423e6e59c38086fa2f03d6af8de187992bd249d26d6066d6a4be41c6434e1cc01bdbd9eae6745147"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf10_bw250k_cr3",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2664447230054066,
+      "user_s": 3.08,
+      "sys_s": 0.13,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72388.0,
+        "cpu_percent": 254.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 1.5100547389956773,
+      "user_s": 1.65,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 11616.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 1.65,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 11616.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf10_bw250k_cr3_baseline.cf32",
+        "metadata": {
+          "sf": 10,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 3,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35085,
+          "mean_power": 0.804936
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          518,
+          942,
+          417,
+          625,
+          985,
+          781,
+          369,
+          813,
+          1005,
+          637,
+          782,
+          786,
+          621,
+          171,
+          935,
+          890,
+          811,
+          527,
+          478,
+          221,
+          648,
+          100,
+          137,
+          971
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "37f1d2f3680fee2a6a045a8380ccf41b58ae17a0d311"
+      }
+    },
+    "payload": {
+      "expected_hex": "c8ebf3553e29be270e7d0a35c8549d822e46a9d0e9a0ee67ad6f08fa97c31fbf",
+      "standalone_hex": "37f1d2f3680fee2a6a045a8380ccf41b58ae17a0d311"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf10_bw250k_cr4",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2709497350006131,
+      "user_s": 3.04,
+      "sys_s": 0.16,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72704.0,
+        "cpu_percent": 252.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 1.5140431879990501,
+      "user_s": 1.64,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 11596.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 1.64,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 11596.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf10_bw250k_cr4_baseline.cf32",
+        "metadata": {
+          "sf": 10,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 4,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.3507,
+          "mean_power": 0.804848
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          518,
+          942,
+          733,
+          765,
+          861,
+          653,
+          341,
+          981,
+          29,
+          381,
+          500,
+          791,
+          47,
+          355,
+          154,
+          829,
+          584,
+          502,
+          370,
+          348,
+          733,
+          425,
+          485,
+          780
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "9ce6368a3c59afd49d0f03cfb81557bb04e3fac5e9d0d0b798"
+      }
+    },
+    "payload": {
+      "expected_hex": "bbb73753b6fc7f290cedb1a5fbf0461bf99944f785652cde0697d4d881d2092a",
+      "standalone_hex": "9ce6368a3c59afd49d0f03cfb81557bb04e3fac5e9d0d0b798"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf10_bw500k_cr1",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2753666979988338,
+      "user_s": 3.08,
+      "sys_s": 0.13,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72460.0,
+        "cpu_percent": 251.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 1.9571900970040588,
+      "user_s": 2.13,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 20184.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 2.13,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 20184.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf10_bw500k_cr1_baseline.cf32",
+        "metadata": {
+          "sf": 10,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 1,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35052,
+          "mean_power": 0.745229
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          518,
+          942,
+          289,
+          689,
+          925,
+          781,
+          653,
+          553,
+          533,
+          833,
+          897,
+          566,
+          270,
+          703,
+          307,
+          75,
+          966,
+          249,
+          543,
+          382,
+          570,
+          635,
+          313,
+          613
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "f3877bfad3e57f5f514fe339b274e367bf06001869f1e637657f39856627cd6074f6529c8e29b65a50bbf0872505bdda"
+      }
+    },
+    "payload": {
+      "expected_hex": "ad9b1ad6c4401a36402616ae0abaf8cc9f5b3215d4e5211d0419f22bb2bf5082",
+      "standalone_hex": "f3877bfad3e57f5f514fe339b274e367bf06001869f1e637657f39856627cd6074f6529c8e29b65a50bbf0872505bdda"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf10_bw500k_cr2",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.3071477580015198,
+      "user_s": 3.11,
+      "sys_s": 0.12,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72460.0,
+        "cpu_percent": 247.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 1.9577104049967602,
+      "user_s": 2.13,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 20236.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 2.13,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 20236.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf10_bw500k_cr2_baseline.cf32",
+        "metadata": {
+          "sf": 10,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 2,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35071,
+          "mean_power": 0.774725
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          518,
+          942,
+          289,
+          701,
+          837,
+          845,
+          697,
+          989,
+          609,
+          385,
+          898,
+          159,
+          44,
+          453,
+          527,
+          14,
+          77,
+          477,
+          850,
+          523,
+          604,
+          486,
+          40,
+          475
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "73d137b2c403fba868598faf1e3568605e5a04db91f09b6a288e50ca08b670159ea25904b7"
+      }
+    },
+    "payload": {
+      "expected_hex": "2927763cae66646482e85abc86269e12e02a81245062cfaeeeadc24d4d2e5f4f",
+      "standalone_hex": "73d137b2c403fba868598faf1e3568605e5a04db91f09b6a288e50ca08b670159ea25904b7"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf10_bw500k_cr3",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2903658560026088,
+      "user_s": 3.11,
+      "sys_s": 0.14,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72488.0,
+        "cpu_percent": 73.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 1.970716749994608,
+      "user_s": 2.14,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 20084.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 2.14,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 20084.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf10_bw500k_cr3_baseline.cf32",
+        "metadata": {
+          "sf": 10,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 3,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35088,
+          "mean_power": 0.789727
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          518,
+          942,
+          417,
+          369,
+          805,
+          785,
+          365,
+          805,
+          537,
+          389,
+          769,
+          296,
+          395,
+          728,
+          26,
+          647,
+          917,
+          113,
+          468,
+          850,
+          674,
+          679,
+          464,
+          281
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "2b0e8d155058a1cb819e7487b055a68f9d9f1a344dd1982130f2169b41ebcb52d4c3242a32a93e53a6e1f4e06d335f70d94b9020c76609a0d37d1fbc2468b201c50c"
+      }
+    },
+    "payload": {
+      "expected_hex": "e09d38be5e29e4652261d2249b1a070cdd786c266c0c143935578196ad655dcc",
+      "standalone_hex": "2b0e8d155058a1cb819e7487b055a68f9d9f1a344dd1982130f2169b41ebcb52d4c3242a32a93e53a6e1f4e06d335f70d94b9020c76609a0d37d1fbc2468b201c50c"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf10_bw500k_cr4",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.3059006089970353,
+      "user_s": 3.18,
+      "sys_s": 0.1,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72688.0,
+        "cpu_percent": 251.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 1.953869652999856,
+      "user_s": 2.11,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 20324.0,
+        "cpu_percent": 108.0
+      },
+      "summary": {
+        "user_s_reported": 2.11,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 108.0,
+        "max_rss_kb": 20324.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf10_bw500k_cr4_baseline.cf32",
+        "metadata": {
+          "sf": 10,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 4,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.34988,
+          "mean_power": 0.805063
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          518,
+          942,
+          33,
+          381,
+          925,
+          657,
+          377,
+          977,
+          485,
+          893,
+          867,
+          981,
+          737,
+          365,
+          357,
+          235,
+          491,
+          727,
+          407,
+          693,
+          671,
+          620,
+          57,
+          110
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "be88ffa8f38596a30f057f5a9f2eb5e1a3ea2d757bd7b213815406555d440505ed493f11e4b4e976254b972e5cce"
+      }
+    },
+    "payload": {
+      "expected_hex": "a4e0514a02c97a71b8ef74e7265274bf590bfb04b2d23dd6ed7420fed45371f7",
+      "standalone_hex": "be88ffa8f38596a30f057f5a9f2eb5e1a3ea2d757bd7b213815406555d440505ed493f11e4b4e976254b972e5cce"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf11_bw125k_cr1",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2675766879983712,
+      "user_s": 2.98,
+      "sys_s": 0.21,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72592.0,
+        "cpu_percent": 252.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 4.786081377998926,
+      "user_s": 5.25,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 8712.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 5.25,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 8712.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf11_bw125k_cr1_baseline.cf32",
+        "metadata": {
+          "sf": 11,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 1,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35083,
+          "mean_power": 0.845687
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          1038,
+          260,
+          1757,
+          1329,
+          1825,
+          1777,
+          1373,
+          1129,
+          1061,
+          1669,
+          69,
+          509,
+          285,
+          837,
+          193,
+          533,
+          461,
+          1425,
+          213,
+          1973,
+          1485,
+          233,
+          73,
+          1881
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "8bed9d8de084969158776c099c1ac7f6f7f84d2429e3f336c24211354d341535bc3b385286c799124548c618399977f1b5f134513a2a"
+      }
+    },
+    "payload": {
+      "expected_hex": "da3a7160f53858b8e7df9e624ab85f9c9c9dd2610b7085a29c32349551d7026a",
+      "standalone_hex": "8bed9d8de084969158776c099c1ac7f6f7f84d2429e3f336c24211354d341535bc3b385286c799124548c618399977f1b5f134513a2a"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf11_bw125k_cr2",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2583531689961092,
+      "user_s": 3.06,
+      "sys_s": 0.13,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72456.0,
+        "cpu_percent": 254.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 4.733788478995848,
+      "user_s": 5.24,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 8764.0,
+        "cpu_percent": 110.0
+      },
+      "summary": {
+        "user_s_reported": 5.24,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 110.0,
+        "max_rss_kb": 8764.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf11_bw125k_cr2_baseline.cf32",
+        "metadata": {
+          "sf": 11,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 2,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35088,
+          "mean_power": 0.846369
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          1038,
+          260,
+          477,
+          829,
+          1721,
+          1617,
+          1353,
+          1965,
+          1233,
+          1797,
+          1225,
+          1809,
+          505,
+          561,
+          1969,
+          865,
+          673,
+          873,
+          1053,
+          549,
+          1693,
+          1377,
+          469,
+          1409
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "58adf6c8824ce3ece07b7c5ebce4ac097239bd255840"
+      }
+    },
+    "payload": {
+      "expected_hex": "13d169c6e8cae33b50bc5cc965d4a55706967bff2726633aaf97a8d0cdb9c595",
+      "standalone_hex": "58adf6c8824ce3ece07b7c5ebce4ac097239bd255840"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf11_bw125k_cr3",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2587587360030739,
+      "user_s": 3.09,
+      "sys_s": 0.13,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72396.0,
+        "cpu_percent": 257.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 4.770478852005908,
+      "user_s": 5.23,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 8660.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 5.23,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 8660.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf11_bw125k_cr3_baseline.cf32",
+        "metadata": {
+          "sf": 11,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 3,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.3507,
+          "mean_power": 0.846179
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          1038,
+          260,
+          673,
+          1393,
+          1957,
+          1649,
+          717,
+          1629,
+          2009,
+          1277,
+          1617,
+          1209,
+          517,
+          929,
+          1069,
+          1405,
+          1921,
+          1293,
+          1917,
+          237,
+          377,
+          1253,
+          1385,
+          2041
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "2c2bd698b3d7e0b2d0f743d4eab647c6c70dd4359c5b8f65b42c7ebf8803959738393871f640c8a479a022e593"
+      }
+    },
+    "payload": {
+      "expected_hex": "98a702e5534b828c4734f10a4c6e4a0c0eca4c57cc376ff6a5a5a26ca0e1ab9c",
+      "standalone_hex": "2c2bd698b3d7e0b2d0f743d4eab647c6c70dd4359c5b8f65b42c7ebf8803959738393871f640c8a479a022e593"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf11_bw125k_cr4",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2869584209984168,
+      "user_s": 3.05,
+      "sys_s": 0.19,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72456.0,
+        "cpu_percent": 252.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 4.8086553960019955,
+      "user_s": 5.25,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 8668.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 5.25,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 8668.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf11_bw125k_cr4_baseline.cf32",
+        "metadata": {
+          "sf": 11,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 4,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.00117775,
+          "max_magnitude": 1.34646,
+          "mean_power": 0.845967
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          1038,
+          260,
+          801,
+          1021,
+          2017,
+          1489,
+          661,
+          1941,
+          61,
+          1785,
+          933,
+          233,
+          1849,
+          1165,
+          181,
+          853,
+          1681,
+          649,
+          1749,
+          481,
+          961,
+          217,
+          509,
+          1585
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "98b8eceeb5c3b2a519561c7de96eb496c7b97e056bd39054e46364304c537202b81d3871"
+      }
+    },
+    "payload": {
+      "expected_hex": "668dd5c7b9121d98009acfb3de7f55109742bc28e067f01ce93e0af901c2c2d5",
+      "standalone_hex": "98b8eceeb5c3b2a519561c7de96eb496c7b97e056bd39054e46364304c537202b81d3871"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf11_bw250k_cr1",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2880563190046814,
+      "user_s": 3.06,
+      "sys_s": 0.15,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72444.0,
+        "cpu_percent": 249.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 5.022802461004176,
+      "user_s": 5.48,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 12552.0,
+        "cpu_percent": 66.0
+      },
+      "summary": {
+        "user_s_reported": 5.48,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 66.0,
+        "max_rss_kb": 12552.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf11_bw250k_cr1_baseline.cf32",
+        "metadata": {
+          "sf": 11,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 1,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35087,
+          "mean_power": 0.764238
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          1038,
+          260,
+          33,
+          1073,
+          1629,
+          1549,
+          1293,
+          1129,
+          1989,
+          377,
+          1382,
+          1217,
+          1890,
+          1573,
+          2021,
+          443,
+          1052,
+          373,
+          1294,
+          861,
+          1270,
+          173,
+          1536,
+          266
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "a2186e670c93d1815d730a6bf7a55402800148a2f6900fbe0805ed0281be4cb22a1c03ae8c6b009225"
+      }
+    },
+    "payload": {
+      "expected_hex": "abfdeffd7976acf0bad9b81e3ba96241fcae31f71458ef6268bf0ff3da7d8468",
+      "standalone_hex": "a2186e670c93d1815d730a6bf7a55402800148a2f6900fbe0805ed0281be4cb22a1c03ae8c6b009225"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf11_bw250k_cr2",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.290281497000251,
+      "user_s": 3.02,
+      "sys_s": 0.18,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72456.0,
+        "cpu_percent": 248.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 5.016075359002571,
+      "user_s": 5.48,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 12660.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 5.48,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 12660.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf11_bw250k_cr2_baseline.cf32",
+        "metadata": {
+          "sf": 11,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 2,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.34702,
+          "mean_power": 0.764208
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          1038,
+          260,
+          733,
+          961,
+          1861,
+          1549,
+          1369,
+          1929,
+          1217,
+          1277,
+          668,
+          1301,
+          868,
+          1141,
+          1549,
+          1728,
+          805,
+          866,
+          735,
+          372,
+          1994,
+          1263,
+          510,
+          576
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "eee889dad196f6c208764e68ae1cf29393bb3b0729e6a410f17771213d2712668f583871a684f92524"
+      }
+    },
+    "payload": {
+      "expected_hex": "ba89a2935bfc14e05487ec6903e7752fc45910c1dc6e294ed4ebe9644be2375b",
+      "standalone_hex": "eee889dad196f6c208764e68ae1cf29393bb3b0729e6a410f17771213d2712668f583871a684f92524"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf11_bw250k_cr3",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2562055669986876,
+      "user_s": 3.05,
+      "sys_s": 0.14,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72524.0,
+        "cpu_percent": 255.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 4.9323496550059645,
+      "user_s": 5.47,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 12616.0,
+        "cpu_percent": 111.0
+      },
+      "summary": {
+        "user_s_reported": 5.47,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 111.0,
+        "max_rss_kb": 12616.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf11_bw250k_cr3_baseline.cf32",
+        "metadata": {
+          "sf": 11,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 3,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35088,
+          "mean_power": 0.77471
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          1038,
+          260,
+          861,
+          1393,
+          1957,
+          1777,
+          721,
+          1661,
+          1997,
+          1801,
+          722,
+          438,
+          642,
+          371,
+          1564,
+          1673,
+          801,
+          2015,
+          1150,
+          1606,
+          483,
+          1085,
+          1641,
+          1272
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "f21bb75c71d0278e9bca794a9f52e619cb36534c02acbb6100084c0b081123478e2e2b63e2f33abb171e7fe8904106d37fb8686329f1e2309b7bf1f9120cd1ec7383a60e216b319d9c99c7717ee22ef65cc65dfa4b6b"
+      }
+    },
+    "payload": {
+      "expected_hex": "882f194eebdb16be61cb2e00bee283358da24f739e1e4a62111815f14657ac8b",
+      "standalone_hex": "f21bb75c71d0278e9bca794a9f52e619cb36534c02acbb6100084c0b081123478e2e2b63e2f33abb171e7fe8904106d37fb8686329f1e2309b7bf1f9120cd1ec7383a60e216b319d9c99c7717ee22ef65cc65dfa4b6b"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf11_bw250k_cr4",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.250186268996913,
+      "user_s": 3.06,
+      "sys_s": 0.13,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72452.0,
+        "cpu_percent": 255.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 4.977932125002553,
+      "user_s": 5.47,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 12568.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 5.47,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 12568.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf11_bw250k_cr4_baseline.cf32",
+        "metadata": {
+          "sf": 11,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 4,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35085,
+          "mean_power": 0.846017
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          1038,
+          260,
+          1313,
+          637,
+          1889,
+          1421,
+          677,
+          1929,
+          49,
+          765,
+          773,
+          76,
+          1996,
+          451,
+          1941,
+          787,
+          1538,
+          392,
+          1031,
+          569,
+          1068,
+          891,
+          110,
+          40
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "4f6b1017be305cc1e75ac356495e4d0e842548de4ef7e3f91b8eb48dbe94cb1cd0"
+      }
+    },
+    "payload": {
+      "expected_hex": "bc826c1bbe93fb3297d9434a448ec1facab3a05b2fccc8b2e4df633a18043222",
+      "standalone_hex": "4f6b1017be305cc1e75ac356495e4d0e842548de4ef7e3f91b8eb48dbe94cb1cd0"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf11_bw500k_cr1",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.295693382002355,
+      "user_s": 3.07,
+      "sys_s": 0.17,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72480.0,
+        "cpu_percent": 250.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 5.454083617005381,
+      "user_s": 5.96,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 20428.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 5.96,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 20428.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf11_bw500k_cr1_baseline.cf32",
+        "metadata": {
+          "sf": 11,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 1,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.3496,
+          "mean_power": 0.730251
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          1038,
+          260,
+          1569,
+          945,
+          1949,
+          1645,
+          1325,
+          1137,
+          2013,
+          649,
+          766,
+          1795,
+          1943,
+          250,
+          1143,
+          873,
+          92,
+          673,
+          792,
+          447,
+          834,
+          1972,
+          1907,
+          474
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "ddd73446dce574400a172333bf78f163aac628a79e0e387daaa4e67d0c532bea9deae36b9d40e483878111e524b8710b0564acad54775efe39071e3451264d9b376ec52866e498b16f1112f367a937bd09fbee77183b82007aa3e8de5e3360891c4602a954de5fb5b97f5fb502"
+      }
+    },
+    "payload": {
+      "expected_hex": "b594457e34f5f448b704d5010bf9373175f06f341b713824d964a4373e8d0f65",
+      "standalone_hex": "ddd73446dce574400a172333bf78f163aac628a79e0e387daaa4e67d0c532bea9deae36b9d40e483878111e524b8710b0564acad54775efe39071e3451264d9b376ec52866e498b16f1112f367a937bd09fbee77183b82007aa3e8de5e3360891c4602a954de5fb5b97f5fb502"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf11_bw500k_cr2",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2735533509985544,
+      "user_s": 3.13,
+      "sys_s": 0.09,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72500.0,
+        "cpu_percent": 253.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 5.5026535380020505,
+      "user_s": 6.0,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 20428.0,
+        "cpu_percent": 68.0
+      },
+      "summary": {
+        "user_s_reported": 6.0,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 68.0,
+        "max_rss_kb": 20428.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf11_bw500k_cr2_baseline.cf32",
+        "metadata": {
+          "sf": 11,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 2,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.34972,
+          "mean_power": 0.764136
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          1038,
+          260,
+          1313,
+          577,
+          1925,
+          1549,
+          1381,
+          1929,
+          1853,
+          769,
+          700,
+          2034,
+          659,
+          1616,
+          1199,
+          927,
+          827,
+          10,
+          40,
+          563,
+          613,
+          1129,
+          1529,
+          1650
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "55663310cde03a0227a60184c0699ac2b51f4b925588eb52117d112071fb271c9cba8d9dd50ef752df668a24020c0cf26aa6f9725a52de"
+      }
+    },
+    "payload": {
+      "expected_hex": "bc8e88bda2fc3ed490fdeecbcf5c7ca522057bf55c3427f9cb63e51f1a921e95",
+      "standalone_hex": "55663310cde03a0227a60184c0699ac2b51f4b925588eb52117d112071fb271c9cba8d9dd50ef752df668a24020c0cf26aa6f9725a52de"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf11_bw500k_cr3",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2900377209953149,
+      "user_s": 3.04,
+      "sys_s": 0.18,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72600.0,
+        "cpu_percent": 250.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 5.440956831000221,
+      "user_s": 5.95,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 20544.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 5.95,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 20544.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf11_bw500k_cr3_baseline.cf32",
+        "metadata": {
+          "sf": 11,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 3,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35083,
+          "mean_power": 0.774776
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          1038,
+          260,
+          929,
+          1293,
+          2021,
+          1613,
+          705,
+          1629,
+          2009,
+          1793,
+          853,
+          868,
+          1964,
+          1392,
+          1901,
+          584,
+          173,
+          528,
+          1208,
+          1627,
+          892,
+          641,
+          1343,
+          1398
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "0d6d907d8ef0cd8fcd22a584da04047f1e09f591ce2c7ed77943bae4272eb078d9c72eab74407f"
+      }
+    },
+    "payload": {
+      "expected_hex": "4fa7eea3851c752ac3f04738278ce5a197165ed973170e9e4a47c60982584009",
+      "standalone_hex": "0d6d907d8ef0cd8fcd22a584da04047f1e09f591ce2c7ed77943bae4272eb078d9c72eab74407f"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf11_bw500k_cr4",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2762937980005518,
+      "user_s": 3.07,
+      "sys_s": 0.14,
+      "payload_bytes": 32,
+      "resources": {
+        "max_rss_kb": 72444.0,
+        "cpu_percent": 251.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 5.400551216000167,
+      "user_s": 5.98,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 20428.0,
+        "cpu_percent": 111.0
+      },
+      "summary": {
+        "user_s_reported": 5.98,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 111.0,
+        "max_rss_kb": 20428.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf11_bw500k_cr4_baseline.cf32",
+        "metadata": {
+          "sf": 11,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 4,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35088,
+          "mean_power": 0.805071
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          1038,
+          260,
+          1569,
+          641,
+          1953,
+          1521,
+          761,
+          1921,
+          985,
+          753,
+          32,
+          90,
+          799,
+          757,
+          723,
+          700,
+          1797,
+          484,
+          2030,
+          1182,
+          816,
+          1618,
+          890,
+          40
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "9bedfcf8f0a1b3"
+      }
+    },
+    "payload": {
+      "expected_hex": "999e18d459cfb3fb2c0ee9e0f237a9dcafe5d2daa9be200058f4f32155c4a8fd",
+      "standalone_hex": "9bedfcf8f0a1b3"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf12_bw125k_cr1",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2276691239967477,
+      "user_s": 2.9,
+      "sys_s": 0.09,
+      "payload_bytes": 0,
+      "resources": {
+        "max_rss_kb": 72296.0,
+        "cpu_percent": 244.0
+      }
+    },
+    "standalone": {
+      "status": "error(1)",
+      "wall_s": 18.120789038999646,
+      "user_s": 20.04,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 8948.0,
+        "cpu_percent": 93.0
+      },
+      "summary": {
+        "user_s_reported": 20.04,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 93.0,
+        "max_rss_kb": 8948.0,
+        "payload_hex": "c9efdb9ce2d3a1a33e214c4aee689295b5ce5825"
+      }
+    },
+    "payload": {
+      "expected_hex": "",
+      "standalone_hex": "c9efdb9ce2d3a1a33e214c4aee689295b5ce5825"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf12_bw125k_cr2",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2632181290027802,
+      "user_s": 3.04,
+      "sys_s": 0.16,
+      "payload_bytes": 0,
+      "resources": {
+        "max_rss_kb": 72840.0,
+        "cpu_percent": 253.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 18.01925249800115,
+      "user_s": 19.94,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 8992.0,
+        "cpu_percent": 110.0
+      },
+      "summary": {
+        "user_s_reported": 19.94,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 110.0,
+        "max_rss_kb": 8992.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf12_bw125k_cr2_baseline.cf32",
+        "metadata": {
+          "sf": 12,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 2,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.649425,
+          "max_magnitude": 1.35087,
+          "mean_power": 1.0099
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          2230,
+          714,
+          477,
+          3005,
+          3781,
+          3089,
+          2789,
+          3929,
+          3689,
+          2529,
+          1245,
+          2141,
+          1333,
+          3929,
+          2229,
+          1737,
+          3049,
+          2077,
+          1381,
+          2821,
+          2777,
+          2605,
+          3145,
+          9
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "8f3df2f6f09d4d1c1b87"
+      }
+    },
+    "payload": {
+      "expected_hex": "",
+      "standalone_hex": "8f3df2f6f09d4d1c1b87"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf12_bw125k_cr3",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.235116403993743,
+      "user_s": 3.11,
+      "sys_s": 0.1,
+      "payload_bytes": 0,
+      "resources": {
+        "max_rss_kb": 72516.0,
+        "cpu_percent": 261.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 18.143171661999077,
+      "user_s": 19.94,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 8960.0,
+        "cpu_percent": 92.0
+      },
+      "summary": {
+        "user_s_reported": 19.94,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 92.0,
+        "max_rss_kb": 8960.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf12_bw125k_cr3_baseline.cf32",
+        "metadata": {
+          "sf": 12,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 3,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.658817,
+          "max_magnitude": 1.35044,
+          "mean_power": 1.00971
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          2230,
+          714,
+          605,
+          1905,
+          4005,
+          3153,
+          1505,
+          3285,
+          4021,
+          2537,
+          3585,
+          1977,
+          717,
+          2989,
+          2277,
+          393,
+          3421,
+          2525,
+          1405,
+          129,
+          3045,
+          1233,
+          1,
+          3197
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "3cacd7b843"
+      }
+    },
+    "payload": {
+      "expected_hex": "",
+      "standalone_hex": "3cacd7b843"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf12_bw125k_cr4",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 500000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2213069860008545,
+      "user_s": 3.02,
+      "sys_s": 0.15,
+      "payload_bytes": 0,
+      "resources": {
+        "max_rss_kb": 72512.0,
+        "cpu_percent": 260.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 18.029771414003335,
+      "user_s": 20.03,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 9140.0,
+        "cpu_percent": 111.0
+      },
+      "summary": {
+        "user_s_reported": 20.03,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 111.0,
+        "max_rss_kb": 9140.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf12_bw125k_cr4_baseline.cf32",
+        "metadata": {
+          "sf": 12,
+          "bw": 125000,
+          "sample_rate": 250000,
+          "cr": 4,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 500000,
+          "min_magnitude": 0.64977,
+          "max_magnitude": 1.34121,
+          "mean_power": 1.00983
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          2230,
+          714,
+          2337,
+          1661,
+          3293,
+          3057,
+          1449,
+          3905,
+          101,
+          2589,
+          1281,
+          1017,
+          2609,
+          597,
+          3041,
+          2605,
+          45,
+          5,
+          3221,
+          1897,
+          1385,
+          1501,
+          317,
+          2541
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "91f6"
+      }
+    },
+    "payload": {
+      "expected_hex": "",
+      "standalone_hex": "91f6"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf12_bw250k_cr1",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2231494770021527,
+      "user_s": 3.05,
+      "sys_s": 0.11,
+      "payload_bytes": 0,
+      "resources": {
+        "max_rss_kb": 72456.0,
+        "cpu_percent": 259.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 18.61179733800236,
+      "user_s": 20.24,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 12856.0,
+        "cpu_percent": 92.0
+      },
+      "summary": {
+        "user_s_reported": 20.24,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 92.0,
+        "max_rss_kb": 12856.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf12_bw250k_cr1_baseline.cf32",
+        "metadata": {
+          "sf": 12,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 1,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35088,
+          "mean_power": 0.845984
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          2230,
+          714,
+          2525,
+          3021,
+          4061,
+          3469,
+          2605,
+          2277,
+          3973,
+          1309,
+          2821,
+          2649,
+          2361,
+          213,
+          481,
+          1633,
+          3457,
+          1229,
+          2345,
+          4045,
+          353,
+          33,
+          1745,
+          3437
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "dfefcccbd0e3c18428251d7ebe7ad3c3e49d3b3448c3a0408013330739212156ac0c0871f1e59b21"
+      }
+    },
+    "payload": {
+      "expected_hex": "",
+      "standalone_hex": "dfefcccbd0e3c18428251d7ebe7ad3c3e49d3b3448c3a0408013330739212156ac0c0871f1e59b21"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf12_bw250k_cr2",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.230102554000041,
+      "user_s": 3.08,
+      "sys_s": 0.11,
+      "payload_bytes": 0,
+      "resources": {
+        "max_rss_kb": 72492.0,
+        "cpu_percent": 260.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 18.23063301199727,
+      "user_s": 20.15,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 12864.0,
+        "cpu_percent": 94.0
+      },
+      "summary": {
+        "user_s_reported": 20.15,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 94.0,
+        "max_rss_kb": 12864.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf12_bw250k_cr2_baseline.cf32",
+        "metadata": {
+          "sf": 12,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 2,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35082,
+          "mean_power": 0.8461
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          2230,
+          714,
+          3549,
+          2237,
+          3525,
+          3405,
+          2565,
+          3933,
+          2485,
+          485,
+          933,
+          1973,
+          2221,
+          3769,
+          3109,
+          3969,
+          3093,
+          2053,
+          417,
+          2061,
+          745,
+          3721,
+          3649,
+          3737
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "057f7c7870251b"
+      }
+    },
+    "payload": {
+      "expected_hex": "",
+      "standalone_hex": "057f7c7870251b"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf12_bw250k_cr3",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2301388120031334,
+      "user_s": 2.81,
+      "sys_s": 0.14,
+      "payload_bytes": 0,
+      "resources": {
+        "max_rss_kb": 72388.0,
+        "cpu_percent": 240.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 18.366621470995597,
+      "user_s": 20.21,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 12764.0,
+        "cpu_percent": 110.0
+      },
+      "summary": {
+        "user_s_reported": 20.21,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 110.0,
+        "max_rss_kb": 12764.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf12_bw250k_cr3_baseline.cf32",
+        "metadata": {
+          "sf": 12,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 3,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.34993,
+          "mean_power": 0.845978
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          2230,
+          714,
+          2141,
+          2417,
+          3301,
+          3153,
+          1361,
+          3293,
+          4013,
+          1561,
+          3505,
+          2269,
+          3173,
+          3741,
+          409,
+          101,
+          2865,
+          3057,
+          977,
+          109,
+          1817,
+          285,
+          565,
+          1121
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "fdffefc9c0e3f38709150c7c9f7bd0f1d68e292748c3a040803213253923"
+      }
+    },
+    "payload": {
+      "expected_hex": "",
+      "standalone_hex": "fdffefc9c0e3f38709150c7c9f7bd0f1d68e292748c3a040803213253923"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf12_bw250k_cr4",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 1000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.230147346999729,
+      "user_s": 3.04,
+      "sys_s": 0.09,
+      "payload_bytes": 0,
+      "resources": {
+        "max_rss_kb": 72636.0,
+        "cpu_percent": 255.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 18.419724886996846,
+      "user_s": 20.16,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 12836.0,
+        "cpu_percent": 92.0
+      },
+      "summary": {
+        "user_s_reported": 20.16,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 92.0,
+        "max_rss_kb": 12836.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf12_bw250k_cr4_baseline.cf32",
+        "metadata": {
+          "sf": 12,
+          "bw": 250000,
+          "sample_rate": 500000,
+          "cr": 4,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 1000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35087,
+          "mean_power": 0.846191
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          2230,
+          714,
+          3549,
+          2689,
+          3549,
+          2989,
+          1465,
+          3897,
+          121,
+          3573,
+          3193,
+          3149,
+          2473,
+          1957,
+          2405,
+          3929,
+          3849,
+          3093,
+          2213,
+          4013,
+          805,
+          3665,
+          885,
+          1097
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "12b429877c5027e4c4d7b84357091c4bfbc4f2380cc7a4e401a3d87dddee05d1"
+      }
+    },
+    "payload": {
+      "expected_hex": "",
+      "standalone_hex": "12b429877c5027e4c4d7b84357091c4bfbc4f2380cc7a4e401a3d87dddee05d1"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf12_bw500k_cr1",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2583515100050136,
+      "user_s": 3.05,
+      "sys_s": 0.09,
+      "payload_bytes": 0,
+      "resources": {
+        "max_rss_kb": 72812.0,
+        "cpu_percent": 250.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 18.764046932999918,
+      "user_s": 20.75,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 20764.0,
+        "cpu_percent": 94.0
+      },
+      "summary": {
+        "user_s_reported": 20.75,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 94.0,
+        "max_rss_kb": 20764.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf12_bw500k_cr1_baseline.cf32",
+        "metadata": {
+          "sf": 12,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 1,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35007,
+          "mean_power": 0.764282
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          2230,
+          714,
+          1757,
+          2893,
+          3357,
+          3377,
+          2813,
+          2201,
+          3977,
+          753,
+          166,
+          1667,
+          3246,
+          3507,
+          1001,
+          3100,
+          12,
+          1553,
+          3754,
+          3248,
+          2394,
+          1614,
+          636,
+          2947
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "ffffecf9e0e0d2940a172f4eac68f0f3d79c0a3568d1a14191100214180023568e1c"
+      }
+    },
+    "payload": {
+      "expected_hex": "",
+      "standalone_hex": "ffffecf9e0e0d2940a172f4eac68f0f3d79c0a3568d1a14191100214180023568e1c"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf12_bw500k_cr2",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2575170550044277,
+      "user_s": 2.99,
+      "sys_s": 0.19,
+      "payload_bytes": 0,
+      "resources": {
+        "max_rss_kb": 72380.0,
+        "cpu_percent": 254.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 18.855829977997928,
+      "user_s": 20.65,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 20696.0,
+        "cpu_percent": 109.0
+      },
+      "summary": {
+        "user_s_reported": 20.65,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 109.0,
+        "max_rss_kb": 20696.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf12_bw500k_cr2_baseline.cf32",
+        "metadata": {
+          "sf": 12,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 2,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35077,
+          "mean_power": 0.764142
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          2230,
+          714,
+          545,
+          1725,
+          3641,
+          3309,
+          2629,
+          3881,
+          3665,
+          2541,
+          2549,
+          1580,
+          2698,
+          2658,
+          569,
+          3820,
+          3184,
+          834,
+          4089,
+          2513,
+          2065,
+          2432,
+          422,
+          3064
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "fffefcf8f0e1c1b53a172d6daf68d1c1e79c3a365bf3a353901130270a1020469e1d3950e0d5ab303768b72f5cb870e0"
+      }
+    },
+    "payload": {
+      "expected_hex": "",
+      "standalone_hex": "fffefcf8f0e1c1b53a172d6daf68d1c1e79c3a365bf3a353901130270a1020469e1d3950e0d5ab303768b72f5cb870e0"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf12_bw500k_cr3",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.21732798100129,
+      "user_s": 3.04,
+      "sys_s": 0.11,
+      "payload_bytes": 0,
+      "resources": {
+        "max_rss_kb": 72688.0,
+        "cpu_percent": 259.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 18.750468199999887,
+      "user_s": 20.63,
+      "sys_s": 0.01,
+      "resources": {
+        "max_rss_kb": 20768.0,
+        "cpu_percent": 93.0
+      },
+      "summary": {
+        "user_s_reported": 20.63,
+        "sys_s_reported": 0.01,
+        "cpu_percent": 93.0,
+        "max_rss_kb": 20768.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf12_bw500k_cr3_baseline.cf32",
+        "metadata": {
+          "sf": 12,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 3,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35046,
+          "mean_power": 0.774696
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          2230,
+          714,
+          2721,
+          1037,
+          3737,
+          3185,
+          1357,
+          3277,
+          2165,
+          497,
+          1457,
+          2086,
+          2712,
+          1851,
+          699,
+          3551,
+          2016,
+          1531,
+          1333,
+          3609,
+          1344,
+          2241,
+          672,
+          458
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "4b7ea472c478bfed2bde2994886bf1e3c60d105431161ba10ebae2d421a5733efadede54e2c48912254ba43d5c8a43d3"
+      }
+    },
+    "payload": {
+      "expected_hex": "",
+      "standalone_hex": "4b7ea472c478bfed2bde2994886bf1e3c60d105431161ba10ebae2d421a5733efadede54e2c48912254ba43d5c8a43d3"
+    },
+    "payload_match": false
+  },
+  {
+    "capture": "sweep_sf12_bw500k_cr4",
+    "profile": "baseline",
+    "mc_iteration": 0,
+    "mc_seed": 12345,
+    "impairment": {
+      "cfo_ppm": 0.0,
+      "sto_samples": 0,
+      "sfo_ppm": 0.0,
+      "cfo_ppm_start": null,
+      "cfo_ppm_end": null,
+      "sfo_ppm_start": null,
+      "sfo_ppm_end": null,
+      "iq_gain_i": null,
+      "iq_gain_q": null,
+      "iq_phase_deg": null
+    },
+    "samples_written": 2000000,
+    "gnuradio": {
+      "status": "ok",
+      "wall_s": 1.2612032429969986,
+      "user_s": 3.05,
+      "sys_s": 0.13,
+      "payload_bytes": 0,
+      "resources": {
+        "max_rss_kb": 72488.0,
+        "cpu_percent": 253.0
+      }
+    },
+    "standalone": {
+      "status": "ok",
+      "wall_s": 18.74682670099719,
+      "user_s": 20.66,
+      "sys_s": 0.0,
+      "resources": {
+        "max_rss_kb": 20736.0,
+        "cpu_percent": 110.0
+      },
+      "summary": {
+        "user_s_reported": 20.66,
+        "sys_s_reported": 0.0,
+        "cpu_percent": 110.0,
+        "max_rss_kb": 20736.0,
+        "capture": "build/receiver_vs_gnuradio/sweep_sf12_bw500k_cr4_baseline.cf32",
+        "metadata": {
+          "sf": 12,
+          "bw": 500000,
+          "sample_rate": 1000000,
+          "cr": 4,
+          "payload_len": 32,
+          "preamble_len": 8,
+          "has_crc": true
+        },
+        "stats": {
+          "sample_count": 2000000,
+          "min_magnitude": 0.000759598,
+          "max_magnitude": 1.35077,
+          "mean_power": 0.846024
+        },
+        "reference_mismatches": 0,
+        "stage_mismatches": 0,
+        "whitening_roundtrip_ok": true,
+        "packet_error_rate": 0.0,
+        "bit_error_rate": 0.0,
+        "deadline_miss_count": 0,
+        "tracking_failure": false,
+        "preview_symbols": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          16,
+          2230,
+          714,
+          2849,
+          1533,
+          3101,
+          2673,
+          1481,
+          3841,
+          1981,
+          517,
+          3362,
+          1508,
+          457,
+          3615,
+          605,
+          1888,
+          393,
+          3534,
+          480,
+          1852,
+          2016,
+          3321,
+          1998,
+          503
+        ],
+        "stage_instrumentation": [],
+        "payload_hex": "0273c908ddec"
+      }
+    },
+    "payload": {
+      "expected_hex": "",
+      "standalone_hex": "0273c908ddec"
+    },
+    "payload_match": false
+  }
+]

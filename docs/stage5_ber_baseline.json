@@ -1,0 +1,132 @@
+[
+  {
+    "capture": "tx_rx_sf7_bw125000_cr1_snrm5p0_short.cf32",
+    "snr_points": [
+      {
+        "snr_db": -5.0,
+        "runs": [
+          {
+            "capture": "tx_rx_sf7_bw125000_cr1_snrm5p0_short.cf32",
+            "snr_db": -5.0,
+            "seed": 1,
+            "packet_error_rate": 0.0,
+            "bit_error_rate": 0.0,
+            "reference_mismatches": 0,
+            "summary_path": "/home/yakirqaq/projects/lora-lite-phy/build/stage5_ber_summaries/tx_rx_sf7_bw125000_cr1_snrm5p0_short.cf32/tx_rx_sf7_bw125000_cr1_snrm5p0_short_snrm5p0_seed1.json"
+          }
+        ],
+        "avg_packet_error_rate": 0.0,
+        "avg_bit_error_rate": 0.0,
+        "max_packet_error_rate": 0.0,
+        "max_bit_error_rate": 0.0,
+        "avg_reference_mismatches": 0.0,
+        "max_reference_mismatches": 0
+      },
+      {
+        "snr_db": 0.0,
+        "runs": [
+          {
+            "capture": "tx_rx_sf7_bw125000_cr1_snrm5p0_short.cf32",
+            "snr_db": 0.0,
+            "seed": 1,
+            "packet_error_rate": 0.0,
+            "bit_error_rate": 0.0,
+            "reference_mismatches": 0,
+            "summary_path": "/home/yakirqaq/projects/lora-lite-phy/build/stage5_ber_summaries/tx_rx_sf7_bw125000_cr1_snrm5p0_short.cf32/tx_rx_sf7_bw125000_cr1_snrm5p0_short_snrp0p0_seed1.json"
+          }
+        ],
+        "avg_packet_error_rate": 0.0,
+        "avg_bit_error_rate": 0.0,
+        "max_packet_error_rate": 0.0,
+        "max_bit_error_rate": 0.0,
+        "avg_reference_mismatches": 0.0,
+        "max_reference_mismatches": 0
+      },
+      {
+        "snr_db": 5.0,
+        "runs": [
+          {
+            "capture": "tx_rx_sf7_bw125000_cr1_snrm5p0_short.cf32",
+            "snr_db": 5.0,
+            "seed": 1,
+            "packet_error_rate": 0.0,
+            "bit_error_rate": 0.0,
+            "reference_mismatches": 0,
+            "summary_path": "/home/yakirqaq/projects/lora-lite-phy/build/stage5_ber_summaries/tx_rx_sf7_bw125000_cr1_snrm5p0_short.cf32/tx_rx_sf7_bw125000_cr1_snrm5p0_short_snrp5p0_seed1.json"
+          }
+        ],
+        "avg_packet_error_rate": 0.0,
+        "avg_bit_error_rate": 0.0,
+        "max_packet_error_rate": 0.0,
+        "max_bit_error_rate": 0.0,
+        "avg_reference_mismatches": 0.0,
+        "max_reference_mismatches": 0
+      }
+    ]
+  },
+  {
+    "capture": "tx_rx_sf9_bw125000_cr3_snrm2p0_short.cf32",
+    "snr_points": [
+      {
+        "snr_db": -5.0,
+        "runs": [
+          {
+            "capture": "tx_rx_sf9_bw125000_cr3_snrm2p0_short.cf32",
+            "snr_db": -5.0,
+            "seed": 1,
+            "packet_error_rate": 0.0,
+            "bit_error_rate": 0.0,
+            "reference_mismatches": 0,
+            "summary_path": "/home/yakirqaq/projects/lora-lite-phy/build/stage5_ber_summaries/tx_rx_sf9_bw125000_cr3_snrm2p0_short.cf32/tx_rx_sf9_bw125000_cr3_snrm2p0_short_snrm5p0_seed1.json"
+          }
+        ],
+        "avg_packet_error_rate": 0.0,
+        "avg_bit_error_rate": 0.0,
+        "max_packet_error_rate": 0.0,
+        "max_bit_error_rate": 0.0,
+        "avg_reference_mismatches": 0.0,
+        "max_reference_mismatches": 0
+      },
+      {
+        "snr_db": 0.0,
+        "runs": [
+          {
+            "capture": "tx_rx_sf9_bw125000_cr3_snrm2p0_short.cf32",
+            "snr_db": 0.0,
+            "seed": 1,
+            "packet_error_rate": 0.0,
+            "bit_error_rate": 0.0,
+            "reference_mismatches": 0,
+            "summary_path": "/home/yakirqaq/projects/lora-lite-phy/build/stage5_ber_summaries/tx_rx_sf9_bw125000_cr3_snrm2p0_short.cf32/tx_rx_sf9_bw125000_cr3_snrm2p0_short_snrp0p0_seed1.json"
+          }
+        ],
+        "avg_packet_error_rate": 0.0,
+        "avg_bit_error_rate": 0.0,
+        "max_packet_error_rate": 0.0,
+        "max_bit_error_rate": 0.0,
+        "avg_reference_mismatches": 0.0,
+        "max_reference_mismatches": 0
+      },
+      {
+        "snr_db": 5.0,
+        "runs": [
+          {
+            "capture": "tx_rx_sf9_bw125000_cr3_snrm2p0_short.cf32",
+            "snr_db": 5.0,
+            "seed": 1,
+            "packet_error_rate": 0.0,
+            "bit_error_rate": 0.0,
+            "reference_mismatches": 0,
+            "summary_path": "/home/yakirqaq/projects/lora-lite-phy/build/stage5_ber_summaries/tx_rx_sf9_bw125000_cr3_snrm2p0_short.cf32/tx_rx_sf9_bw125000_cr3_snrm2p0_short_snrp5p0_seed1.json"
+          }
+        ],
+        "avg_packet_error_rate": 0.0,
+        "avg_bit_error_rate": 0.0,
+        "max_packet_error_rate": 0.0,
+        "max_bit_error_rate": 0.0,
+        "avg_reference_mismatches": 0.0,
+        "max_reference_mismatches": 0
+      }
+    ]
+  }
+]

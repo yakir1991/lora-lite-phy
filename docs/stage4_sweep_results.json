@@ -1,0 +1,352 @@
+[
+  {
+    "capture": "gr_lora_sdr/data/generated/tx_rx_sf10_bw250000_cr4_snrp0p0.cf32",
+    "metadata": "gr_lora_sdr/data/generated/tx_rx_sf10_bw250000_cr4_snrp0p0.json",
+    "impair_flags": [
+      "--impair-cfo-ppm",
+      "-10.0",
+      "--impair-sfo-ppm",
+      "10.0",
+      "--impair-awgn-snr",
+      "5.0",
+      "--impair-burst-period",
+      "64",
+      "--impair-burst-duration",
+      "16",
+      "--impair-burst-snr",
+      "0.0",
+      "--impair-seed",
+      "3"
+    ],
+    "rt_flags": [
+      "--rt",
+      "--rt-speed",
+      "1.0"
+    ],
+    "summary_path": "build/stage4_summaries/tx_rx_sf10_bw250000_cr4_snrp0p0_impaircfoppm_10.0_impairsfoppm_10.0_impairawgnsnr_5.0_impairburstperiod_64_impairburstduration_16_impairburstsnr_0.0_impairseed_3.json",
+    "metrics": {
+      "acquisition_time_us": 4092.0,
+      "tracking_jitter_us": 8.51607,
+      "packet_error_rate": 0.0,
+      "bit_error_rate": 0.0,
+      "deadline_miss_count": 0,
+      "rt_overrun_count": 0,
+      "rt_underrun_count": 0
+    }
+  },
+  {
+    "capture": "gr_lora_sdr/data/generated/tx_rx_sf5_bw125000_cr1_snrm5p0.cf32",
+    "metadata": "gr_lora_sdr/data/generated/tx_rx_sf5_bw125000_cr1_snrm5p0.json",
+    "impair_flags": [
+      "--impair-cfo-ppm",
+      "-10.0",
+      "--impair-sfo-ppm",
+      "10.0",
+      "--impair-awgn-snr",
+      "5.0",
+      "--impair-burst-period",
+      "64",
+      "--impair-burst-duration",
+      "16",
+      "--impair-burst-snr",
+      "0.0",
+      "--impair-seed",
+      "3"
+    ],
+    "rt_flags": [
+      "--rt",
+      "--rt-speed",
+      "1.0"
+    ],
+    "summary_path": "build/stage4_summaries/tx_rx_sf5_bw125000_cr1_snrm5p0_impaircfoppm_10.0_impairsfoppm_10.0_impairawgnsnr_5.0_impairburstperiod_64_impairburstduration_16_impairburstsnr_0.0_impairseed_3.json",
+    "metrics": {
+      "acquisition_time_us": 250.0,
+      "tracking_jitter_us": 0.966704,
+      "packet_error_rate": 0.0,
+      "bit_error_rate": 0.0,
+      "deadline_miss_count": 0,
+      "rt_overrun_count": 0,
+      "rt_underrun_count": 0
+    }
+  },
+  {
+    "capture": "gr_lora_sdr/data/generated/tx_rx_sf5_bw125000_cr2_snrm5p0.cf32",
+    "metadata": "gr_lora_sdr/data/generated/tx_rx_sf5_bw125000_cr2_snrm5p0.json",
+    "impair_flags": [
+      "--impair-cfo-ppm",
+      "-10.0",
+      "--impair-sfo-ppm",
+      "10.0",
+      "--impair-awgn-snr",
+      "5.0",
+      "--impair-burst-period",
+      "64",
+      "--impair-burst-duration",
+      "16",
+      "--impair-burst-snr",
+      "0.0",
+      "--impair-seed",
+      "3"
+    ],
+    "rt_flags": [
+      "--rt",
+      "--rt-speed",
+      "1.0"
+    ],
+    "summary_path": "build/stage4_summaries/tx_rx_sf5_bw125000_cr2_snrm5p0_impaircfoppm_10.0_impairsfoppm_10.0_impairawgnsnr_5.0_impairburstperiod_64_impairburstduration_16_impairburstsnr_0.0_impairseed_3.json",
+    "metrics": {
+      "acquisition_time_us": 250.0,
+      "tracking_jitter_us": 0.837242,
+      "packet_error_rate": 0.0,
+      "bit_error_rate": 0.0,
+      "deadline_miss_count": 0,
+      "rt_overrun_count": 0,
+      "rt_underrun_count": 0
+    }
+  },
+  {
+    "capture": "gr_lora_sdr/data/generated/tx_rx_sf6_bw125000_cr1_snrm5p0.cf32",
+    "metadata": "gr_lora_sdr/data/generated/tx_rx_sf6_bw125000_cr1_snrm5p0.json",
+    "impair_flags": [
+      "--impair-cfo-ppm",
+      "-10.0",
+      "--impair-sfo-ppm",
+      "10.0",
+      "--impair-awgn-snr",
+      "5.0",
+      "--impair-burst-period",
+      "64",
+      "--impair-burst-duration",
+      "16",
+      "--impair-burst-snr",
+      "0.0",
+      "--impair-seed",
+      "3"
+    ],
+    "rt_flags": [
+      "--rt",
+      "--rt-speed",
+      "1.0"
+    ],
+    "summary_path": "build/stage4_summaries/tx_rx_sf6_bw125000_cr1_snrm5p0_impaircfoppm_10.0_impairsfoppm_10.0_impairawgnsnr_5.0_impairburstperiod_64_impairburstduration_16_impairburstsnr_0.0_impairseed_3.json",
+    "metrics": {
+      "acquisition_time_us": 506.0,
+      "tracking_jitter_us": 1.562833,
+      "packet_error_rate": 0.0,
+      "bit_error_rate": 0.0,
+      "deadline_miss_count": 0,
+      "rt_overrun_count": 0,
+      "rt_underrun_count": 0
+    }
+  },
+  {
+    "capture": "gr_lora_sdr/data/generated/tx_rx_sf6_bw125000_cr2_snrm5p0.cf32",
+    "metadata": "gr_lora_sdr/data/generated/tx_rx_sf6_bw125000_cr2_snrm5p0.json",
+    "impair_flags": [
+      "--impair-cfo-ppm",
+      "-10.0",
+      "--impair-sfo-ppm",
+      "10.0",
+      "--impair-awgn-snr",
+      "5.0",
+      "--impair-burst-period",
+      "64",
+      "--impair-burst-duration",
+      "16",
+      "--impair-burst-snr",
+      "0.0",
+      "--impair-seed",
+      "3"
+    ],
+    "rt_flags": [
+      "--rt",
+      "--rt-speed",
+      "1.0"
+    ],
+    "summary_path": "build/stage4_summaries/tx_rx_sf6_bw125000_cr2_snrm5p0_impaircfoppm_10.0_impairsfoppm_10.0_impairawgnsnr_5.0_impairburstperiod_64_impairburstduration_16_impairburstsnr_0.0_impairseed_3.json",
+    "metrics": {
+      "acquisition_time_us": 506.0,
+      "tracking_jitter_us": 1.452199,
+      "packet_error_rate": 0.0,
+      "bit_error_rate": 0.0,
+      "deadline_miss_count": 0,
+      "rt_overrun_count": 0,
+      "rt_underrun_count": 0
+    }
+  },
+  {
+    "capture": "gr_lora_sdr/data/generated/tx_rx_sf7_bw125000_cr1_snrm5p0.cf32",
+    "metadata": "gr_lora_sdr/data/generated/tx_rx_sf7_bw125000_cr1_snrm5p0.json",
+    "impair_flags": [
+      "--impair-cfo-ppm",
+      "-10.0",
+      "--impair-sfo-ppm",
+      "10.0",
+      "--impair-awgn-snr",
+      "5.0",
+      "--impair-burst-period",
+      "64",
+      "--impair-burst-duration",
+      "16",
+      "--impair-burst-snr",
+      "0.0",
+      "--impair-seed",
+      "3"
+    ],
+    "rt_flags": [
+      "--rt",
+      "--rt-speed",
+      "1.0"
+    ],
+    "summary_path": "build/stage4_summaries/tx_rx_sf7_bw125000_cr1_snrm5p0_impaircfoppm_10.0_impairsfoppm_10.0_impairawgnsnr_5.0_impairburstperiod_64_impairburstduration_16_impairburstsnr_0.0_impairseed_3.json",
+    "metrics": {
+      "acquisition_time_us": 1016.0,
+      "tracking_jitter_us": 3.767501,
+      "packet_error_rate": 0.0,
+      "bit_error_rate": 0.0,
+      "deadline_miss_count": 0,
+      "rt_overrun_count": 0,
+      "rt_underrun_count": 0
+    }
+  },
+  {
+    "capture": "gr_lora_sdr/data/generated/tx_rx_sf7_bw125000_cr1_snrm5p0_short.cf32",
+    "metadata": "gr_lora_sdr/data/generated/tx_rx_sf7_bw125000_cr1_snrm5p0_short.json",
+    "impair_flags": [
+      "--impair-cfo-ppm",
+      "-10.0",
+      "--impair-sfo-ppm",
+      "10.0",
+      "--impair-awgn-snr",
+      "5.0",
+      "--impair-burst-period",
+      "64",
+      "--impair-burst-duration",
+      "16",
+      "--impair-burst-snr",
+      "0.0",
+      "--impair-seed",
+      "3"
+    ],
+    "rt_flags": [
+      "--rt",
+      "--rt-speed",
+      "1.0"
+    ],
+    "summary_path": "build/stage4_summaries/tx_rx_sf7_bw125000_cr1_snrm5p0_short_impaircfoppm_10.0_impairsfoppm_10.0_impairawgnsnr_5.0_impairburstperiod_64_impairburstduration_16_impairburstsnr_0.0_impairseed_3.json",
+    "metrics": {
+      "acquisition_time_us": 1016.0,
+      "tracking_jitter_us": 1.70236,
+      "packet_error_rate": 0.0,
+      "bit_error_rate": 0.0,
+      "deadline_miss_count": 0,
+      "rt_overrun_count": 0,
+      "rt_underrun_count": 0
+    }
+  },
+  {
+    "capture": "gr_lora_sdr/data/generated/tx_rx_sf7_bw125000_cr2_snrm5p0.cf32",
+    "metadata": "gr_lora_sdr/data/generated/tx_rx_sf7_bw125000_cr2_snrm5p0.json",
+    "impair_flags": [
+      "--impair-cfo-ppm",
+      "-10.0",
+      "--impair-sfo-ppm",
+      "10.0",
+      "--impair-awgn-snr",
+      "5.0",
+      "--impair-burst-period",
+      "64",
+      "--impair-burst-duration",
+      "16",
+      "--impair-burst-snr",
+      "0.0",
+      "--impair-seed",
+      "3"
+    ],
+    "rt_flags": [
+      "--rt",
+      "--rt-speed",
+      "1.0"
+    ],
+    "summary_path": "build/stage4_summaries/tx_rx_sf7_bw125000_cr2_snrm5p0_impaircfoppm_10.0_impairsfoppm_10.0_impairawgnsnr_5.0_impairburstperiod_64_impairburstduration_16_impairburstsnr_0.0_impairseed_3.json",
+    "metrics": {
+      "acquisition_time_us": 1016.0,
+      "tracking_jitter_us": 8.589056,
+      "packet_error_rate": 0.0,
+      "bit_error_rate": 0.0,
+      "deadline_miss_count": 0,
+      "rt_overrun_count": 0,
+      "rt_underrun_count": 0
+    }
+  },
+  {
+    "capture": "gr_lora_sdr/data/generated/tx_rx_sf9_bw125000_cr3_snrm2p0.cf32",
+    "metadata": "gr_lora_sdr/data/generated/tx_rx_sf9_bw125000_cr3_snrm2p0.json",
+    "impair_flags": [
+      "--impair-cfo-ppm",
+      "-10.0",
+      "--impair-sfo-ppm",
+      "10.0",
+      "--impair-awgn-snr",
+      "5.0",
+      "--impair-burst-period",
+      "64",
+      "--impair-burst-duration",
+      "16",
+      "--impair-burst-snr",
+      "0.0",
+      "--impair-seed",
+      "3"
+    ],
+    "rt_flags": [
+      "--rt",
+      "--rt-speed",
+      "1.0"
+    ],
+    "summary_path": "build/stage4_summaries/tx_rx_sf9_bw125000_cr3_snrm2p0_impaircfoppm_10.0_impairsfoppm_10.0_impairawgnsnr_5.0_impairburstperiod_64_impairburstduration_16_impairburstsnr_0.0_impairseed_3.json",
+    "metrics": {
+      "acquisition_time_us": 4088.0,
+      "tracking_jitter_us": 13.010324,
+      "packet_error_rate": 0.0,
+      "bit_error_rate": 0.0,
+      "deadline_miss_count": 0,
+      "rt_overrun_count": 0,
+      "rt_underrun_count": 0
+    }
+  },
+  {
+    "capture": "gr_lora_sdr/data/generated/tx_rx_sf9_bw125000_cr3_snrm2p0_short.cf32",
+    "metadata": "gr_lora_sdr/data/generated/tx_rx_sf9_bw125000_cr3_snrm2p0_short.json",
+    "impair_flags": [
+      "--impair-cfo-ppm",
+      "-10.0",
+      "--impair-sfo-ppm",
+      "10.0",
+      "--impair-awgn-snr",
+      "5.0",
+      "--impair-burst-period",
+      "64",
+      "--impair-burst-duration",
+      "16",
+      "--impair-burst-snr",
+      "0.0",
+      "--impair-seed",
+      "3"
+    ],
+    "rt_flags": [
+      "--rt",
+      "--rt-speed",
+      "1.0"
+    ],
+    "summary_path": "build/stage4_summaries/tx_rx_sf9_bw125000_cr3_snrm2p0_short_impaircfoppm_10.0_impairsfoppm_10.0_impairawgnsnr_5.0_impairburstperiod_64_impairburstduration_16_impairburstsnr_0.0_impairseed_3.json",
+    "metrics": {
+      "acquisition_time_us": 4088.0,
+      "tracking_jitter_us": 9.135232,
+      "packet_error_rate": 0.0,
+      "bit_error_rate": 0.0,
+      "deadline_miss_count": 0,
+      "rt_overrun_count": 0,
+      "rt_underrun_count": 0
+    }
+  }
+]

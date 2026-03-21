@@ -1,0 +1,15 @@
+{
+  "sf": 7,
+  "bw": 125000,
+  "sample_rate": 500000,
+  "cr": 1,
+  "payload_len": 16,
+  "preamble_len": 8,
+  "implicit_header": false,
+  "has_crc": true,
+  "ldro": 1,
+  "capture_file": "tx_rx_sf7_bw125000_cr1_snrm5p0_short.cf32",
+  "sample_count": 1255288,
+  "duration_secs": 2.510576,
+  "snr_db": -5.0
+}

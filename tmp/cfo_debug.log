@@ -1,0 +1,12 @@
+[frame_sync] sf=7 k_hat=1 upchirps=5
+[frame_sync] sf=7 down_val=0 cfo_frac=-0.00441006 sto_frac=0.243013
+[frame_sync] sf=7 cfo_int=0 down_val=0
+[frame_sync] sf=7 k_hat=0 upchirps=5
+[frame_sync] sf=7 down_val=0 cfo_frac=0.00798027 sto_frac=0.295284
+[frame_sync] sf=7 cfo_int=0 down_val=0
+[frame_sync] sf=7 k_hat=0 upchirps=5
+[frame_sync] sf=7 down_val=0 cfo_frac=-0.00372886 sto_frac=0.234606
+[frame_sync] sf=7 cfo_int=0 down_val=0
+[frame_sync] sf=7 k_hat=96 upchirps=5
+[frame_sync] sf=7 down_val=0 cfo_frac=0.0132165 sto_frac=0.286414
+[frame_sync] sf=7 cfo_int=0 down_val=0

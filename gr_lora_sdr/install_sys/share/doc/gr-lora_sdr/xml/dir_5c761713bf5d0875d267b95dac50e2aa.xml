@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.1" xml:lang="en-US">
+  <compounddef id="dir_5c761713bf5d0875d267b95dac50e2aa" kind="dir">
+    <compoundname>include</compoundname>
+    <innerdir refid="dir_3a94dfbc5ff74efccff39bcc20cce342">gnuradio</innerdir>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/yakirqaq/projects/lora-lite-phy/gr_lora_sdr/install/include/"/>
+  </compounddef>
+</doxygen>

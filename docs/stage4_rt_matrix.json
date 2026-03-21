@@ -1,0 +1,60 @@
+{
+  "rt_speed": 1.0,
+  "allow_tracking_failure_captures": [
+    "tx_rx_sf6_bw125000_cr1_snrm5p0.cf32",
+    "tx_rx_sf6_bw125000_cr2_snrm5p0.cf32"
+  ],
+  "impairments": [
+    {
+      "label": "baseline_clean",
+      "cfo_ppm": 0.0,
+      "sfo_ppm": 0.0,
+      "awgn_snr_db": 40.0,
+      "seed": 1
+    },
+    {
+      "label": "moderate_drift_low_snr",
+      "cfo_ppm": 5.0,
+      "cfo_drift_ppm": 1.5,
+      "sfo_ppm": -5.0,
+      "sfo_drift_ppm": 1.0,
+      "awgn_snr_db": 12.0,
+      "seed": 2
+    },
+    {
+      "label": "burst_and_collision",
+      "cfo_ppm": -8.0,
+      "sfo_ppm": 6.0,
+      "awgn_snr_db": 6.0,
+      "burst": {
+        "period": 64,
+        "duration": 16,
+        "snr_db": 0.0
+      },
+      "collision": {
+        "prob": 0.2,
+        "scale": 0.8,
+        "waveform": "docs/stage4_waveforms/interference_sf7_short.cf32"
+      },
+      "seed": 3
+    },
+    {
+      "label": "severe_collision",
+      "cfo_ppm": 10.0,
+      "sfo_ppm": -10.0,
+      "awgn_snr_db": 3.0,
+      "burst": {
+        "period": 32,
+        "duration": 24,
+        "snr_db": -3.0
+      },
+      "collision": {
+        "prob": 0.35,
+        "scale": 1.0,
+        "waveform": "docs/stage4_waveforms/interference_sf9_short.cf32"
+      },
+      "allow_tracking_failure": true,
+      "seed": 4
+    }
+  ]
+}

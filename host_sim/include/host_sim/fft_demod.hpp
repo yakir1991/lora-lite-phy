@@ -44,6 +44,9 @@ public:
 
     float current_cfo_frac() const { return cfo_frac_; }
     int current_cfo_int() const { return cfo_int_; }
+    float current_sfo_slope() const { return sfo_slope_; }
+
+    const ChirpTables& chirps() const { return chirps_; }
 
 private:
     int sf_;
