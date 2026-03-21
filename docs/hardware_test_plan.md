@@ -180,8 +180,13 @@ detect as packets.
 | sf7_bw125_cr7 | ✅ CRC OK | ✅ byte-exact | ✅ |
 | sf8_bw125_cr5 | ✅ CRC OK | ✅ byte-exact | ✅ |
 | sf9_bw125_cr5 | ✅ CRC OK | ⚠️ GR buffer error | N/A |
+| sf10_bw125_cr5 | ✅ CRC OK | ⚠️ GR buffer error | N/A |
+| sf11_bw125_cr5 | ✅ CRC OK | ⚠️ GR buffer error | N/A |
+| sf12_bw125_cr5 | ✅ CRC OK | ⚠️ GR buffer error | N/A |
 
-**7/8 byte-identical.** SF9 failure is a known gr-lora_sdr buffer limitation at 16× oversampling.
+**7/8 byte-identical** (SF7–8 + SF7 BW250/CR7). SF≥9 failure is a known gr-lora_sdr
+buffer limitation: `ninput_items_required > max_possible_items_available` at 16×
+oversampling (2 MSPS / 125 kHz). Our decoder decodes all 11 captures correctly.
 See `build/interop_report.md` for full details.
 
 ---
@@ -221,4 +226,4 @@ docs/
 | Phase 2 | ✅ Done | SF7–SF12 all decode; SF10–12 fixed via SFO estimation + metadata fixes (2026-03-21) |
 | Phase 3 | ⚠️ Inconclusive | Devices too close — TX power doesn't affect SNR; need attenuators (2026-03-21) |
 | Phase 4 | ✅ Done | 11 golden OTA captures archived, 27/27 CTests pass (2026-03-21) |
-| Phase 5 | ✅ Done | 7/8 byte-identical interop with GNU Radio; SF10–12 interop pending (2026-03-21) |
+| Phase 5 | ✅ Done | 7/11 byte-identical interop with GNU Radio; SF≥9 GR buffer limitation (2026-03-21) |
