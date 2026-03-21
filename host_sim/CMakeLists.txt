@@ -131,4 +131,27 @@ if (BUILD_TESTING)
                 --lora-replay ${CMAKE_CURRENT_BINARY_DIR}/lora_replay
     )
     set_tests_properties(host_sim_summary_metrics PROPERTIES LABELS "host-sim")
+
+    # ----- OTA regression tests (offline decode of real-world captures) -----
+    set(OTA_DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data/ota")
+    set(OTA_METADATA "${OTA_DATA_DIR}/metadata.json")
+
+    set(OTA_PAYLOADS "LoRa Test #520" "LoRa Test #521" "LoRa Test #522" "LoRa Test #523")
+    foreach(pkt_idx RANGE 0 3)
+        list(GET OTA_PAYLOADS ${pkt_idx} expected_payload)
+        set(test_name "ota_rfm95_packet_${pkt_idx}")
+        add_test(
+            NAME ${test_name}
+            COMMAND lora_replay
+                --iq "${OTA_DATA_DIR}/packet_${pkt_idx}.cf32"
+                --metadata "${OTA_METADATA}"
+                --payload "${expected_payload}"
+        )
+        # OTA captures have reference-demod mismatches (expected with real noise)
+        # so we match on payload + CRC instead of exit code.
+        set_tests_properties(${test_name} PROPERTIES
+            LABELS "ota"
+            PASS_REGULAR_EXPRESSION "Payload ASCII: ${expected_payload}.*CRC.*OK"
+        )
+    endforeach()
 endif ()
