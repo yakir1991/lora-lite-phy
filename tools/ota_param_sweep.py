@@ -174,15 +174,21 @@ print(len(iq))
 # ---------------------------------------------------------------------------
 
 def write_metadata(path: Path, tc: TestCase, sample_rate: int = 2_000_000) -> None:
+    # LDRO is auto-enabled by SX1276/RadioLib when symbol time > 16 ms
+    symbol_time_ms = (2 ** tc.sf) / (tc.bw * 1000) * 1000
+    ldro = symbol_time_ms > 16.0
+
     meta = {
         "sf": tc.sf,
         "bw": tc.bw * 1000,
         "sample_rate": sample_rate,
         "cr": tc.cr - 4,          # internal CR: RadioLib 5 → decoder 1
-        "payload_len": 32,
+        "payload_len": 0,         # auto-detect from header (explicit mode)
         "preamble_len": 8,
         "implicit_header": False,
         "has_crc": True,
+        "ldro": ldro,
+        "sync_word": 18,
     }
     path.write_text(json.dumps(meta, indent=2))
 

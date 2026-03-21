@@ -154,4 +154,41 @@ if (BUILD_TESTING)
             PASS_REGULAR_EXPRESSION "Payload ASCII: ${expected_payload}.*CRC.*OK"
         )
     endforeach()
+
+    # ----- Golden OTA captures (param-sweep archive) -----
+    # Each entry: test_suffix  capture_file  metadata_file  expected_payload
+    set(OTA_GOLDEN_TESTS
+        "sf7_bw250_cr5"   "sf7_bw250_cr5.cf32"   "sf7_bw250_cr5_meta.json"   "LoRa Test #2"
+        "sf7_bw125_cr7"   "sf7_bw125_cr7.cf32"    "sf7_bw125_cr7_meta.json"   "LoRa Test #6"
+        "sf8_bw125_cr5"   "sf8_bw125_cr5.cf32"    "sf8_bw125_cr5_meta.json"   "LoRa Test #4"
+        "sf9_bw125_cr5"   "sf9_bw125_cr5.cf32"    "sf9_bw125_cr5_meta.json"   "LoRa Test #5"
+        "sf10_bw125_cr5"  "sf10_bw125_cr5.cf32"   "sf10_bw125_cr5_meta.json"  "LoRa Test #74"
+        "sf11_bw125_cr5"  "sf11_bw125_cr5.cf32"   "sf11_bw125_cr5_meta.json"  "LoRa Test #77"
+        "sf12_bw125_cr5"  "sf12_bw125_cr5.cf32"   "sf12_bw125_cr5_meta.json"  "LoRa Test #79"
+    )
+    list(LENGTH OTA_GOLDEN_TESTS _golden_len)
+    math(EXPR _golden_count "${_golden_len} / 4")
+    math(EXPR _golden_last "${_golden_count} - 1")
+    foreach(_i RANGE 0 ${_golden_last})
+        math(EXPR _off "${_i} * 4")
+        math(EXPR _off1 "${_off} + 1")
+        math(EXPR _off2 "${_off} + 2")
+        math(EXPR _off3 "${_off} + 3")
+        list(GET OTA_GOLDEN_TESTS ${_off}  _suffix)
+        list(GET OTA_GOLDEN_TESTS ${_off1} _capture)
+        list(GET OTA_GOLDEN_TESTS ${_off2} _meta)
+        list(GET OTA_GOLDEN_TESTS ${_off3} _payload)
+        set(_test_name "ota_golden_${_suffix}")
+        add_test(
+            NAME ${_test_name}
+            COMMAND lora_replay
+                --iq "${OTA_DATA_DIR}/${_capture}"
+                --metadata "${OTA_DATA_DIR}/${_meta}"
+                --payload "${_payload}"
+        )
+        set_tests_properties(${_test_name} PROPERTIES
+            LABELS "ota"
+            PASS_REGULAR_EXPRESSION "Payload ASCII: ${_payload}.*CRC.*OK"
+        )
+    endforeach()
 endif ()

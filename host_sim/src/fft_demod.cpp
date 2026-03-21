@@ -78,33 +78,46 @@ uint16_t FftDemodulator::demodulate(const std::complex<float>* symbol_samples) c
               static_cast<float>(samples_per_symbol_)
         : 0.0f;
 
-    int base = oversample_factor_ / 2;
-    if (oversample_factor_ > 1 && (oversample_factor_ % 2) == 0) {
-        base = std::max(0, base - 1);
-    }
-
-    for (int bin = 0; bin < n_bins_; ++bin) {
-        int sample_idx = bin * oversample_factor_ + base;
-        if (sample_idx < 0) {
-            sample_idx = 0;
-        } else if (sample_idx >= samples_per_symbol_) {
-            sample_idx = samples_per_symbol_ - 1;
+    // Single-tap decimation.
+    //
+    // At high oversampling (os > 4, e.g. OTA captures at 2 MHz), we
+    // MUST use base=0.  The LoRa chirp wraps at n_fold = sps - V*os,
+    // which always falls on a chip boundary (multiple of os).  Picking
+    // sample 0 of each chip group guarantees every tap sits inside one
+    // chirp segment, so the N-point FFT peak lands on the correct bin
+    // for any symbol value and any CFO.  Other bases (including the
+    // "middle" base) break because the two chirp segments contribute
+    // with a phase mismatch that shifts the peak for ~28% of symbols.
+    //
+    // At low oversampling (os ≤ 4) we keep the legacy base to stay
+    // bit-exact with the reference demodulator and existing stage files.
+    {
+        int base = 0;
+        if (oversample_factor_ <= 4) {
+            base = oversample_factor_ / 2;
+            if (oversample_factor_ > 1 && (oversample_factor_ % 2) == 0) {
+                base = std::max(0, base - 1);
+            }
         }
 
-        const float chip = static_cast<float>(sample_idx) /
-                           static_cast<float>(oversample_factor_);
-        const float phase = -2.0f * static_cast<float>(M_PI) * fractional_offset *
-                            chip / static_cast<float>(n_bins_);
-        std::complex<float> rot(std::cos(phase), std::sin(phase));
-        if (apply_sfo) {
-            const float sfo_phase = sfo_factor * static_cast<float>(sample_idx);
-            rot *= std::complex<float>(std::cos(sfo_phase), std::sin(sfo_phase));
-        }
+        for (int bin = 0; bin < n_bins_; ++bin) {
+            const int sample_idx = bin * oversample_factor_ + base;
 
-        const std::complex<float> value =
-            symbol_samples[sample_idx] * rot * chirps_.downchirp[sample_idx];
-        fft_in_[bin].r = value.real();
-        fft_in_[bin].i = value.imag();
+            const float chip = static_cast<float>(sample_idx) /
+                               static_cast<float>(oversample_factor_);
+            const float phase = -2.0f * static_cast<float>(M_PI) * fractional_offset *
+                                chip / static_cast<float>(n_bins_);
+            std::complex<float> rot(std::cos(phase), std::sin(phase));
+            if (apply_sfo) {
+                const float sfo_phase = sfo_factor * static_cast<float>(sample_idx);
+                rot *= std::complex<float>(std::cos(sfo_phase), std::sin(sfo_phase));
+            }
+
+            const std::complex<float> value =
+                symbol_samples[sample_idx] * rot * chirps_.downchirp[sample_idx];
+            fft_in_[bin].r = value.real();
+            fft_in_[bin].i = value.imag();
+        }
     }
 
     kiss_fft(kiss_cfg_, fft_in_.data(), fft_out_.data());
@@ -144,14 +157,23 @@ uint16_t FftDemodulator::demodulate(const std::complex<float>* symbol_samples) c
                            fft_out_[prev_bin].i * fft_out_[prev_bin].i;
     const float mag_next = fft_out_[next_bin].r * fft_out_[next_bin].r +
                            fft_out_[next_bin].i * fft_out_[next_bin].i;
-    const float denom = mag_prev - 2.0f * best_mag + mag_next;
+
+    // Log-domain (Gaussian) parabolic interpolation.
+    // More accurate than power-domain for sinc/Dirichlet-shaped peaks,
+    // especially when the true peak is far from the bin centre.
     float delta = 0.0f;
-    if (std::abs(denom) > 1e-6f) {
-        delta = 0.5f * (mag_prev - mag_next) / denom;
-        if (delta > 0.5f) {
-            delta = 0.5f;
-        } else if (delta < -0.5f) {
-            delta = -0.5f;
+    if (mag_prev > 1e-30f && best_mag > 1e-30f && mag_next > 1e-30f) {
+        const float lp = std::log(mag_prev);
+        const float lb = std::log(best_mag);
+        const float ln_next = std::log(mag_next);
+        const float denom = lp - 2.0f * lb + ln_next;
+        if (std::abs(denom) > 1e-6f) {
+            delta = 0.5f * (lp - ln_next) / denom;
+            if (delta > 0.5f) {
+                delta = 0.5f;
+            } else if (delta < -0.5f) {
+                delta = -0.5f;
+            }
         }
     }
 
@@ -236,7 +258,117 @@ FftDemodulator::FrequencyEstimate FftDemodulator::estimate_frequency_offsets(
         signed_bin -= n_bins_;
     }
     estimate.cfo_int = signed_bin;
+
+    // --- SFO estimation from inter-symbol phase-difference drift ---
+    //
+    // CFO_frac causes a constant phase rotation Δφ between successive
+    // preamble symbols at the peak bin.  SFO causes Δφ to drift linearly.
+    //
+    // We compute Δφ[k] = arg( fft[k+1] · conj(fft[k]) ) for each pair
+    // of adjacent preamble symbols, then fit a linear slope.  The slope
+    // in rad/symbol² maps to SFO in bins/symbol via:
+    //    sfo_slope = phase_slope / (2π)
+    //
+    // The alignment may include 1-2 non-preamble symbols at the start.
+    // We validate each symbol by checking its FFT peak is at global_bin
+    // (±1 bin), and only use phase differences between verified preamble
+    // symbol pairs.
+
     estimate.sfo_slope = 0.0f;
+
+    if (symbol_count >= 6) {
+        const int n_diffs = symbol_count - 1;
+        const int half = n_bins_ / 2;
+
+        // Mark which symbols are genuine preamble (peak at global_bin ±1)
+        std::vector<bool> is_preamble(symbol_count, false);
+        for (int s = 0; s < symbol_count; ++s) {
+            int sym_best = 0;
+            float sym_best_mag = -1.0f;
+            for (int bin = 0; bin < n_bins_; ++bin) {
+                const auto& v = fft_vals[s][bin];
+                const float mag = v.real() * v.real() + v.imag() * v.imag();
+                if (mag > sym_best_mag) {
+                    sym_best_mag = mag;
+                    sym_best = bin;
+                }
+            }
+            int d = std::abs(sym_best - global_bin);
+            d = std::min(d, n_bins_ - d);
+            is_preamble[s] = (d <= 1);
+        }
+
+        // Compute phase differences only between consecutive verified pairs
+        std::vector<int>    inlier_indices;
+        std::vector<double> inlier_phases;
+        for (int k = 0; k < n_diffs; ++k) {
+            if (!is_preamble[k] || !is_preamble[k + 1]) continue;
+            const std::complex<double> a = fft_vals[k][global_bin];
+            const std::complex<double> b = fft_vals[k + 1][global_bin];
+            inlier_indices.push_back(k);
+            inlier_phases.push_back(std::arg(b * std::conj(a)));
+        }
+
+        const int n_inliers = static_cast<int>(inlier_indices.size());
+        if (n_inliers >= 4) {
+            const double n = static_cast<double>(n_inliers);
+            double sum_x = 0.0, sum_y = 0.0, sum_xy = 0.0, sum_xx = 0.0;
+            for (int i = 0; i < n_inliers; ++i) {
+                const double x = static_cast<double>(inlier_indices[i]);
+                const double y = inlier_phases[i];
+                sum_x += x;
+                sum_y += y;
+                sum_xy += x * y;
+                sum_xx += x * x;
+            }
+            const double denom = n * sum_xx - sum_x * sum_x;
+            if (std::abs(denom) > 1e-12) {
+                const double slope = (n * sum_xy - sum_x * sum_y) / denom;
+                const double intercept = (sum_y - slope * sum_x) / n;
+
+                double ss_res = 0.0;
+                for (int i = 0; i < n_inliers; ++i) {
+                    const double predicted = intercept + slope * static_cast<double>(inlier_indices[i]);
+                    const double residual = inlier_phases[i] - predicted;
+                    ss_res += residual * residual;
+                }
+
+                const double s2 = ss_res / (n - 2.0);
+                const double x_bar = sum_x / n;
+                double ss_xx = 0.0;
+                for (int i = 0; i < n_inliers; ++i) {
+                    const double dx = static_cast<double>(inlier_indices[i]) - x_bar;
+                    ss_xx += dx * dx;
+                }
+
+                const double se_slope = (ss_xx > 1e-12) ? std::sqrt(s2 / ss_xx) : 1e30;
+                const double t_stat = std::abs(slope) / se_slope;
+                const double sfo = slope / (2.0 * M_PI);
+
+                if (std::getenv("HOST_SIM_DEBUG_SFO")) {
+                    std::cerr << "[SFO_debug] n_diffs=" << n_diffs
+                              << " n_inliers=" << n_inliers
+                              << " slope_rad=" << slope
+                              << " sfo_bins=" << sfo
+                              << " se_slope=" << se_slope
+                              << " t_stat=" << t_stat
+                              << "\n";
+                    for (int i = 0; i < n_inliers; ++i) {
+                        std::cerr << "[SFO_debug]   phase[" << inlier_indices[i]
+                                  << "]=" << inlier_phases[i] << "\n";
+                    }
+                }
+
+                // Accept SFO only if:
+                // 1. Statistically significant (t > 3.0)
+                // 2. Physically plausible (< 0.1 bins/symbol)
+                // 3. Large enough to matter (> 0.001 bins/symbol)
+                if (t_stat > 3.0 && std::abs(sfo) < 0.1 && std::abs(sfo) > 0.001) {
+                    estimate.sfo_slope = static_cast<float>(sfo);
+                }
+            }
+        }
+    }
 
     return estimate;
 }
