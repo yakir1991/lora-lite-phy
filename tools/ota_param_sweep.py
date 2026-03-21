@@ -200,8 +200,8 @@ def decode_capture(cf32_path: Path, metadata_path: Path) -> tuple[int, str]:
         "--iq", str(cf32_path),
         "--metadata", str(metadata_path),
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-    stdout = result.stdout
+    result = subprocess.run(cmd, capture_output=True, timeout=600)
+    stdout = result.stdout.decode("utf-8", errors="replace")
     # Count decoded payloads (lines matching "Payload ASCII:")
     payloads = re.findall(r"Payload ASCII:\s*(.+)", stdout)
     return len(payloads), stdout
@@ -260,7 +260,9 @@ def run_test(ser, tc: TestCase, output_dir: Path) -> TestResult:
         result.packets_decoded = n_decoded
         result.decode_stdout = stdout
         result.payloads = re.findall(r"Payload ASCII:\s*(.+)", stdout)
-        result.passed = n_decoded >= 1
+        # Require at least one CRC OK for pass
+        crc_ok_count = len(re.findall(r"\[payload\] CRC.*?OK", stdout))
+        result.passed = crc_ok_count >= 1
     except Exception as e:
         result.error = str(e)
 
