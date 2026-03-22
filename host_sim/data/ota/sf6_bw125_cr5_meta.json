@@ -1,0 +1,12 @@
+{
+  "sf": 6,
+  "bw": 125000,
+  "sample_rate": 2000000,
+  "cr": 1,
+  "preamble_len": 8,
+  "payload_len": 12,
+  "has_crc": true,
+  "ldro": false,
+  "sync_word": 18,
+  "implicit_header": true
+}

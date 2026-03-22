@@ -62,6 +62,12 @@ bool applyConfig() {
     cfg.preamble
   );
   radioReady = (state == RADIOLIB_ERR_NONE);
+  if (radioReady && cfg.sf <= 6) {
+    // SX1276 requires implicit header mode for SF6
+    radio.implicitHeader(255);
+  } else if (radioReady) {
+    radio.explicitHeader();
+  }
   return radioReady;
 }
 

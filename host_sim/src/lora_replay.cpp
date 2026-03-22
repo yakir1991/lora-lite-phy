@@ -1042,6 +1042,40 @@ int main(int argc, char** argv)
                                 &samples[data_sample + i * sps]));
                         }
 
+                        if (metadata->implicit_header) {
+                            // Implicit header: no header structure in the packet.
+                            // Use standard quarter offset (first tried), decode
+                            // first 8 symbols at CR=4 as payload data, and use
+                            // metadata values for payload_len / CR / CRC.
+                            const std::size_t hdr_syms = std::min<std::size_t>(8, redemod.size());
+                            std::vector<uint16_t> first_block(redemod.begin(),
+                                                              redemod.begin() + hdr_syms);
+                            host_sim::DeinterleaverConfig hdr_cfg{metadata->sf, 4, true, metadata->ldro};
+                            std::size_t consumed_block = 0;
+                            auto codewords = host_sim::deinterleave(first_block, hdr_cfg, consumed_block);
+                            auto nibs = host_sim::hamming_decode_block(codewords, true, 4);
+
+                            std::cout << "SFD re-demod: implicit header, quarter offset "
+                                      << qoff << " (sync at symbol " << (*sync_pos - 4) << ")\n";
+                            header.success = true;
+                            header.payload_len = metadata->payload_len;
+                            header.cr = metadata->cr;
+                            header.has_crc = metadata->has_crc;
+                            header.checksum_field = -1;
+                            header.checksum_computed = -1;
+                            header.consumed_symbols = consumed_block > 0 ? consumed_block : 8;
+                            header.codewords.assign(codewords.begin(), codewords.end());
+                            // Pad with 5 dummy header nibbles so the payload
+                            // extraction (positions 5+) picks up the real data.
+                            header.nibbles.assign(5, 0);
+                            header.nibbles.insert(header.nibbles.end(), nibs.begin(), nibs.end());
+
+                            symbol_cursor = header.consumed_symbols;
+                            chosen_offset = 0;
+                            symbols = std::move(redemod);
+                            break;
+                        }
+
                         auto hdr = try_decode_header(redemod, 0, *metadata);
                         if (!hdr.success) continue;
 

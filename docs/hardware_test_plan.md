@@ -192,7 +192,7 @@ Additional OTA combinations tested (not archived as golden captures):
 
 | Config | Result |
 |--------|--------|
-| SF7/BW500/CR5 | ❌ CRC MISMATCH — os=4, SFD quarter-symbol offset not handled (known limitation) |
+| SF7/BW500/CR5 | ✅ CRC OK — fixed via `skip_grid_scan` (2026-03-22) |
 | SF8/BW125/CR7 | ✅ CRC OK |
 | SF9/BW125/CR7 | ✅ CRC OK |
 | SF8/BW250/CR5 | ✅ CRC OK |
@@ -201,9 +201,12 @@ Additional OTA combinations tested (not archived as golden captures):
 | SF7/BW125/CR8 | ✅ CRC OK |
 | SF10/BW125/CR7 | ✅ CRC OK |
 
-**7/8 pass.** BW500 limitation: at 2 MSPS capture rate, oversampling=4. The SFD
-re-demod path (which handles the 0.25-symbol offset) is only enabled for os>4.
-Workaround: capture at 4 MSPS for BW500.
+**8/8 pass** (after BW500 fix). Additionally tested (2026-03-22):
+
+| Config | Result |
+|--------|--------|
+| SF6/BW125/CR5 | ✅ CRC OK — implicit header mode, first SF6 OTA decode |
+| SF8/BW500/CR5 | ✅ CRC OK — confirms BW500 fix applies across SF values |
 
 ### Not yet captured
 
@@ -278,7 +281,7 @@ docs/
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Phase 1 | ✅ Done | 4/4 OTA packets decoded (2026-03-03) |
-| Phase 2 | ✅ Done | SF7–SF12, BW125/250, CR5–8 all decode; BW500 known limitation at 2 MSPS (2026-03-21) |
+| Phase 2 | ✅ Done | SF6–SF12, BW125/250/500, CR5–8 all decode; BW500 fixed (2026-03-22); SF6 implicit header (2026-03-22) |
 | Phase 3 | ✅ Software done | SW AWGN sweep: SF7 cliff at +4 dB, SF9 at +6 dB, SF12 gradual to -24 dB; HW attenuator sweep pending (2026-03-21) |
-| Phase 4 | ✅ Done | 11 golden OTA captures archived, 27/27 CTests pass (2026-03-21) |
+| Phase 4 | ✅ Done | 14 golden OTA captures archived, 30/30 CTests pass (2026-03-22) |
 | Phase 5 | ✅ Done | 7/11 byte-identical interop with GNU Radio; SF≥9 GR buffer limitation (2026-03-21) |
