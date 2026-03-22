@@ -160,6 +160,7 @@ if (BUILD_TESTING)
     set(OTA_GOLDEN_TESTS
         "sf7_bw250_cr5"   "sf7_bw250_cr5.cf32"   "sf7_bw250_cr5_meta.json"   "LoRa Test #2"
         "sf7_bw125_cr7"   "sf7_bw125_cr7.cf32"    "sf7_bw125_cr7_meta.json"   "LoRa Test #6"
+        "sf7_bw500_cr5"   "sf7_bw500_cr5.cf32"    "sf7_bw500_cr5_meta.json"   "LoRa Test #113"
         "sf8_bw125_cr5"   "sf8_bw125_cr5.cf32"    "sf8_bw125_cr5_meta.json"   "LoRa Test #4"
         "sf9_bw125_cr5"   "sf9_bw125_cr5.cf32"    "sf9_bw125_cr5_meta.json"   "LoRa Test #5"
         "sf10_bw125_cr5"  "sf10_bw125_cr5.cf32"   "sf10_bw125_cr5_meta.json"  "LoRa Test #74"

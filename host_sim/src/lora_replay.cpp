@@ -956,12 +956,16 @@ int main(int argc, char** argv)
             std::size_t symbol_cursor = 0;
             std::size_t chosen_offset = std::numeric_limits<std::size_t>::max();
 
-            // At high oversampling (os > 4), the LoRa SFD's 0.25-symbol
+            // At high oversampling (os > 4) or BW500-class captures
+            // (os == 4 in non-comparison mode), the LoRa SFD's 0.25-symbol
             // offset shifts data symbols off the preamble grid.  Scanning
             // preamble-grid symbols for a header is futile and can yield
             // false positives from noise, so skip straight to the SFD
-            // re-demod path.
-            if (os <= 4) {
+            // re-demod path.  Stage-comparison tests at os == 4 still need
+            // the preamble-grid scan to stay bit-exact with the reference.
+            const bool skip_grid_scan =
+                (os > 4) || (os == 4 && !options.compare_root);
+            if (!skip_grid_scan) {
             for (std::size_t candidate = 0; candidate + 8 <= symbols.size(); ++candidate) {
                 auto candidate_header = try_decode_header(symbols, candidate, *metadata);
                 if (!candidate_header.success) {
@@ -993,7 +997,7 @@ int main(int argc, char** argv)
                 chosen_offset = candidate;
                 break;
             }
-            } // os <= 4
+            } // !skip_grid_scan
 
             // Fallback: if header not found on the preamble grid, try
             // re-demodulating from the sync word position with a quarter-
@@ -1001,10 +1005,7 @@ int main(int argc, char** argv)
             // symbols start at sync + 2 (sync) + 2.25 (SFD) = sync + 4.25
             // symbols.  At high oversampling this 0.25 offset shifts the bin
             // by N/4, making header decode impossible on the preamble grid.
-            // Only apply at os > 4 where this is genuinely needed (OTA
-            // captures).  At os <= 4 the existing tests don't rely on header
-            // decode and triggering it would cause stage-comparison failures.
-            if (!header.success && os > 4) {
+            if (!header.success && skip_grid_scan) {
                 auto sync_pos = host_sim::find_header_symbol_index(
                     symbols, 0x12, metadata->sf);
                 if (!sync_pos) {

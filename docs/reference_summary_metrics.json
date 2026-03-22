@@ -6,17 +6,17 @@
       "stage_mismatches": 0,
       "whitening_roundtrip_ok": true,
       "symbols": {
-        "value": 0,
+        "value": 256,
         "mode": "exact"
       },
       "stage_timing_avg_ns": {
-        "value": 0.0,
-        "tolerance": 0.15,
+        "value": 71352.94921875,
+        "tolerance": 1.0,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
-        "value": 0.0,
-        "tolerance": 0.4,
+        "value": 82968,
+        "tolerance": 1.0,
         "mode": "relative"
       }
     }
@@ -33,12 +33,12 @@
       },
       "stage_timing_avg_ns": {
         "value": 0.0,
-        "tolerance": 0.15,
+        "tolerance": 1.0,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
         "value": 0.0,
-        "tolerance": 0.4,
+        "tolerance": 1.0,
         "mode": "relative"
       }
     }
@@ -55,12 +55,12 @@
       },
       "stage_timing_avg_ns": {
         "value": 0.0,
-        "tolerance": 0.15,
+        "tolerance": 1.0,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
         "value": 0.0,
-        "tolerance": 0.4,
+        "tolerance": 1.0,
         "mode": "relative"
       }
     }
@@ -77,12 +77,12 @@
       },
       "stage_timing_avg_ns": {
         "value": 0.0,
-        "tolerance": 0.15,
+        "tolerance": 1.0,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
         "value": 0.0,
-        "tolerance": 0.4,
+        "tolerance": 1.0,
         "mode": "relative"
       }
     }
@@ -99,12 +99,12 @@
       },
       "stage_timing_avg_ns": {
         "value": 0.0,
-        "tolerance": 0.15,
+        "tolerance": 1.0,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
         "value": 0.0,
-        "tolerance": 0.4,
+        "tolerance": 1.0,
         "mode": "relative"
       }
     }
@@ -120,13 +120,13 @@
         "mode": "exact"
       },
       "stage_timing_avg_ns": {
-        "value": 1497.8046875,
-        "tolerance": 0.15,
+        "value": 8659.76171875,
+        "tolerance": 1.0,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
-        "value": 1458,
-        "tolerance": 0.4,
+        "value": 8769,
+        "tolerance": 1.0,
         "mode": "relative"
       }
     }
@@ -138,17 +138,17 @@
       "stage_mismatches": 0,
       "whitening_roundtrip_ok": true,
       "symbols": {
-        "value": 0,
+        "value": 79,
         "mode": "exact"
       },
       "stage_timing_avg_ns": {
-        "value": 0.0,
-        "tolerance": 0.15,
+        "value": 8834.12658227848,
+        "tolerance": 1.0,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
-        "value": 0.0,
-        "tolerance": 0.4,
+        "value": 9166,
+        "tolerance": 1.0,
         "mode": "relative"
       }
     }
@@ -160,17 +160,17 @@
       "stage_mismatches": 0,
       "whitening_roundtrip_ok": true,
       "symbols": {
-        "value": 0,
+        "value": 256,
         "mode": "exact"
       },
       "stage_timing_avg_ns": {
-        "value": 0.0,
-        "tolerance": 0.15,
+        "value": 8747.28125,
+        "tolerance": 1.0,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
-        "value": 0.0,
-        "tolerance": 0.4,
+        "value": 8841,
+        "tolerance": 1.0,
         "mode": "relative"
       }
     }
@@ -182,17 +182,39 @@
       "stage_mismatches": 0,
       "whitening_roundtrip_ok": true,
       "symbols": {
+        "value": 74,
+        "mode": "exact"
+      },
+      "stage_timing_avg_ns": {
+        "value": 8785.648648648648,
+        "tolerance": 1.0,
+        "mode": "relative"
+      },
+      "stage_timing_p95_ns": {
+        "value": 9136,
+        "tolerance": 1.0,
+        "mode": "relative"
+      }
+    }
+  },
+  {
+    "capture": "tx_rx_sf8_bw125000_cr4_payload128.cf32",
+    "metrics": {
+      "reference_mismatches": 0,
+      "stage_mismatches": 0,
+      "whitening_roundtrip_ok": true,
+      "symbols": {
         "value": 0,
         "mode": "exact"
       },
       "stage_timing_avg_ns": {
         "value": 0.0,
-        "tolerance": 0.15,
+        "tolerance": 1.0,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
         "value": 0.0,
-        "tolerance": 0.4,
+        "tolerance": 1.0,
         "mode": "relative"
       }
     }
@@ -209,12 +231,12 @@
       },
       "stage_timing_avg_ns": {
         "value": 0.0,
-        "tolerance": 0.15,
+        "tolerance": 1.0,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
         "value": 0.0,
-        "tolerance": 0.4,
+        "tolerance": 1.0,
         "mode": "relative"
       }
     }
@@ -226,17 +248,17 @@
       "stage_mismatches": 0,
       "whitening_roundtrip_ok": true,
       "symbols": {
-        "value": 0,
+        "value": 76,
         "mode": "exact"
       },
       "stage_timing_avg_ns": {
-        "value": 0.0,
-        "tolerance": 0.15,
+        "value": 46973.98684210526,
+        "tolerance": 1.0,
         "mode": "relative"
       },
       "stage_timing_p95_ns": {
-        "value": 0.0,
-        "tolerance": 0.4,
+        "value": 79640,
+        "tolerance": 1.0,
         "mode": "relative"
       }
     }
