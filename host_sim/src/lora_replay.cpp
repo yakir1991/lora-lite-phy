@@ -897,6 +897,45 @@ int main(int argc, char** argv)
                 demod.set_frequency_offsets(freq_est.cfo_frac,
                                             freq_est.cfo_int,
                                             freq_est.sfo_slope);
+
+                // --- Sub-sample alignment refinement ---
+                // The alignment algorithm may be off by a few samples.
+                // At low oversampling (os ≤ 4), even a 1–2 sample error
+                // shifts the dechirped FFT peak by a fraction of a bin,
+                // which can flip the rounded bin on marginal symbols.
+                // Try a few offsets around the detected alignment and pick
+                // the one whose preamble symbols most agree on bin 0.
+                if (os <= 4 && !options.compare_root) {
+                    const int n_bins = 1 << metadata->sf;
+                    int best_offset = 0;
+                    int best_count_0 = -1;
+                    for (int try_off = -3; try_off <= 3; ++try_off) {
+                        const auto try_align = static_cast<std::size_t>(
+                            static_cast<std::ptrdiff_t>(alignment_samples) + try_off);
+                        if (try_align + 8ULL * sps > samples.size()) continue;
+                        demod.set_frequency_offsets(freq_est.cfo_frac,
+                                                    freq_est.cfo_int,
+                                                    freq_est.sfo_slope);
+                        demod.reset_symbol_counter();
+                        int c0 = 0;
+                        for (int p = 0; p < std::min(preamble_symbols_to_use, 8); ++p) {
+                            uint16_t v = demod.demodulate(
+                                &samples[try_align +
+                                         static_cast<std::size_t>(p) * sps]);
+                            if (v == 0) ++c0;
+                        }
+                        if (c0 > best_count_0) {
+                            best_count_0 = c0;
+                            best_offset = try_off;
+                        }
+                    }
+                    if (best_offset != 0) {
+                        alignment_samples = static_cast<std::size_t>(
+                            static_cast<std::ptrdiff_t>(alignment_samples) +
+                            best_offset);
+                    }
+                }
+
                 demod_ref.set_frequency_offsets(freq_est.cfo_frac,
                                                 freq_est.sfo_slope,
                                                 freq_est.cfo_int);

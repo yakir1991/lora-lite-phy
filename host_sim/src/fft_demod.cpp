@@ -78,7 +78,7 @@ uint16_t FftDemodulator::demodulate(const std::complex<float>* symbol_samples) c
               static_cast<float>(samples_per_symbol_)
         : 0.0f;
 
-    // Single-tap decimation.
+    // Single-tap decimation with per-sample CFO/SFO phase correction.
     //
     // At high oversampling (os > 4, e.g. OTA captures at 2 MHz), we
     // MUST use base=0.  The LoRa chirp wraps at n_fold = sps - V*os,
