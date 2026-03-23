@@ -936,9 +936,12 @@ int main(int argc, char** argv)
                     }
                 }
 
+                demod.set_frequency_offsets(freq_est.cfo_frac,
+                                            freq_est.cfo_int,
+                                            freq_est.sfo_slope);
                 demod_ref.set_frequency_offsets(freq_est.cfo_frac,
-                                                freq_est.sfo_slope,
-                                                freq_est.cfo_int);
+                                                freq_est.cfo_int,
+                                                freq_est.sfo_slope);
                 demod.reset_symbol_counter();
                 std::cout << "Frequency offsets: CFO_int=" << freq_est.cfo_int
                           << " CFO_frac=" << freq_est.cfo_frac
@@ -1069,7 +1072,7 @@ int main(int argc, char** argv)
                             static_cast<std::size_t>(qoff) * quarter;
                         if (data_sample + 8ULL * sps > samples.size()) continue;
 
-                        // Re-demodulate data symbols from adjusted position
+                        // Re-demodulate data symbols from adjusted position.
                         demod.set_frequency_offsets(saved_cfo_frac,
                                                    saved_cfo_int,
                                                    saved_sfo);
