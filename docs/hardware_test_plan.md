@@ -172,14 +172,17 @@ For each SF ∈ {7, 9, 12}:
 | `packet_0.cf32` … `packet_3.cf32` | 7 | 125k | 4/5 | LoRa Test #520–#523 | `ota_rfm95_packet_0`…`3` | ✅ |
 | `sf7_bw250_cr5.cf32` | 7 | 250k | 4/5 | LoRa Test #2 | `ota_golden_sf7_bw250_cr5` | ✅ |
 | `sf7_bw125_cr7.cf32` | 7 | 125k | 4/7 | LoRa Test #6 | `ota_golden_sf7_bw125_cr7` | ✅ |
+| `sf7_bw125_cr5.cf32` | 7 | 125k | 4/5 | LoRa Test #12 | `ota_golden_sf7_bw125_cr5` | ✅ |
 | `sf8_bw125_cr5.cf32` | 8 | 125k | 4/5 | LoRa Test #4 | `ota_golden_sf8_bw125_cr5` | ✅ |
+| `sf8_bw250_cr5.cf32` | 8 | 250k | 4/5 | LoRa Test #15 | `ota_golden_sf8_bw250_cr5` | ✅ |
 | `sf9_bw125_cr5.cf32` | 9 | 125k | 4/5 | LoRa Test #5 | `ota_golden_sf9_bw125_cr5` | ✅ |
+| `sf9_bw250_cr5.cf32` | 9 | 250k | 4/5 | LoRa Test #21 | `ota_golden_sf9_bw250_cr5` | ✅ |
 | `sf10_bw125_cr5.cf32` | 10 | 125k | 4/5 | LoRa Test #74 | `ota_golden_sf10_bw125_cr5` | ✅ |
 | `sf11_bw125_cr5.cf32` | 11 | 125k | 4/5 | LoRa Test #77 | `ota_golden_sf11_bw125_cr5` | ✅ |
 | `sf12_bw125_cr5.cf32` | 12 | 125k | 4/5 | LoRa Test #79 | `ota_golden_sf12_bw125_cr5` | ✅ |
 
 Each capture has a corresponding `*_meta.json` with SF/BW/CR/sample_rate.
-All 11 CTest targets are registered with label `ota` and use `PASS_REGULAR_EXPRESSION`.
+All 17 OTA golden CTest targets are registered with label `ota` and use `PASS_REGULAR_EXPRESSION`.
 
 **Fixes applied for SF10–12 (2026-03-21):**
 - Metadata: `payload_len=0` (auto-detect from header in explicit mode)
@@ -201,12 +204,17 @@ Additional OTA combinations tested (not archived as golden captures):
 | SF7/BW125/CR8 | ✅ CRC OK |
 | SF10/BW125/CR7 | ✅ CRC OK |
 
-**8/8 pass** (after BW500 fix). Additionally tested (2026-03-22):
+**8/8 pass** (after BW500 fix). Additionally tested (2026-03-22/23):
 
-| Config | Result |
-|--------|--------|
-| SF6/BW125/CR5 | ✅ CRC OK — implicit header mode, first SF6 OTA decode |
-| SF8/BW500/CR5 | ✅ CRC OK — confirms BW500 fix applies across SF values |
+| Config | Result | Golden? |
+|--------|--------|--------|
+| SF6/BW125/CR5 | ✅ CRC OK — implicit header mode | ✅ archived |
+| SF7/BW125/CR5 | ✅ CRC OK | ✅ archived |
+| SF7/BW500/CR5 | ✅ CRC OK — SFD re-demod fix | ✅ archived |
+| SF7/BW125/CR8 | ❌ CRC MISMATCH — 1-byte error, SFO drift | — |
+| SF8/BW250/CR5 | ✅ CRC OK | ✅ archived |
+| SF8/BW500/CR5 | ✅ CRC OK | ✅ archived |
+| SF9/BW250/CR5 | ✅ CRC OK | ✅ archived |
 
 ### Not yet captured
 
@@ -283,5 +291,5 @@ docs/
 | Phase 1 | ✅ Done | 4/4 OTA packets decoded (2026-03-03) |
 | Phase 2 | ✅ Done | SF6–SF12, BW125/250/500, CR5–8 all decode; BW500 fixed (2026-03-22); SF6 implicit header (2026-03-22) |
 | Phase 3 | ✅ Software done | SW AWGN sweep: SF7 cliff at +4 dB, SF9 at +6 dB, SF12 gradual to -24 dB; HW attenuator sweep pending (2026-03-21) |
-| Phase 4 | ✅ Done | 14 golden OTA captures archived, 30/30 CTests pass (2026-03-22) |
+| Phase 4 | ✅ Done | 17 golden OTA captures archived, 33/33 CTests pass (2026-03-23) |
 | Phase 5 | ✅ Done | 7/11 byte-identical interop with GNU Radio; SF≥9 GR buffer limitation (2026-03-21) |
