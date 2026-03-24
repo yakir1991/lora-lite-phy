@@ -177,6 +177,7 @@ if (BUILD_TESTING)
         "sf10_bw500_cr5"  "sf10_bw500_cr5.cf32"   "sf10_bw500_cr5_meta.json"  "LoRa Test #15"
         "sf11_bw125_cr5"  "sf11_bw125_cr5.cf32"   "sf11_bw125_cr5_meta.json"  "LoRa Test #77"
         "sf11_bw250_cr5"  "sf11_bw250_cr5.cf32"   "sf11_bw250_cr5_meta.json"  "LoRa Test #27"
+        "sf11_bw500_cr5"  "sf11_bw500_cr5.cf32"   "sf11_bw500_cr5_meta.json"  "LoRa Test #37"
         "sf12_bw125_cr5"  "sf12_bw125_cr5.cf32"   "sf12_bw125_cr5_meta.json"  "LoRa Test #79"
         "sf12_bw250_cr5"  "sf12_bw250_cr5.cf32"   "sf12_bw250_cr5_meta.json"  "LoRa Test #23"
     )
