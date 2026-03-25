@@ -362,6 +362,81 @@ HeaderDecodeResult try_decode_header(const std::vector<uint16_t>& symbols,
     return result;
 }
 
+// Quick CRC probe: decode payload from symbols and check CRC.
+// Used for data-start timing refinement at low oversampling,
+// where SFO-induced timing drift can shift data symbols by ±1 bin.
+bool probe_payload_crc(const std::vector<uint16_t>& symbols,
+                       const HeaderDecodeResult& hdr,
+                       const host_sim::LoRaMetadata& meta)
+{
+    if (!hdr.success) return false;
+    const int pl = hdr.payload_len > 0 ? hdr.payload_len : meta.payload_len;
+    const int cr = hdr.cr > 0 ? hdr.cr : meta.cr;
+    const bool has_crc = hdr.has_crc || meta.has_crc;
+    if (!has_crc || pl < 3) return false;
+
+    std::vector<uint8_t> payload_nibbles;
+    if (hdr.nibbles.size() > 5) {
+        for (std::size_t i = 5; i < hdr.nibbles.size(); ++i) {
+            payload_nibbles.push_back(hdr.nibbles[i]);
+        }
+    }
+
+    const std::size_t nibble_target =
+        static_cast<std::size_t>(pl) * 2 + 4;
+    const int cw_len = cr + 4;
+    std::size_t cursor = hdr.consumed_symbols > 0 ? hdr.consumed_symbols : 8;
+    host_sim::DeinterleaverConfig payload_cfg{meta.sf, cr, false, meta.ldro};
+
+    while (cursor + static_cast<std::size_t>(cw_len) <= symbols.size() &&
+           payload_nibbles.size() < nibble_target) {
+        std::vector<uint16_t> block(symbols.begin() + static_cast<std::ptrdiff_t>(cursor),
+                                    symbols.begin() + static_cast<std::ptrdiff_t>(cursor + cw_len));
+        std::size_t consumed = 0;
+        auto codewords = host_sim::deinterleave(block, payload_cfg, consumed);
+        if (consumed == 0) break;
+        cursor += consumed;
+        auto nibs = host_sim::hamming_decode_block(codewords, false, cr);
+        payload_nibbles.insert(payload_nibbles.end(), nibs.begin(), nibs.end());
+    }
+
+    if (payload_nibbles.size() < static_cast<std::size_t>(pl) * 2 + 4)
+        return false;
+
+    host_sim::WhiteningSequencer seq;
+    auto whitening = seq.sequence(payload_nibbles.size() / 2);
+
+    std::vector<uint8_t> unwhitened;
+    for (std::size_t i = 0; i + 1 < payload_nibbles.size() &&
+         unwhitened.size() < static_cast<std::size_t>(pl) + 2; i += 2) {
+        const std::size_t byte_idx = i / 2;
+        uint8_t lo, hi;
+        if (byte_idx < static_cast<std::size_t>(pl)) {
+            const uint8_t w = (byte_idx < whitening.size()) ? whitening[byte_idx] : 0;
+            lo = (payload_nibbles[i] & 0xF) ^ (w & 0x0F);
+            hi = (payload_nibbles[i + 1] & 0xF) ^ ((w >> 4) & 0x0F);
+        } else {
+            lo = payload_nibbles[i] & 0xF;
+            hi = payload_nibbles[i + 1] & 0xF;
+        }
+        unwhitened.push_back(static_cast<uint8_t>((hi << 4) | lo));
+    }
+
+    if (unwhitened.size() < static_cast<std::size_t>(pl) + 2)
+        return false;
+
+    std::vector<uint8_t> crc_data(unwhitened.begin(),
+                                  unwhitened.begin() + pl - 2);
+    uint16_t computed = compute_lora_crc(crc_data);
+    if (pl >= 2) {
+        computed ^= unwhitened[pl - 1];
+        computed ^= static_cast<uint16_t>(unwhitened[pl - 2]) << 8;
+    }
+    const uint16_t decoded = static_cast<uint16_t>(unwhitened[pl]) |
+                             (static_cast<uint16_t>(unwhitened[pl + 1]) << 8);
+    return computed == decoded;
+}
+
 uint16_t normalize_fft_symbol(uint16_t symbol, bool reduce_by_four, int sf)
 {
     const uint16_t mask_full = static_cast<uint16_t>((1u << sf) - 1u);
@@ -1126,6 +1201,51 @@ int main(int argc, char** argv)
                         if (metadata->payload_len > 0 && hlen != metadata->payload_len) continue;
                         if (metadata->cr > 0 && hcr != metadata->cr) continue;
                         if (metadata->has_crc && !hdr.has_crc) continue;
+
+                        // SFO-induced timing drift between the preamble
+                        // and data start can shift data symbols by ±1 bin.
+                        // The header is robust (uses sf_app = sf-2) but the
+                        // payload is not.  Sweep small timing adjustments
+                        // around the nominal data_sample and select the one
+                        // that gives a valid CRC.
+                        bool timing_refined = false;
+                        if ((hdr.has_crc || metadata->has_crc) &&
+                            !probe_payload_crc(redemod, hdr, *metadata)) {
+                            const int max_adj = std::max(os, 4) + 2;
+                            for (int adj = -1; std::abs(adj) <= max_adj; adj = adj > 0 ? -adj - 1 : -adj) {
+                                const auto adj_data = static_cast<std::size_t>(
+                                    static_cast<std::ptrdiff_t>(data_sample) + adj);
+                                if (adj_data + 8ULL * sps > samples.size())
+                                    continue;
+                                demod.set_frequency_offsets(saved_cfo_frac,
+                                                           saved_cfo_int,
+                                                           saved_sfo);
+                                demod.reset_symbol_counter();
+                                std::vector<uint16_t> adj_syms;
+                                const std::size_t adj_max =
+                                    (samples.size() - adj_data) / sps;
+                                for (std::size_t i = 0;
+                                     i < std::min<std::size_t>(adj_max, 200);
+                                     ++i) {
+                                    adj_syms.push_back(demod.demodulate(
+                                        &samples[adj_data + i * sps]));
+                                }
+                                auto adj_hdr =
+                                    try_decode_header(adj_syms, 0, *metadata);
+                                if (!adj_hdr.success) continue;
+                                if (probe_payload_crc(adj_syms, adj_hdr,
+                                                      *metadata)) {
+                                    redemod = std::move(adj_syms);
+                                    hdr = std::move(adj_hdr);
+                                    timing_refined = true;
+                                    std::cout << "SFD re-demod: data start "
+                                                 "refined by "
+                                              << adj
+                                              << " samples (CRC verified)\n";
+                                    break;
+                                }
+                            }
+                        }
 
                         std::cout << "SFD re-demod: header found with quarter offset "
                                   << qoff << " (sync at symbol " << (*sync_pos - 4)

@@ -180,6 +180,7 @@ if (BUILD_TESTING)
         "sf11_bw500_cr5"  "sf11_bw500_cr5.cf32"   "sf11_bw500_cr5_meta.json"  "LoRa Test #37"
         "sf12_bw125_cr5"  "sf12_bw125_cr5.cf32"   "sf12_bw125_cr5_meta.json"  "LoRa Test #79"
         "sf12_bw250_cr5"  "sf12_bw250_cr5.cf32"   "sf12_bw250_cr5_meta.json"  "LoRa Test #23"
+        "sf12_bw500_cr5"  "sf12_bw500_cr5.cf32"   "sf12_bw500_cr5_meta.json"  "LoRa Test #46"
     )
     list(LENGTH OTA_GOLDEN_TESTS _golden_len)
     math(EXPR _golden_count "${_golden_len} / 4")
