@@ -159,6 +159,8 @@ if (BUILD_TESTING)
     # Each entry: test_suffix  capture_file  metadata_file  expected_payload
     set(OTA_GOLDEN_TESTS
         "sf6_bw125_cr5"   "sf6_bw125_cr5.cf32"   "sf6_bw125_cr5_meta.json"   "LoRa Test #0"
+        "sf6_bw250_cr5"   "sf6_bw250_cr5.cf32"   "sf6_bw250_cr5_meta.json"   "LoRa Test #20"
+        "sf6_bw500_cr5"   "sf6_bw500_cr5.cf32"   "sf6_bw500_cr5_meta.json"   "LoRa Test #70"
         "sf7_bw125_cr5"   "sf7_bw125_cr5.cf32"   "sf7_bw125_cr5_meta.json"   "LoRa Test #12"
         "sf7_bw250_cr5"   "sf7_bw250_cr5.cf32"   "sf7_bw250_cr5_meta.json"   "LoRa Test #2"
         "sf7_bw125_cr6"   "sf7_bw125_cr6.cf32"    "sf7_bw125_cr6_meta.json"   "LoRa Test #5"

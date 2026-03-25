@@ -1160,37 +1160,85 @@ int main(int argc, char** argv)
                         }
 
                         if (metadata->implicit_header) {
-                            // Implicit header: no header structure in the packet.
-                            // Use standard quarter offset (first tried), decode
-                            // first 8 symbols at CR=4 as payload data, and use
-                            // metadata values for payload_len / CR / CRC.
-                            const std::size_t hdr_syms = std::min<std::size_t>(8, redemod.size());
-                            std::vector<uint16_t> first_block(redemod.begin(),
-                                                              redemod.begin() + hdr_syms);
-                            host_sim::DeinterleaverConfig hdr_cfg{metadata->sf, 4, true, metadata->ldro};
-                            std::size_t consumed_block = 0;
-                            auto codewords = host_sim::deinterleave(first_block, hdr_cfg, consumed_block);
-                            auto nibs = host_sim::hamming_decode_block(codewords, true, 4);
+                            // Helper lambda: build implicit header from symbols.
+                            auto build_implicit_header = [&](const std::vector<uint16_t>& syms)
+                                -> HeaderDecodeResult {
+                                HeaderDecodeResult h;
+                                const std::size_t hdr_syms = std::min<std::size_t>(8, syms.size());
+                                std::vector<uint16_t> first_block(syms.begin(),
+                                                                  syms.begin() + hdr_syms);
+                                host_sim::DeinterleaverConfig hdr_cfg{metadata->sf, 4, true, metadata->ldro};
+                                std::size_t consumed_block = 0;
+                                auto codewords = host_sim::deinterleave(first_block, hdr_cfg, consumed_block);
+                                auto nibs = host_sim::hamming_decode_block(codewords, true, 4);
+                                h.success = true;
+                                h.payload_len = metadata->payload_len;
+                                h.cr = metadata->cr;
+                                h.has_crc = metadata->has_crc;
+                                h.checksum_field = -1;
+                                h.checksum_computed = -1;
+                                h.consumed_symbols = consumed_block > 0 ? consumed_block : 8;
+                                h.codewords.assign(codewords.begin(), codewords.end());
+                                h.nibbles.assign(5, 0);
+                                h.nibbles.insert(h.nibbles.end(), nibs.begin(), nibs.end());
+                                return h;
+                            };
 
-                            std::cout << "SFD re-demod: implicit header, quarter offset "
-                                      << qoff << " (sync at symbol " << (*sync_pos - 4) << ")\n";
-                            header.success = true;
-                            header.payload_len = metadata->payload_len;
-                            header.cr = metadata->cr;
-                            header.has_crc = metadata->has_crc;
-                            header.checksum_field = -1;
-                            header.checksum_computed = -1;
-                            header.consumed_symbols = consumed_block > 0 ? consumed_block : 8;
-                            header.codewords.assign(codewords.begin(), codewords.end());
-                            // Pad with 5 dummy header nibbles so the payload
-                            // extraction (positions 5+) picks up the real data.
-                            header.nibbles.assign(5, 0);
-                            header.nibbles.insert(header.nibbles.end(), nibs.begin(), nibs.end());
+                            auto imp_hdr = build_implicit_header(redemod);
 
-                            symbol_cursor = header.consumed_symbols;
-                            chosen_offset = 0;
-                            symbols = std::move(redemod);
-                            break;
+                            // CRC-guided timing sweep for implicit header.
+                            if (metadata->has_crc &&
+                                !probe_payload_crc(redemod, imp_hdr, *metadata)) {
+                                const int max_adj = std::max(os, 4) + 2;
+                                for (int adj = -1; std::abs(adj) <= max_adj;
+                                     adj = adj > 0 ? -adj - 1 : -adj) {
+                                    const auto adj_data = static_cast<std::size_t>(
+                                        static_cast<std::ptrdiff_t>(data_sample) + adj);
+                                    if (adj_data + 8ULL * sps > samples.size())
+                                        continue;
+                                    demod.set_frequency_offsets(saved_cfo_frac,
+                                                               saved_cfo_int,
+                                                               saved_sfo);
+                                    demod.reset_symbol_counter();
+                                    std::vector<uint16_t> adj_syms;
+                                    const std::size_t adj_max =
+                                        (samples.size() - adj_data) / sps;
+                                    for (std::size_t i = 0;
+                                         i < std::min<std::size_t>(adj_max, 200);
+                                         ++i) {
+                                        adj_syms.push_back(demod.demodulate(
+                                            &samples[adj_data + i * sps]));
+                                    }
+                                    auto adj_hdr = build_implicit_header(adj_syms);
+                                    if (probe_payload_crc(adj_syms, adj_hdr,
+                                                          *metadata)) {
+                                        redemod = std::move(adj_syms);
+                                        imp_hdr = std::move(adj_hdr);
+                                        std::cout << "SFD re-demod: implicit data start "
+                                                     "refined by "
+                                                  << adj
+                                                  << " samples (CRC verified)\n";
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // Only accept this qoff if CRC validated
+                            // (or if there's no CRC to check).
+                            bool crc_ok = !metadata->has_crc ||
+                                probe_payload_crc(redemod, imp_hdr, *metadata);
+
+                            if (crc_ok) {
+                                std::cout << "SFD re-demod: implicit header, quarter offset "
+                                          << qoff << " (sync at symbol " << (*sync_pos - 4) << ")\n";
+                                header = std::move(imp_hdr);
+                                symbol_cursor = header.consumed_symbols;
+                                chosen_offset = 0;
+                                symbols = std::move(redemod);
+                                break;
+                            }
+                            // CRC failed even after timing sweep — try next qoff.
+                            continue;
                         }
 
                         auto hdr = try_decode_header(redemod, 0, *metadata);
