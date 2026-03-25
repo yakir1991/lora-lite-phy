@@ -48,8 +48,8 @@ RFM95 radio = new Module(PIN_NSS, PIN_DIO0, PIN_RST, PIN_DIO1);
 // LoRa parameters - MUST MATCH YOUR DECODER
 #define LORA_FREQUENCY    868.1    // MHz
 #define LORA_BANDWIDTH    125.0    // kHz
-#define LORA_SF           7        // Spreading Factor (7-12)
-#define LORA_CR           5        // Coding Rate (5=4/5, 6=4/6, 7=4/7, 8=4/8)
+#define LORA_SF           7
+#define LORA_CR           5        // Coding Rate
 #define LORA_SYNC_WORD    0x12     // LoRa sync word (0x12 = private, 0x34 = LoRaWAN)
 #define LORA_POWER        10       // TX power in dBm (2-20)
 #define LORA_PREAMBLE     8        // Preamble length
