@@ -14,18 +14,24 @@ extern "C" {
 namespace host_sim
 {
 
-std::size_t detect_burst_start(const std::vector<std::complex<float>>& samples,
+std::optional<std::size_t> detect_burst_start(const std::vector<std::complex<float>>& samples,
                                int samples_per_symbol,
-                               float threshold_factor)
+                               float threshold_factor,
+                               std::size_t search_from)
 {
     if (samples.empty() || samples_per_symbol <= 0) {
-        return 0;
+        return std::nullopt;
     }
 
     const std::size_t window = static_cast<std::size_t>(samples_per_symbol);
     const std::size_t n_windows = samples.size() / window;
     if (n_windows < 3) {
-        return 0;  // Too short to distinguish noise from signal.
+        return std::nullopt;  // Too short to distinguish noise from signal.
+    }
+
+    const std::size_t start_window = search_from / window;
+    if (start_window >= n_windows) {
+        return std::nullopt;
     }
 
     // Compute per-window mean power.
@@ -51,16 +57,17 @@ std::size_t detect_burst_start(const std::vector<std::complex<float>>& samples,
     const float noise_floor = static_cast<float>(noise_acc / static_cast<double>(q1_end));
     const float threshold = noise_floor * threshold_factor;
 
-    // Find first window that exceeds threshold.
-    for (std::size_t w = 0; w < n_windows; ++w) {
+    // Find first window at or after start_window that exceeds threshold.
+    for (std::size_t w = start_window; w < n_windows; ++w) {
         if (powers[w] > threshold) {
             // Back up slightly so alignment search can scan the start.
-            const std::size_t margin = (w >= 2) ? 2 : w;
+            const std::size_t margin = (w >= 2 && w - 2 >= start_window) ? 2
+                                     : (w > start_window ? w - start_window : 0);
             return (w - margin) * window;
         }
     }
 
-    return 0;  // No burst detected — start from beginning.
+    return std::nullopt;  // No burst detected.
 }
 
 AlignmentResult find_symbol_alignment_scored(

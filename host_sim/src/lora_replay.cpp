@@ -134,6 +134,7 @@ struct Options
     std::optional<std::filesystem::path> dump_stages;
     std::optional<std::filesystem::path> dump_payload;
     std::optional<std::filesystem::path> summary_output;
+    bool multi_packet{false};
 };
 
 struct HeaderDecodeResult
@@ -198,6 +199,7 @@ void print_usage(const char* binary)
               << " [--dump-stages <path/prefix>]"
               << " [--dump-payload <file.bin>]"
               << " [--summary <file.json>]"
+              << " [--multi]"
               << "\n";
 }
 
@@ -226,6 +228,8 @@ Options parse_arguments(int argc, char** argv)
             opts.dump_payload = std::filesystem::path{argv[++i]};
         } else if (arg == "--summary" && i + 1 < argc) {
             opts.summary_output = std::filesystem::path{argv[++i]};
+        } else if (arg == "--multi") {
+            opts.multi_packet = true;
         } else if (arg == "--help" || arg == "-h") {
             print_usage(argv[0]);
             std::exit(EXIT_SUCCESS);
@@ -908,9 +912,21 @@ int main(int argc, char** argv)
             // --- Stage 0: burst detection ---
             // If the capture contains noise before the signal, skip to
             // the burst start so that alignment search sees the preamble.
-            const std::size_t burst_offset = host_sim::detect_burst_start(
-                samples, sps);
+            std::size_t multi_search_offset = 0;
+            int multi_packet_index = 0;
+            bool multi_any_failed = false;
+
+          for (;;) { // multi-packet loop (runs once unless --multi)
+            const auto burst_result = host_sim::detect_burst_start(
+                samples, sps, 6.0f, multi_search_offset);
+            const std::size_t burst_offset = burst_result.value_or(0);
+            if (!burst_result && multi_search_offset > 0) {
+                break; // no more bursts in --multi mode
+            }
             if (burst_offset > 0) {
+                if (options.multi_packet) {
+                    std::cout << "\n=== Packet #" << multi_packet_index << " ===\n";
+                }
                 std::cout << "Burst detected at sample " << burst_offset
                           << " (" << static_cast<double>(burst_offset) /
                                      metadata->sample_rate * 1000.0
@@ -1592,8 +1608,33 @@ int main(int argc, char** argv)
                     summary.stage_timings_ns = std::move(instrumentation.stage_timings_ns);
                     summary.memory_usage_bytes = std::move(instrumentation.symbol_memory_bytes);
                 }
+            } // end if (header.success)
+
+            // --- multi-packet loop advance ---
+            if (options.multi_packet) {
+                // Estimate burst end: alignment + all decoded symbols
+                const std::size_t symbols_consumed = symbols.size();
+                const std::size_t burst_end_sample = alignment_samples +
+                    symbols_consumed * static_cast<std::size_t>(sps);
+                // Advance past this burst with a small gap margin
+                const std::size_t next_offset = burst_end_sample + static_cast<std::size_t>(sps) * 4;
+                // If we didn't advance (e.g., no symbols decoded), skip one symbol period
+                if (next_offset <= multi_search_offset) {
+                    multi_search_offset += static_cast<std::size_t>(sps) * 8;
+                } else {
+                    multi_search_offset = next_offset;
+                }
+                if (!header.success) {
+                    std::cout << "[multi] packet #" << multi_packet_index
+                              << ": header decode failed, skipping burst\n";
+                }
+                ++multi_packet_index;
+                symbols.clear();
+                continue; // next burst
+            }
+            break; // single-packet mode: done
+          } // end multi-packet loop
             summary.stage_mismatches = total_stage_mismatches;
-        }
         }
 
         if (options.dump_symbols && !symbols.empty()) {

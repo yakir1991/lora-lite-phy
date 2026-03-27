@@ -13,10 +13,12 @@ class FftDemodulator;
 /// Detect the sample offset where a LoRa burst begins using a sliding
 /// power envelope.  Returns the sample index where signal power first
 /// rises above `threshold_factor` times the estimated noise floor.
-/// If no burst is found, returns 0 (start of buffer).
-std::size_t detect_burst_start(const std::vector<std::complex<float>>& samples,
+/// If no burst is found, returns std::nullopt.
+/// If search_from > 0, scanning starts at that sample offset.
+std::optional<std::size_t> detect_burst_start(const std::vector<std::complex<float>>& samples,
                                int samples_per_symbol,
-                               float threshold_factor = 6.0f);
+                               float threshold_factor = 6.0f,
+                               std::size_t search_from = 0);
 
 std::size_t find_symbol_alignment(const std::vector<std::complex<float>>& samples,
                                   const FftDemodulator& demod,

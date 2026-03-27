@@ -223,4 +223,23 @@ if (BUILD_TESTING)
             PASS_REGULAR_EXPRESSION "Payload ASCII: ${_payload}.*CRC.*OK"
         )
     endforeach()
+
+    # ----- Multi-packet streaming test -----
+    # Concatenate two copies of the SF7/BW125/CR5 capture with a noise gap
+    # and verify --multi decodes both packets.
+    set(_multi_iq "${CMAKE_CURRENT_BINARY_DIR}/multi_sf7_test.cf32")
+    set(_src_iq "${OTA_DATA_DIR}/sf7_bw125_cr5.cf32")
+    add_test(
+        NAME ota_multi_packet_sf7
+        COMMAND ${CMAKE_COMMAND}
+            -DLORA_REPLAY=$<TARGET_FILE:lora_replay>
+            -DSRC_IQ=${_src_iq}
+            -DMULTI_IQ=${_multi_iq}
+            -DMETA=${OTA_DATA_DIR}/sf7_bw125_cr5_meta.json
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/multi_packet_test.cmake
+    )
+    set_tests_properties(ota_multi_packet_sf7 PROPERTIES
+        LABELS "ota"
+        PASS_REGULAR_EXPRESSION "MULTI_PACKET_OK"
+    )
 endif ()
