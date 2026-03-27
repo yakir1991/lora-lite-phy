@@ -15,6 +15,8 @@ add_library(host_sim_core STATIC
     src/scheduler.cpp
     src/lora_params.cpp
     src/whitening.cpp
+    src/lora_replay_header_encoder.cpp
+    src/lora_replay_stage_processing.cpp
     third_party/kissfft/kiss_fft.c
 )
 
@@ -31,6 +33,15 @@ add_executable(lora_replay
 )
 
 target_link_libraries(lora_replay
+    PRIVATE
+        host_sim_core
+)
+
+add_executable(lora_tx
+    src/lora_tx.cpp
+)
+
+target_link_libraries(lora_tx
     PRIVATE
         host_sim_core
 )
@@ -243,3 +254,48 @@ if (BUILD_TESTING)
         PASS_REGULAR_EXPRESSION "MULTI_PACKET_OK"
     )
 endif ()
+
+# ===== TX round-trip tests (encode → decode) =====
+set(TX_ROUNDTRIP_TESTS
+    # suffix      SF  CR  BW      payload
+    "sf7_cr1"      7   1  125000  "Hello LoRa"
+    "sf8_cr2"      8   2  125000  "SF8 test"
+    "sf9_cr3"      9   3  125000  "SF9"
+    "sf10_cr4"    10   4  125000  "SF10 long payload test!"
+    "sf12_cr1"    12   1  125000  "SF12"
+    "sf7_bw250"    7   1  250000  "BW250"
+    "sf7_bw500"    7   1  500000  "BW500k test"
+)
+list(LENGTH TX_ROUNDTRIP_TESTS _tx_total)
+math(EXPR _tx_count "${_tx_total} / 5")
+foreach(_i RANGE 0 ${_tx_count})
+    if(_i EQUAL ${_tx_count})
+        break()
+    endif()
+    math(EXPR _off  "${_i} * 5")
+    math(EXPR _off1 "${_off} + 1")
+    math(EXPR _off2 "${_off} + 2")
+    math(EXPR _off3 "${_off} + 3")
+    math(EXPR _off4 "${_off} + 4")
+    list(GET TX_ROUNDTRIP_TESTS ${_off}  _suffix)
+    list(GET TX_ROUNDTRIP_TESTS ${_off1} _sf)
+    list(GET TX_ROUNDTRIP_TESTS ${_off2} _cr)
+    list(GET TX_ROUNDTRIP_TESTS ${_off3} _bw)
+    list(GET TX_ROUNDTRIP_TESTS ${_off4} _payload)
+    set(_test_name "tx_roundtrip_${_suffix}")
+    add_test(
+        NAME ${_test_name}
+        COMMAND ${CMAKE_COMMAND}
+            -DLORA_TX=$<TARGET_FILE:lora_tx>
+            -DLORA_REPLAY=$<TARGET_FILE:lora_replay>
+            -DSF=${_sf}
+            -DCR=${_cr}
+            -DBW=${_bw}
+            -DPAYLOAD=${_payload}
+            -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tx_roundtrip_${_suffix}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tx_roundtrip_test.cmake
+    )
+    set_tests_properties(${_test_name} PROPERTIES
+        LABELS "tx"
+    )
+endforeach()
