@@ -411,6 +411,13 @@ set(TX_IMPAIRMENT_TESTS
     # Higher SF with impairments
     "sf12_cfo20k"    12  1  125000  "Hello"  3  "1.0"  ""  20000   ""  125000
     "sf9_cfo10k_snr-8" 9  1  125000  "Hello"  10  "0.5"  -8  10000  ""  125000
+    # BW=250kHz and BW=500kHz
+    "bw250k_cfo40k"   7  1  250000  "Hello"  5  "1.0"  ""  40000   ""  250000
+    "bw500k_cfo40k"   7  1  500000  "Hello"  5  "1.0"  ""  40000   ""  500000
+    # Higher code rate
+    "cr4_cfo10k"      7  4  125000  "Hello"  5  "1.0"  ""  10000   ""  125000
+    # Longer payload (100 bytes)
+    "long100_cfo10k"  7  1  125000  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"  5  "1.0"  ""  10000   ""  125000
 )
 list(LENGTH TX_IMPAIRMENT_TESTS _imp_total)
 math(EXPR _imp_count "${_imp_total} / 11")
