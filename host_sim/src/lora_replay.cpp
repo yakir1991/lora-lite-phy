@@ -5,6 +5,7 @@
 #include "host_sim/fft_demod_ref.hpp"
 #include "host_sim/hamming.hpp"
 #include "host_sim/lora_params.hpp"
+#include "host_sim/soft_decode.hpp"
 #include "host_sim/scheduler.hpp"
 #include "host_sim/stages/demod_stage.hpp"
 #include "host_sim/whitening.hpp"
@@ -135,6 +136,7 @@ struct Options
     std::optional<std::filesystem::path> dump_payload;
     std::optional<std::filesystem::path> summary_output;
     bool multi_packet{false};
+    bool soft{false};
 };
 
 struct HeaderDecodeResult
@@ -230,6 +232,8 @@ Options parse_arguments(int argc, char** argv)
             opts.summary_output = std::filesystem::path{argv[++i]};
         } else if (arg == "--multi") {
             opts.multi_packet = true;
+        } else if (arg == "--soft") {
+            opts.soft = true;
         } else if (arg == "--help" || arg == "-h") {
             print_usage(argv[0]);
             std::exit(EXIT_SUCCESS);
@@ -867,6 +871,7 @@ int main(int argc, char** argv)
         summary.stats = stats;
 
         std::vector<uint16_t> symbols;
+        std::vector<host_sim::SymbolLLR> symbol_llrs;
         std::size_t alignment_samples = 0;
 
         std::cout << "Loaded capture: " << options.iq_file << "\n"
@@ -1049,6 +1054,13 @@ int main(int argc, char** argv)
             for (int idx = 0; idx < symbol_count; ++idx) {
                 uint16_t value = demod.demodulate(&samples[alignment_samples + static_cast<std::size_t>(idx) * sps]);
                 symbols.push_back(value);
+                if (options.soft) {
+                    auto mags = demod.get_fft_magnitudes_sq();
+                    symbol_llrs.push_back(host_sim::compute_symbol_llrs(
+                        mags.data(), metadata->sf,
+                        (idx < 8) || metadata->ldro,
+                        demod.current_cfo_int()));
+                }
                 uint16_t ref_value = demod_ref.demodulate(&samples[alignment_samples + static_cast<std::size_t>(idx) * sps]);
                 if (value != ref_value) {
                     ++reference_mismatches;
@@ -1138,7 +1150,11 @@ int main(int argc, char** argv)
             // symbols start at sync + 2 (sync) + 2.25 (SFD) = sync + 4.25
             // symbols.  At high oversampling this 0.25 offset shifts the bin
             // by N/4, making header decode impossible on the preamble grid.
-            if (!header.success && skip_grid_scan) {
+            // At os=1, the 0.25 offset is still non-zero (sps/4 samples),
+            // so this fallback is needed at ALL oversampling factors.
+            // Exception: stage-comparison mode (--compare-root) needs the
+            // preamble-grid decode to stay bit-exact with the reference.
+            if (!header.success && !options.compare_root) {
                 auto sync_pos = host_sim::find_header_symbol_index(
                     symbols, 0x12, metadata->sf);
                 if (!sync_pos) {
@@ -1169,10 +1185,18 @@ int main(int argc, char** argv)
                                                    saved_sfo);
                         demod.reset_symbol_counter();
                         std::vector<uint16_t> redemod;
+                        std::vector<host_sim::SymbolLLR> redemod_llrs;
                         const std::size_t max_sym = (samples.size() - data_sample) / sps;
                         for (std::size_t i = 0; i < std::min<std::size_t>(max_sym, 200); ++i) {
                             redemod.push_back(demod.demodulate(
                                 &samples[data_sample + i * sps]));
+                            if (options.soft) {
+                                auto mags = demod.get_fft_magnitudes_sq();
+                                redemod_llrs.push_back(host_sim::compute_symbol_llrs(
+                                    mags.data(), metadata->sf,
+                                    (static_cast<int>(i) < 8) || metadata->ldro,
+                                    saved_cfo_int));
+                            }
                         }
 
                         if (metadata->implicit_header) {
@@ -1217,6 +1241,7 @@ int main(int argc, char** argv)
                                                                saved_sfo);
                                     demod.reset_symbol_counter();
                                     std::vector<uint16_t> adj_syms;
+                                    std::vector<host_sim::SymbolLLR> adj_llrs;
                                     const std::size_t adj_max =
                                         (samples.size() - adj_data) / sps;
                                     for (std::size_t i = 0;
@@ -1224,11 +1249,19 @@ int main(int argc, char** argv)
                                          ++i) {
                                         adj_syms.push_back(demod.demodulate(
                                             &samples[adj_data + i * sps]));
+                                        if (options.soft) {
+                                            auto mags = demod.get_fft_magnitudes_sq();
+                                            adj_llrs.push_back(host_sim::compute_symbol_llrs(
+                                                mags.data(), metadata->sf,
+                                                (static_cast<int>(i) < 8) || metadata->ldro,
+                                                saved_cfo_int));
+                                        }
                                     }
                                     auto adj_hdr = build_implicit_header(adj_syms);
                                     if (probe_payload_crc(adj_syms, adj_hdr,
                                                           *metadata)) {
                                         redemod = std::move(adj_syms);
+                                        redemod_llrs = std::move(adj_llrs);
                                         imp_hdr = std::move(adj_hdr);
                                         std::cout << "SFD re-demod: implicit data start "
                                                      "refined by "
@@ -1251,6 +1284,7 @@ int main(int argc, char** argv)
                                 symbol_cursor = header.consumed_symbols;
                                 chosen_offset = 0;
                                 symbols = std::move(redemod);
+                                symbol_llrs = std::move(redemod_llrs);
                                 break;
                             }
                             // CRC failed even after timing sweep — try next qoff.
@@ -1286,6 +1320,7 @@ int main(int argc, char** argv)
                                                            saved_sfo);
                                 demod.reset_symbol_counter();
                                 std::vector<uint16_t> adj_syms;
+                                std::vector<host_sim::SymbolLLR> adj_llrs;
                                 const std::size_t adj_max =
                                     (samples.size() - adj_data) / sps;
                                 for (std::size_t i = 0;
@@ -1293,6 +1328,13 @@ int main(int argc, char** argv)
                                      ++i) {
                                     adj_syms.push_back(demod.demodulate(
                                         &samples[adj_data + i * sps]));
+                                    if (options.soft) {
+                                        auto mags = demod.get_fft_magnitudes_sq();
+                                        adj_llrs.push_back(host_sim::compute_symbol_llrs(
+                                            mags.data(), metadata->sf,
+                                            (static_cast<int>(i) < 8) || metadata->ldro,
+                                            saved_cfo_int));
+                                    }
                                 }
                                 auto adj_hdr =
                                     try_decode_header(adj_syms, 0, *metadata);
@@ -1300,6 +1342,7 @@ int main(int argc, char** argv)
                                 if (probe_payload_crc(adj_syms, adj_hdr,
                                                       *metadata)) {
                                     redemod = std::move(adj_syms);
+                                    redemod_llrs = std::move(adj_llrs);
                                     hdr = std::move(adj_hdr);
                                     timing_refined = true;
                                     std::cout << "SFD re-demod: data start "
@@ -1318,6 +1361,7 @@ int main(int argc, char** argv)
                         symbol_cursor = header.consumed_symbols;
                         chosen_offset = 0;
                         symbols = std::move(redemod);
+                        symbol_llrs = std::move(redemod_llrs);
                         break;
                     }
                 }
@@ -1393,7 +1437,23 @@ int main(int argc, char** argv)
                     std::vector<uint16_t> block(symbols.begin() + symbol_cursor,
                                                 symbols.begin() + symbol_cursor + payload_cw_len);
                     std::size_t consumed_block = 0;
-                    auto codewords = host_sim::deinterleave(block, payload_cfg, consumed_block);
+
+                    std::vector<uint8_t> nibs;
+                    std::vector<uint8_t> codewords;
+                    if (options.soft && symbol_cursor + payload_cw_len <= symbol_llrs.size()) {
+                        std::vector<host_sim::SymbolLLR> block_llrs(
+                            symbol_llrs.begin() + symbol_cursor,
+                            symbol_llrs.begin() + symbol_cursor + payload_cw_len);
+                        nibs = host_sim::soft_decode_block(
+                            block_llrs, metadata->sf, active_cr,
+                            false, metadata->ldro, consumed_block);
+                        // Hard deinterleave for stage outputs
+                        codewords = host_sim::deinterleave(block, payload_cfg, consumed_block);
+                    } else {
+                        codewords = host_sim::deinterleave(block, payload_cfg, consumed_block);
+                        nibs = host_sim::hamming_decode_block(codewords, false, active_cr);
+                    }
+
                     if (consumed_block == 0) {
                         break;
                     }
@@ -1401,7 +1461,6 @@ int main(int argc, char** argv)
                     if (!suppress_payload_stage) {
                         append_fft_gray(block, false, metadata->ldro, metadata->sf, stage_outputs);
                     }
-                    auto nibs = host_sim::hamming_decode_block(codewords, false, active_cr);
                     payload_nibbles.insert(payload_nibbles.end(), nibs.begin(), nibs.end());
                     if (!suppress_payload_stage) {
                         for (auto cw : codewords) {

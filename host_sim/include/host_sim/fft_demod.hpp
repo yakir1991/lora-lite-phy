@@ -24,6 +24,9 @@ public:
 
     uint16_t demodulate(const std::complex<float>* symbol_samples) const;
 
+    // Return |fft_out_[n]|² for all N bins after the most recent demodulate() call.
+    std::vector<float> get_fft_magnitudes_sq() const;
+
     int samples_per_symbol() const { return samples_per_symbol_; }
 
     int oversample_factor() const { return oversample_factor_; }

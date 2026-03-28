@@ -200,6 +200,15 @@ uint16_t FftDemodulator::demodulate(const std::complex<float>* symbol_samples) c
     return static_cast<uint16_t>(corrected_bin);
 }
 
+std::vector<float> FftDemodulator::get_fft_magnitudes_sq() const
+{
+    std::vector<float> mags(n_bins_);
+    for (int i = 0; i < n_bins_; ++i) {
+        mags[i] = fft_out_[i].r * fft_out_[i].r + fft_out_[i].i * fft_out_[i].i;
+    }
+    return mags;
+}
+
 FftDemodulator::FrequencyEstimate FftDemodulator::estimate_frequency_offsets(
     const std::complex<float>* samples,
     int symbol_count) const

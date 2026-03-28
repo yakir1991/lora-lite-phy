@@ -16,6 +16,7 @@
 #include <iostream>
 #include <numbers>
 #include <optional>
+#include <random>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -279,6 +280,10 @@ struct TxOptions
     bool has_crc{true};
     bool ldro_auto{true};
     bool ldro{false};
+    float snr_db{NAN};    // NaN = no noise
+    float cfo_hz{0.0f};   // carrier frequency offset
+    float sfo_ppm{0.0f};  // sampling frequency offset
+    unsigned seed{0};     // RNG seed (0 = random)
     std::string payload;
     std::filesystem::path output;
 };
@@ -296,6 +301,10 @@ void print_usage(const char* prog)
         << "  --no-crc             Disable CRC\n"
         << "  --ldro               Force LDRO on\n"
         << "  --no-ldro            Force LDRO off\n"
+        << "  --snr <dB>           Add AWGN at given SNR (default: off)\n"
+        << "  --cfo <Hz>           Carrier frequency offset (default: 0)\n"
+        << "  --sfo <ppm>          Sampling frequency offset (default: 0)\n"
+        << "  --seed <n>           RNG seed for AWGN (default: random)\n"
         << "  --payload <text>     Payload string\n"
         << "  --payload-hex <hex>  Payload as hex bytes\n"
         << "  --output <file>      Output IQ file (.cf32)\n";
@@ -331,6 +340,10 @@ std::optional<TxOptions> parse_args(int argc, char* argv[])
                     std::stoi(hex.substr(j, 2), nullptr, 16)));
             }
         }
+        else if (arg == "--snr") { opts.snr_db = std::stof(next()); }
+        else if (arg == "--cfo") { opts.cfo_hz = std::stof(next()); }
+        else if (arg == "--sfo") { opts.sfo_ppm = std::stof(next()); }
+        else if (arg == "--seed") { opts.seed = static_cast<unsigned>(std::stoul(next())); }
         else if (arg == "--output") { opts.output = next(); }
         else if (arg == "--help" || arg == "-h") { return std::nullopt; }
         else {
@@ -405,6 +418,80 @@ int main(int argc, char* argv[])
                               opts.preamble_len, data_symbols);
 
     std::cout << "  IQ samples: " << iq.size() << "\n";
+
+    // --- Apply channel impairments ---
+
+    // CFO: apply progressive phase rotation  e^(j*2π*cfo*n/Fs)
+    if (opts.cfo_hz != 0.0f) {
+        const float phase_per_sample =
+            2.0f * static_cast<float>(M_PI) * opts.cfo_hz /
+            static_cast<float>(opts.sample_rate);
+        for (std::size_t n = 0; n < iq.size(); ++n) {
+            const float phi = phase_per_sample * static_cast<float>(n);
+            iq[n] *= std::complex<float>(std::cos(phi), std::sin(phi));
+        }
+        std::cout << "  CFO applied: " << opts.cfo_hz << " Hz\n";
+    }
+
+    // SFO: resample via linear interpolation at slightly different rate
+    if (opts.sfo_ppm != 0.0f) {
+        const double rate_ratio = 1.0 + static_cast<double>(opts.sfo_ppm) * 1e-6;
+        const auto new_len = static_cast<std::size_t>(
+            static_cast<double>(iq.size()) / rate_ratio);
+        std::vector<std::complex<float>> resampled(new_len);
+        for (std::size_t i = 0; i < new_len; ++i) {
+            const double src_idx = static_cast<double>(i) * rate_ratio;
+            const auto idx0 = static_cast<std::size_t>(src_idx);
+            const float frac = static_cast<float>(src_idx - static_cast<double>(idx0));
+            if (idx0 + 1 < iq.size()) {
+                resampled[i] = iq[idx0] * (1.0f - frac) + iq[idx0 + 1] * frac;
+            } else if (idx0 < iq.size()) {
+                resampled[i] = iq[idx0];
+            }
+        }
+        iq = std::move(resampled);
+        std::cout << "  SFO applied: " << opts.sfo_ppm << " ppm ("
+                  << iq.size() << " samples after resample)\n";
+    }
+
+    // AWGN: add complex Gaussian noise at specified SNR
+    if (!std::isnan(opts.snr_db)) {
+        // Measure signal power over the non-silence portion
+        // (find first and last non-zero sample)
+        double signal_power = 0.0;
+        std::size_t sig_count = 0;
+        for (const auto& s : iq) {
+            const float pwr = s.real() * s.real() + s.imag() * s.imag();
+            if (pwr > 1e-10f) {
+                signal_power += static_cast<double>(pwr);
+                ++sig_count;
+            }
+        }
+        if (sig_count > 0) {
+            signal_power /= static_cast<double>(sig_count);
+        } else {
+            signal_power = 1.0;
+        }
+
+        const double noise_power =
+            signal_power / std::pow(10.0, static_cast<double>(opts.snr_db) / 10.0);
+        const auto noise_std = static_cast<float>(std::sqrt(noise_power / 2.0));
+
+        std::mt19937 rng(opts.seed != 0 ? opts.seed : std::random_device{}());
+        std::normal_distribution<float> dist(0.0f, noise_std);
+        // Only add noise to the signal portion (non-zero samples) so
+        // the receiver's energy-based burst detector can still find the
+        // packet.  The leading/trailing silence stays clean.
+        for (auto& s : iq) {
+            const float pwr = s.real() * s.real() + s.imag() * s.imag();
+            if (pwr > 1e-10f) {
+                s += std::complex<float>(dist(rng), dist(rng));
+            }
+        }
+        std::cout << "  AWGN applied: SNR=" << opts.snr_db
+                  << " dB (signal_pwr=" << signal_power
+                  << " noise_std=" << noise_std << ")\n";
+    }
 
     // Write output
     std::ofstream out(opts.output, std::ios::binary);

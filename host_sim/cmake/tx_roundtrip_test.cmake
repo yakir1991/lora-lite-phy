@@ -1,11 +1,14 @@
 # tx_roundtrip_test.cmake
 # Encode a payload with lora_tx and decode with lora_replay, verifying CRC OK.
 # Expects: LORA_TX, LORA_REPLAY, SF, CR, BW, PAYLOAD, WORK_DIR
+# Optional: SAMPLE_RATE (defaults to BW*4)
 
 file(MAKE_DIRECTORY "${WORK_DIR}")
 
-set(SAMPLE_RATE_MULT 4)
-math(EXPR SAMPLE_RATE "${BW} * ${SAMPLE_RATE_MULT}")
+if(NOT DEFINED SAMPLE_RATE OR "${SAMPLE_RATE}" STREQUAL "")
+    set(SAMPLE_RATE_MULT 4)
+    math(EXPR SAMPLE_RATE "${BW} * ${SAMPLE_RATE_MULT}")
+endif()
 set(TX_IQ "${WORK_DIR}/tx.cf32")
 set(META  "${WORK_DIR}/meta.json")
 

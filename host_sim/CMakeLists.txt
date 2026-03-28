@@ -14,6 +14,7 @@ add_library(host_sim_core STATIC
     src/hamming.cpp
     src/scheduler.cpp
     src/lora_params.cpp
+    src/soft_decode.cpp
     src/whitening.cpp
     src/lora_replay_header_encoder.cpp
     src/lora_replay_stage_processing.cpp
@@ -297,5 +298,95 @@ foreach(_i RANGE 0 ${_tx_count})
     )
     set_tests_properties(${_test_name} PROPERTIES
         LABELS "tx"
+    )
+endforeach()
+
+# ----- TX round-trip tests at os=1 (Fs = BW) -----
+set(TX_ROUNDTRIP_OS1_TESTS
+    # suffix          SF  CR  BW      payload
+    "sf7_cr1_os1"      7   1  125000  "os1 test!"
+    "sf9_cr3_os1"      9   3  125000  "SF9 os1"
+    "sf12_cr1_os1"    12   1  125000  "sf12"
+)
+list(LENGTH TX_ROUNDTRIP_OS1_TESTS _tx_os1_total)
+math(EXPR _tx_os1_count "${_tx_os1_total} / 5")
+foreach(_i RANGE 0 ${_tx_os1_count})
+    if(_i EQUAL ${_tx_os1_count})
+        break()
+    endif()
+    math(EXPR _off  "${_i} * 5")
+    math(EXPR _off1 "${_off} + 1")
+    math(EXPR _off2 "${_off} + 2")
+    math(EXPR _off3 "${_off} + 3")
+    math(EXPR _off4 "${_off} + 4")
+    list(GET TX_ROUNDTRIP_OS1_TESTS ${_off}  _suffix)
+    list(GET TX_ROUNDTRIP_OS1_TESTS ${_off1} _sf)
+    list(GET TX_ROUNDTRIP_OS1_TESTS ${_off2} _cr)
+    list(GET TX_ROUNDTRIP_OS1_TESTS ${_off3} _bw)
+    list(GET TX_ROUNDTRIP_OS1_TESTS ${_off4} _payload)
+    set(_test_name "tx_roundtrip_${_suffix}")
+    add_test(
+        NAME ${_test_name}
+        COMMAND ${CMAKE_COMMAND}
+            -DLORA_TX=$<TARGET_FILE:lora_tx>
+            -DLORA_REPLAY=$<TARGET_FILE:lora_replay>
+            -DSF=${_sf}
+            -DCR=${_cr}
+            -DBW=${_bw}
+            -DSAMPLE_RATE=${_bw}
+            -DPAYLOAD=${_payload}
+            -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tx_roundtrip_${_suffix}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tx_roundtrip_test.cmake
+    )
+    set_tests_properties(${_test_name} PROPERTIES
+        LABELS "tx"
+    )
+endforeach()
+
+# ----- Soft-decode AWGN tests -----
+# These run lora_tx with AWGN, then lora_replay --soft, requiring >= 50% CRC OK.
+# SNR chosen near the knee of the PER curve where soft > hard.
+set(TX_SOFT_DECODE_TESTS
+    # suffix               SF  CR  BW      payload           SNR  SEEDS
+    "soft_sf7_cr1_snr-9"    7   1  125000  "Hello soft"      -9   20
+    "soft_sf7_cr4_snr-10"   7   4  125000  "Hello soft"      -10  20
+)
+list(LENGTH TX_SOFT_DECODE_TESTS _soft_total)
+math(EXPR _soft_count "${_soft_total} / 7")
+foreach(_i RANGE 0 ${_soft_count})
+    if(_i EQUAL ${_soft_count})
+        break()
+    endif()
+    math(EXPR _off  "${_i} * 7")
+    math(EXPR _off1 "${_off} + 1")
+    math(EXPR _off2 "${_off} + 2")
+    math(EXPR _off3 "${_off} + 3")
+    math(EXPR _off4 "${_off} + 4")
+    math(EXPR _off5 "${_off} + 5")
+    math(EXPR _off6 "${_off} + 6")
+    list(GET TX_SOFT_DECODE_TESTS ${_off}  _suffix)
+    list(GET TX_SOFT_DECODE_TESTS ${_off1} _sf)
+    list(GET TX_SOFT_DECODE_TESTS ${_off2} _cr)
+    list(GET TX_SOFT_DECODE_TESTS ${_off3} _bw)
+    list(GET TX_SOFT_DECODE_TESTS ${_off4} _payload)
+    list(GET TX_SOFT_DECODE_TESTS ${_off5} _snr)
+    list(GET TX_SOFT_DECODE_TESTS ${_off6} _seeds)
+    set(_test_name "tx_${_suffix}")
+    add_test(
+        NAME ${_test_name}
+        COMMAND ${CMAKE_COMMAND}
+            -DLORA_TX=$<TARGET_FILE:lora_tx>
+            -DLORA_REPLAY=$<TARGET_FILE:lora_replay>
+            -DSF=${_sf}
+            -DCR=${_cr}
+            -DBW=${_bw}
+            -DPAYLOAD=${_payload}
+            -DSNR=${_snr}
+            -DSEEDS=${_seeds}
+            -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tx_${_suffix}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tx_soft_decode_test.cmake
+    )
+    set_tests_properties(${_test_name} PROPERTIES
+        LABELS "tx;soft"
     )
 endforeach()
