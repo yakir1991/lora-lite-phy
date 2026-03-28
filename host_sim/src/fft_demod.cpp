@@ -196,6 +196,19 @@ uint16_t FftDemodulator::demodulate(const std::complex<float>* symbol_samples) c
                   << '\n';
     }
 
+    // Per-symbol closed-loop CFO tracking.
+    // The residual (fractional distance from bin centre after all corrections)
+    // is a noisy observation of the remaining CFO error.  An EMA filter
+    // feeds it back into cfo_frac_ so the correction adapts to slow drift.
+    if (cfo_track_alpha_ > 0.0f) {
+        const float residual = corrected_position -
+                               static_cast<float>(corrected_bin);
+        cfo_frac_ += cfo_track_alpha_ * residual;
+        // Keep cfo_frac_ in [-0.5, 0.5)
+        if (cfo_frac_ >= 0.5f) cfo_frac_ -= 1.0f;
+        if (cfo_frac_ < -0.5f) cfo_frac_ += 1.0f;
+    }
+
     ++symbol_counter_;
     return static_cast<uint16_t>(corrected_bin);
 }

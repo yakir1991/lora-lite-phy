@@ -390,3 +390,76 @@ foreach(_i RANGE 0 ${_soft_count})
         LABELS "tx;soft"
     )
 endforeach()
+
+# ===== TX impairment tests (CFO, SFO, combined AWGN+CFO) =====
+# Each entry: suffix  SF  CR  BW  payload  SEEDS  MIN_OK_RATIO  SNR  CFO  SFO  SAMPLE_RATE
+set(TX_IMPAIRMENT_TESTS
+    # Pure CFO (OS=1 — realistic for dedicated decoder)
+    "cfo_5k"          7  1  125000  "Hello"  5  "1.0"  ""   5000   ""  125000
+    "cfo_20k"         7  1  125000  "Hello"  5  "1.0"  ""  20000   ""  125000
+    "cfo_40k"         7  1  125000  "Hello"  5  "1.0"  ""  40000   ""  125000
+    # Pure SFO
+    "sfo_10ppm"       7  1  125000  "Hello"  5  "1.0"  ""   ""     10  125000
+    "sfo_20ppm"       7  1  125000  "Hello"  5  "1.0"  ""   ""     20  125000
+    # Combined CFO + AWGN
+    "cfo10k_snr-5"    7  1  125000  "Hello"  10  "0.8"  -5  10000  ""  125000
+    "cfo20k_snr-5"    7  1  125000  "Hello"  10  "0.5"  -5  20000  ""  125000
+    # Combined CFO + SFO
+    "cfo3k_sfo10"     7  1  125000  "Hello"  5  "1.0"  ""   3000   10  125000
+    # Triple: AWGN + CFO + SFO
+    "awgn_cfo_sfo"    7  1  125000  "Hello"  10  "0.5"  -5   3000  10  125000
+    # Higher SF with impairments
+    "sf12_cfo20k"    12  1  125000  "Hello"  3  "1.0"  ""  20000   ""  125000
+    "sf9_cfo10k_snr-8" 9  1  125000  "Hello"  10  "0.5"  -8  10000  ""  125000
+)
+list(LENGTH TX_IMPAIRMENT_TESTS _imp_total)
+math(EXPR _imp_count "${_imp_total} / 11")
+foreach(_i RANGE 0 ${_imp_count})
+    if(_i EQUAL ${_imp_count})
+        break()
+    endif()
+    math(EXPR _off  "${_i} * 11")
+    math(EXPR _off1 "${_off} + 1")
+    math(EXPR _off2 "${_off} + 2")
+    math(EXPR _off3 "${_off} + 3")
+    math(EXPR _off4 "${_off} + 4")
+    math(EXPR _off5 "${_off} + 5")
+    math(EXPR _off6 "${_off} + 6")
+    math(EXPR _off7 "${_off} + 7")
+    math(EXPR _off8 "${_off} + 8")
+    math(EXPR _off9 "${_off} + 9")
+    math(EXPR _off10 "${_off} + 10")
+    list(GET TX_IMPAIRMENT_TESTS ${_off}  _suffix)
+    list(GET TX_IMPAIRMENT_TESTS ${_off1} _sf)
+    list(GET TX_IMPAIRMENT_TESTS ${_off2} _cr)
+    list(GET TX_IMPAIRMENT_TESTS ${_off3} _bw)
+    list(GET TX_IMPAIRMENT_TESTS ${_off4} _payload)
+    list(GET TX_IMPAIRMENT_TESTS ${_off5} _seeds)
+    list(GET TX_IMPAIRMENT_TESTS ${_off6} _min_ok)
+    list(GET TX_IMPAIRMENT_TESTS ${_off7} _snr)
+    list(GET TX_IMPAIRMENT_TESTS ${_off8} _cfo)
+    list(GET TX_IMPAIRMENT_TESTS ${_off9} _sfo)
+    list(GET TX_IMPAIRMENT_TESTS ${_off10} _sr)
+    set(_test_name "tx_impair_${_suffix}")
+    add_test(
+        NAME ${_test_name}
+        COMMAND ${CMAKE_COMMAND}
+            -DLORA_TX=$<TARGET_FILE:lora_tx>
+            -DLORA_REPLAY=$<TARGET_FILE:lora_replay>
+            -DSF=${_sf}
+            -DCR=${_cr}
+            -DBW=${_bw}
+            -DSAMPLE_RATE=${_sr}
+            -DPAYLOAD=${_payload}
+            -DSEEDS=${_seeds}
+            -DMIN_OK_RATIO=${_min_ok}
+            -DSNR=${_snr}
+            -DCFO=${_cfo}
+            -DSFO=${_sfo}
+            -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tx_impair_${_suffix}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tx_impairment_test.cmake
+    )
+    set_tests_properties(${_test_name} PROPERTIES
+        LABELS "tx;impairment"
+    )
+endforeach()

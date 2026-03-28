@@ -1039,6 +1039,11 @@ int main(int argc, char** argv)
                                                 freq_est.cfo_int,
                                                 freq_est.sfo_slope);
                 demod.reset_symbol_counter();
+                // Per-symbol CFO tracking: disabled by default.
+                // Enable with HOST_SIM_CFO_TRACK_ALPHA env variable.
+                if (const char* alpha_env = std::getenv("HOST_SIM_CFO_TRACK_ALPHA")) {
+                    demod.set_cfo_tracking(std::stof(alpha_env));
+                }
                 std::cout << "Frequency offsets: CFO_int=" << freq_est.cfo_int
                           << " CFO_frac=" << freq_est.cfo_frac
                           << " SFO_slope=" << freq_est.sfo_slope << "\n";

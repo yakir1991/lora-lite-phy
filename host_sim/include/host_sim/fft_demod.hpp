@@ -49,6 +49,10 @@ public:
     int current_cfo_int() const { return cfo_int_; }
     float current_sfo_slope() const { return sfo_slope_; }
 
+    /// Enable per-symbol closed-loop CFO tracking.
+    /// alpha = 0 disables tracking (default).
+    void set_cfo_tracking(float alpha) { cfo_track_alpha_ = alpha; }
+
     const ChirpTables& chirps() const { return chirps_; }
 
 private:
@@ -62,10 +66,11 @@ private:
     kiss_fft_cfg kiss_cfg_{nullptr};
     mutable std::vector<kiss_fft_cpx> fft_in_;
     mutable std::vector<kiss_fft_cpx> fft_out_;
-    float cfo_frac_{0.0f};
+    mutable float cfo_frac_{0.0f};
     int cfo_int_{0};
     float sfo_slope_{0.0f};
     mutable std::size_t symbol_counter_{0};
+    float cfo_track_alpha_{0.0f};
 
     void initialize_fft();
     void compute_fft(const std::complex<float>* symbol_samples,
