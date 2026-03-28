@@ -11,6 +11,7 @@
 #include "host_sim/whitening.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -1426,6 +1427,19 @@ int main(int argc, char** argv)
                                             metadata->bw * 2,
                                             metadata->bw);
 
+                    // Sweep SFO rate compensation: 0 first, then spiral
+                    // outward.  SFO shifts symbol boundaries by
+                    //   drift_per_sym = sfo_ppm * sps_os2 / 1e6
+                    // We compensate by adjusting the stride between
+                    // successive FFT windows.
+                    for (int sfo_cand = 0; std::abs(sfo_cand) <= 100;
+                         sfo_cand = sfo_cand >= 0 ? -sfo_cand - 5
+                                                  : -sfo_cand) {
+                        if (header.success) break;
+                        const double stride =
+                            static_cast<double>(sps_os2) *
+                            (1.0 - static_cast<double>(sfo_cand) * 1e-6);
+
                     for (int qoff : {1, 0, 2, 3}) {
                         if (header.success) break;
                         const std::size_t data_sample_os2 =
@@ -1440,13 +1454,15 @@ int main(int argc, char** argv)
                         demod_os2.reset_symbol_counter();
                         std::vector<uint16_t> redemod;
                         std::vector<host_sim::SymbolLLR> redemod_llrs;
-                        const std::size_t max_sym =
-                            (up.size() - data_sample_os2) / sps_os2;
-                        for (std::size_t i = 0;
-                             i < std::min<std::size_t>(max_sym, 1024); ++i) {
-                            redemod.push_back(demod_os2.demodulate(
-                                &up[data_sample_os2 +
-                                    i * static_cast<std::size_t>(sps_os2)]));
+                        for (std::size_t i = 0; i < 1024; ++i) {
+                            const auto pos = static_cast<std::size_t>(
+                                std::round(static_cast<double>(
+                                               data_sample_os2) +
+                                           static_cast<double>(i) * stride));
+                            if (pos + static_cast<std::size_t>(sps_os2) >
+                                up.size())
+                                break;
+                            redemod.push_back(demod_os2.demodulate(&up[pos]));
                             if (options.soft) {
                                 auto mags = demod_os2.get_fft_magnitudes_sq();
                                 redemod_llrs.push_back(
@@ -1508,18 +1524,16 @@ int main(int argc, char** argv)
                                         0.0f);
                                     demod_os2.reset_symbol_counter();
                                     std::vector<uint16_t> adj_syms;
-                                    const std::size_t adj_max =
-                                        (up.size() - adj_data) / sps_os2;
-                                    for (std::size_t i = 0;
-                                         i < std::min<std::size_t>(
-                                                 adj_max, 1024);
-                                         ++i) {
+                                    for (std::size_t i = 0; i < 1024; ++i) {
+                                        const auto pos = static_cast<std::size_t>(
+                                            std::round(static_cast<double>(
+                                                           adj_data) +
+                                                       static_cast<double>(i) * stride));
+                                        if (pos + static_cast<std::size_t>(sps_os2) >
+                                            up.size())
+                                            break;
                                         adj_syms.push_back(
-                                            demod_os2.demodulate(
-                                                &up[adj_data +
-                                                    i * static_cast<
-                                                            std::size_t>(
-                                                            sps_os2)]));
+                                            demod_os2.demodulate(&up[pos]));
                                     }
                                     HeaderDecodeResult adj_imp;
                                     {
@@ -1577,7 +1591,11 @@ int main(int argc, char** argv)
                                 std::cout
                                     << "OS=2 upsample: implicit header, "
                                        "quarter offset "
-                                    << qoff << "\n";
+                                    << qoff;
+                                if (sfo_cand != 0) {
+                                    std::cout << " (SFO=" << sfo_cand << "ppm)";
+                                }
+                                std::cout << "\n";
                                 header = std::move(imp_hdr);
                                 symbol_cursor = header.consumed_symbols;
                                 chosen_offset = 0;
@@ -1621,18 +1639,16 @@ int main(int argc, char** argv)
                                     saved_cfo_frac, saved_cfo_int, 0.0f);
                                 demod_os2.reset_symbol_counter();
                                 std::vector<uint16_t> adj_syms;
-                                const std::size_t adj_max =
-                                    (up.size() - adj_data) / sps_os2;
-                                for (std::size_t i = 0;
-                                     i < std::min<std::size_t>(adj_max,
-                                                               1024);
-                                     ++i) {
+                                for (std::size_t i = 0; i < 1024; ++i) {
+                                    const auto pos = static_cast<std::size_t>(
+                                        std::round(static_cast<double>(
+                                                       adj_data) +
+                                                   static_cast<double>(i) * stride));
+                                    if (pos + static_cast<std::size_t>(sps_os2) >
+                                        up.size())
+                                        break;
                                     adj_syms.push_back(
-                                        demod_os2.demodulate(
-                                            &up[adj_data +
-                                                i * static_cast<
-                                                        std::size_t>(
-                                                        sps_os2)]));
+                                        demod_os2.demodulate(&up[pos]));
                                 }
                                 auto adj_hdr = try_decode_header(
                                     adj_syms, 0, *metadata);
@@ -1651,9 +1667,21 @@ int main(int argc, char** argv)
                             }
                         }
 
+                        // Only accept if CRC passes (or no CRC).
+                        // If CRC fails, try the next SFO candidate.
+                        if ((hdr_os2.has_crc || metadata->has_crc) &&
+                            !probe_payload_crc(redemod, hdr_os2,
+                                               *metadata)) {
+                            continue;
+                        }
+
                         std::cout << "OS=2 upsample: header found with "
                                      "quarter offset "
-                                  << qoff << "\n";
+                                  << qoff;
+                        if (sfo_cand != 0) {
+                            std::cout << " (SFO=" << sfo_cand << "ppm)";
+                        }
+                        std::cout << "\n";
                         header = std::move(hdr_os2);
                         symbol_cursor = header.consumed_symbols;
                         chosen_offset = 0;
@@ -1661,6 +1689,7 @@ int main(int argc, char** argv)
                         symbol_llrs = std::move(redemod_llrs);
                         break;
                     }
+                    } // sfo_cand
 
                     // If OS=2 didn't produce CRC-valid decode, restore
                     // the original native-OS result.
