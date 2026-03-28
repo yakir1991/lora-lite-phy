@@ -1192,7 +1192,9 @@ int main(int argc, char** argv)
                         std::vector<uint16_t> redemod;
                         std::vector<host_sim::SymbolLLR> redemod_llrs;
                         const std::size_t max_sym = (samples.size() - data_sample) / sps;
-                        for (std::size_t i = 0; i < std::min<std::size_t>(max_sym, 200); ++i) {
+                        // Cap at 1024 symbols: enough for max LoRa payload (255B, any SF/CR)
+                        // while preventing multi-packet mode from consuming the entire capture.
+                        for (std::size_t i = 0; i < std::min<std::size_t>(max_sym, 1024); ++i) {
                             redemod.push_back(demod.demodulate(
                                 &samples[data_sample + i * sps]));
                             if (options.soft) {
