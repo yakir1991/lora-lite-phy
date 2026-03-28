@@ -51,7 +51,12 @@ public:
 
     /// Enable per-symbol closed-loop CFO tracking.
     /// alpha = 0 disables tracking (default).
-    void set_cfo_tracking(float alpha) { cfo_track_alpha_ = alpha; }
+    /// delay_symbols: number of symbols to skip before tracking starts
+    ///   (use >=8 to protect the header block from tracking noise).
+    void set_cfo_tracking(float alpha, int delay_symbols = 0) {
+        cfo_track_alpha_ = alpha;
+        cfo_track_delay_ = delay_symbols;
+    }
 
     const ChirpTables& chirps() const { return chirps_; }
 
@@ -71,6 +76,7 @@ private:
     float sfo_slope_{0.0f};
     mutable std::size_t symbol_counter_{0};
     float cfo_track_alpha_{0.0f};
+    int cfo_track_delay_{0};
 
     void initialize_fft();
     void compute_fft(const std::complex<float>* symbol_samples,
