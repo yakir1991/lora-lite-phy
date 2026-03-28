@@ -405,9 +405,9 @@ set(TX_IMPAIRMENT_TESTS
     "cfo10k_snr-5"    7  1  125000  "Hello"  10  "0.8"  -5  10000  ""  125000
     "cfo20k_snr-5"    7  1  125000  "Hello"  10  "0.5"  -5  20000  ""  125000
     # Combined CFO + SFO
-    "cfo3k_sfo10"     7  1  125000  "Hello"  5  "1.0"  ""   3000   10  125000
+    "cfo20k_sfo20"    7  1  125000  "Hello"  5  "1.0"  ""  20000   20  125000
     # Triple: AWGN + CFO + SFO
-    "awgn_cfo_sfo"    7  1  125000  "Hello"  10  "0.5"  -5   3000  10  125000
+    "awgn_cfo_sfo"    7  1  125000  "Hello"  10  "0.5"  -5  10000  10  125000
     # Higher SF with impairments
     "sf12_cfo20k"    12  1  125000  "Hello"  3  "1.0"  ""  20000   ""  125000
     "sf9_cfo10k_snr-8" 9  1  125000  "Hello"  10  "0.5"  -8  10000  ""  125000

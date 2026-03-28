@@ -367,6 +367,16 @@ FftDemodulator::FrequencyEstimate FftDemodulator::estimate_frequency_offsets(
                 const double t_stat = std::abs(slope) / se_slope;
                 const double sfo = slope / (2.0 * M_PI);
 
+                // R² (coefficient of determination) — reject step-function
+                // patterns where CFO-induced phase jumps masquerade as a slope.
+                const double y_bar = sum_y / n;
+                double ss_tot = 0.0;
+                for (int i = 0; i < n_inliers; ++i) {
+                    const double dy = inlier_phases[i] - y_bar;
+                    ss_tot += dy * dy;
+                }
+                const double r_squared = (ss_tot > 1e-12) ? 1.0 - ss_res / ss_tot : 0.0;
+
                 if (std::getenv("HOST_SIM_DEBUG_SFO")) {
                     std::cerr << "[SFO_debug] n_diffs=" << n_diffs
                               << " n_inliers=" << n_inliers
@@ -374,6 +384,7 @@ FftDemodulator::FrequencyEstimate FftDemodulator::estimate_frequency_offsets(
                               << " sfo_bins=" << sfo
                               << " se_slope=" << se_slope
                               << " t_stat=" << t_stat
+                              << " r_squared=" << r_squared
                               << "\n";
                     for (int i = 0; i < n_inliers; ++i) {
                         std::cerr << "[SFO_debug]   phase[" << inlier_indices[i]
@@ -385,7 +396,9 @@ FftDemodulator::FrequencyEstimate FftDemodulator::estimate_frequency_offsets(
                 // 1. Statistically significant (t > 3.0)
                 // 2. Physically plausible (< 0.1 bins/symbol)
                 // 3. Large enough to matter (> 0.001 bins/symbol)
-                if (t_stat > 3.0 && std::abs(sfo) < 0.1 && std::abs(sfo) > 0.001) {
+                // 4. Good linear fit (R² > 0.8) to reject step-function artifacts
+                if (t_stat > 3.0 && std::abs(sfo) < 0.1 && std::abs(sfo) > 0.001
+                    && r_squared > 0.8) {
                     estimate.sfo_slope = static_cast<float>(sfo);
                 }
             }
