@@ -370,6 +370,26 @@ HeaderDecodeResult try_decode_header(const std::vector<uint16_t>& symbols,
     return result;
 }
 
+// Upsample complex IQ data by 2x using linear interpolation.
+// Doubles the effective sample rate so the demodulator gets finer
+// timing resolution, extending SFO tolerance for long payloads.
+std::vector<std::complex<float>> upsample_2x(
+    const std::complex<float>* data, std::size_t count)
+{
+    if (count < 2) {
+        return count == 1
+            ? std::vector<std::complex<float>>{data[0]}
+            : std::vector<std::complex<float>>{};
+    }
+    std::vector<std::complex<float>> out(count * 2 - 1);
+    for (std::size_t i = 0; i < count - 1; ++i) {
+        out[2 * i] = data[i];
+        out[2 * i + 1] = 0.5f * (data[i] + data[i + 1]);
+    }
+    out[2 * (count - 1)] = data[count - 1];
+    return out;
+}
+
 // Quick CRC probe: decode payload from symbols and check CRC.
 // Used for data-start timing refinement at low oversampling,
 // where SFO-induced timing drift can shift data symbols by ±1 bin.
@@ -1167,14 +1187,15 @@ int main(int argc, char** argv)
                         symbols, 0x34, metadata->sf);
                 }
 
+                // Save demod state for re-demod attempts (needed by
+                // both the native-OS and the OS=2-upsample fallback).
+                const float saved_cfo_frac = demod.current_cfo_frac();
+                const int   saved_cfo_int  = demod.current_cfo_int();
+                const float saved_sfo      = demod.current_sfo_slope();
+
                 if (sync_pos) {
                     const std::size_t quarter = static_cast<std::size_t>(sps / 4);
                     const int n_bins = 1 << metadata->sf;
-
-                    // Save and restore demod state around each qoff attempt
-                    const float saved_cfo_frac = demod.current_cfo_frac();
-                    const int   saved_cfo_int  = demod.current_cfo_int();
-                    const float saved_sfo      = demod.current_sfo_slope();
 
                     // Try quarter-symbol offsets: 1 (standard), 0, 2, 3
                     for (int qoff : {1, 0, 2, 3}) {
@@ -1370,6 +1391,285 @@ int main(int argc, char** argv)
                         symbols = std::move(redemod);
                         symbol_llrs = std::move(redemod_llrs);
                         break;
+                    }
+                }
+
+                // ── OS=2 upsample fallback ──────────────────────────
+                // When the native-OS decode at OS=1 either fails or
+                // produces a CRC-invalid payload, upsample the burst by
+                // 2x and retry.  This doubles the SFO timing tolerance
+                // (n_symbols × sfo_ppm threshold ~4000 vs ~2000 at OS=1).
+                // If OS=2 also fails CRC, the original decode is kept.
+                bool need_os2 = !header.success;
+                if (!need_os2 && os == 1 && sync_pos &&
+                    (header.has_crc || metadata->has_crc) &&
+                    !probe_payload_crc(symbols, header, *metadata)) {
+                    need_os2 = true;
+                }
+                if (need_os2 && sync_pos && os == 1) {
+                    // Save current decode as fallback.
+                    auto fallback_header = header;
+                    auto fallback_symbols = symbols;
+                    auto fallback_llrs = symbol_llrs;
+                    auto fallback_cursor = symbol_cursor;
+                    auto fallback_offset = chosen_offset;
+                    header.success = false;
+
+                    const std::size_t burst_start = alignment_samples;
+                    const std::size_t burst_len = samples.size() - burst_start;
+                    auto up = upsample_2x(&samples[burst_start], burst_len);
+
+                    const int sps_os2 = sps * 2;
+                    const std::size_t quarter_os2 =
+                        static_cast<std::size_t>(sps_os2 / 4);
+                    host_sim::FftDemodulator demod_os2(metadata->sf,
+                                            metadata->bw * 2,
+                                            metadata->bw);
+
+                    for (int qoff : {1, 0, 2, 3}) {
+                        if (header.success) break;
+                        const std::size_t data_sample_os2 =
+                            *sync_pos * static_cast<std::size_t>(sps_os2) +
+                            static_cast<std::size_t>(qoff) * quarter_os2;
+                        if (data_sample_os2 + 8ULL * sps_os2 > up.size())
+                            continue;
+
+                        demod_os2.set_frequency_offsets(saved_cfo_frac,
+                                                       saved_cfo_int,
+                                                       0.0f);
+                        demod_os2.reset_symbol_counter();
+                        std::vector<uint16_t> redemod;
+                        std::vector<host_sim::SymbolLLR> redemod_llrs;
+                        const std::size_t max_sym =
+                            (up.size() - data_sample_os2) / sps_os2;
+                        for (std::size_t i = 0;
+                             i < std::min<std::size_t>(max_sym, 1024); ++i) {
+                            redemod.push_back(demod_os2.demodulate(
+                                &up[data_sample_os2 +
+                                    i * static_cast<std::size_t>(sps_os2)]));
+                            if (options.soft) {
+                                auto mags = demod_os2.get_fft_magnitudes_sq();
+                                redemod_llrs.push_back(
+                                    host_sim::compute_symbol_llrs(
+                                        mags.data(), metadata->sf,
+                                        (static_cast<int>(i) < 8) ||
+                                            metadata->ldro,
+                                        saved_cfo_int));
+                            }
+                        }
+
+                        if (metadata->implicit_header) {
+                            HeaderDecodeResult imp_hdr;
+                            {
+                                const std::size_t hdr_syms =
+                                    std::min<std::size_t>(8, redemod.size());
+                                std::vector<uint16_t> first_block(
+                                    redemod.begin(),
+                                    redemod.begin() + hdr_syms);
+                                host_sim::DeinterleaverConfig hdr_cfg{
+                                    metadata->sf, 4, true, metadata->ldro};
+                                std::size_t consumed_block = 0;
+                                auto codewords = host_sim::deinterleave(
+                                    first_block, hdr_cfg, consumed_block);
+                                auto nibs =
+                                    host_sim::hamming_decode_block(
+                                        codewords, true, 4);
+                                imp_hdr.success = true;
+                                imp_hdr.payload_len = metadata->payload_len;
+                                imp_hdr.cr = metadata->cr;
+                                imp_hdr.has_crc = metadata->has_crc;
+                                imp_hdr.checksum_field = -1;
+                                imp_hdr.checksum_computed = -1;
+                                imp_hdr.consumed_symbols =
+                                    consumed_block > 0 ? consumed_block : 8;
+                                imp_hdr.codewords.assign(
+                                    codewords.begin(), codewords.end());
+                                imp_hdr.nibbles.assign(5, 0);
+                                imp_hdr.nibbles.insert(
+                                    imp_hdr.nibbles.end(),
+                                    nibs.begin(), nibs.end());
+                            }
+
+                            if (metadata->has_crc &&
+                                !probe_payload_crc(redemod, imp_hdr,
+                                                   *metadata)) {
+                                for (int adj = -1; std::abs(adj) <= 6;
+                                     adj = adj > 0 ? -adj - 1 : -adj) {
+                                    const auto adj_data =
+                                        static_cast<std::size_t>(
+                                            static_cast<std::ptrdiff_t>(
+                                                data_sample_os2) +
+                                            adj);
+                                    if (adj_data + 8ULL * sps_os2 >
+                                        up.size())
+                                        continue;
+                                    demod_os2.set_frequency_offsets(
+                                        saved_cfo_frac, saved_cfo_int,
+                                        0.0f);
+                                    demod_os2.reset_symbol_counter();
+                                    std::vector<uint16_t> adj_syms;
+                                    const std::size_t adj_max =
+                                        (up.size() - adj_data) / sps_os2;
+                                    for (std::size_t i = 0;
+                                         i < std::min<std::size_t>(
+                                                 adj_max, 1024);
+                                         ++i) {
+                                        adj_syms.push_back(
+                                            demod_os2.demodulate(
+                                                &up[adj_data +
+                                                    i * static_cast<
+                                                            std::size_t>(
+                                                            sps_os2)]));
+                                    }
+                                    HeaderDecodeResult adj_imp;
+                                    {
+                                        const std::size_t hs =
+                                            std::min<std::size_t>(
+                                                8, adj_syms.size());
+                                        std::vector<uint16_t> fb(
+                                            adj_syms.begin(),
+                                            adj_syms.begin() + hs);
+                                        host_sim::DeinterleaverConfig
+                                            hcfg{metadata->sf, 4, true,
+                                                 metadata->ldro};
+                                        std::size_t cb = 0;
+                                        auto cw =
+                                            host_sim::deinterleave(
+                                                fb, hcfg, cb);
+                                        auto nb =
+                                            host_sim::hamming_decode_block(
+                                                cw, true, 4);
+                                        adj_imp.success = true;
+                                        adj_imp.payload_len =
+                                            metadata->payload_len;
+                                        adj_imp.cr = metadata->cr;
+                                        adj_imp.has_crc =
+                                            metadata->has_crc;
+                                        adj_imp.checksum_field = -1;
+                                        adj_imp.checksum_computed = -1;
+                                        adj_imp.consumed_symbols =
+                                            cb > 0 ? cb : 8;
+                                        adj_imp.codewords.assign(
+                                            cw.begin(), cw.end());
+                                        adj_imp.nibbles.assign(5, 0);
+                                        adj_imp.nibbles.insert(
+                                            adj_imp.nibbles.end(),
+                                            nb.begin(), nb.end());
+                                    }
+                                    if (probe_payload_crc(adj_syms, adj_imp,
+                                                          *metadata)) {
+                                        redemod = std::move(adj_syms);
+                                        imp_hdr = std::move(adj_imp);
+                                        std::cout
+                                            << "OS=2 upsample: implicit "
+                                               "data start refined by "
+                                            << adj
+                                            << " samples (CRC verified)\n";
+                                        break;
+                                    }
+                                }
+                            }
+
+                            bool crc_ok = !metadata->has_crc ||
+                                probe_payload_crc(redemod, imp_hdr,
+                                                  *metadata);
+                            if (crc_ok) {
+                                std::cout
+                                    << "OS=2 upsample: implicit header, "
+                                       "quarter offset "
+                                    << qoff << "\n";
+                                header = std::move(imp_hdr);
+                                symbol_cursor = header.consumed_symbols;
+                                chosen_offset = 0;
+                                symbols = std::move(redemod);
+                                symbol_llrs = std::move(redemod_llrs);
+                                break;
+                            }
+                            continue;
+                        }
+
+                        auto hdr_os2 =
+                            try_decode_header(redemod, 0, *metadata);
+                        if (!hdr_os2.success) continue;
+
+                        int hlen = hdr_os2.payload_len > 0
+                                       ? hdr_os2.payload_len
+                                       : metadata->payload_len;
+                        int hcr = hdr_os2.cr > 0 ? hdr_os2.cr
+                                                  : metadata->cr;
+                        if (metadata->payload_len > 0 &&
+                            hlen != metadata->payload_len)
+                            continue;
+                        if (metadata->cr > 0 && hcr != metadata->cr)
+                            continue;
+                        if (metadata->has_crc && !hdr_os2.has_crc)
+                            continue;
+
+                        if ((hdr_os2.has_crc || metadata->has_crc) &&
+                            !probe_payload_crc(redemod, hdr_os2,
+                                               *metadata)) {
+                            for (int adj = -1; std::abs(adj) <= 6;
+                                 adj = adj > 0 ? -adj - 1 : -adj) {
+                                const auto adj_data =
+                                    static_cast<std::size_t>(
+                                        static_cast<std::ptrdiff_t>(
+                                            data_sample_os2) +
+                                        adj);
+                                if (adj_data + 8ULL * sps_os2 > up.size())
+                                    continue;
+                                demod_os2.set_frequency_offsets(
+                                    saved_cfo_frac, saved_cfo_int, 0.0f);
+                                demod_os2.reset_symbol_counter();
+                                std::vector<uint16_t> adj_syms;
+                                const std::size_t adj_max =
+                                    (up.size() - adj_data) / sps_os2;
+                                for (std::size_t i = 0;
+                                     i < std::min<std::size_t>(adj_max,
+                                                               1024);
+                                     ++i) {
+                                    adj_syms.push_back(
+                                        demod_os2.demodulate(
+                                            &up[adj_data +
+                                                i * static_cast<
+                                                        std::size_t>(
+                                                        sps_os2)]));
+                                }
+                                auto adj_hdr = try_decode_header(
+                                    adj_syms, 0, *metadata);
+                                if (!adj_hdr.success) continue;
+                                if (probe_payload_crc(adj_syms, adj_hdr,
+                                                      *metadata)) {
+                                    redemod = std::move(adj_syms);
+                                    hdr_os2 = std::move(adj_hdr);
+                                    std::cout
+                                        << "OS=2 upsample: data start "
+                                           "refined by "
+                                        << adj
+                                        << " samples (CRC verified)\n";
+                                    break;
+                                }
+                            }
+                        }
+
+                        std::cout << "OS=2 upsample: header found with "
+                                     "quarter offset "
+                                  << qoff << "\n";
+                        header = std::move(hdr_os2);
+                        symbol_cursor = header.consumed_symbols;
+                        chosen_offset = 0;
+                        symbols = std::move(redemod);
+                        symbol_llrs = std::move(redemod_llrs);
+                        break;
+                    }
+
+                    // If OS=2 didn't produce CRC-valid decode, restore
+                    // the original native-OS result.
+                    if (!header.success && fallback_header.success) {
+                        header = std::move(fallback_header);
+                        symbols = std::move(fallback_symbols);
+                        symbol_llrs = std::move(fallback_llrs);
+                        symbol_cursor = fallback_cursor;
+                        chosen_offset = fallback_offset;
                     }
                 }
             }
