@@ -941,6 +941,9 @@ int main(int argc, char** argv)
             std::size_t multi_search_offset = 0;
             int multi_packet_index = 0;
             bool multi_any_failed = false;
+            // Tracks where re-demod data symbols start (alignment +
+            // sync_pos + quarter-offset), for multi-packet advance.
+            std::size_t data_start_sample = 0;
 
           for (;;) { // multi-packet loop (runs once unless --multi)
             const auto burst_result = host_sim::detect_burst_start(
@@ -1312,6 +1315,7 @@ int main(int argc, char** argv)
                                 header = std::move(imp_hdr);
                                 symbol_cursor = header.consumed_symbols;
                                 chosen_offset = 0;
+                                data_start_sample = data_sample;
                                 symbols = std::move(redemod);
                                 symbol_llrs = std::move(redemod_llrs);
                                 break;
@@ -1389,6 +1393,7 @@ int main(int argc, char** argv)
                         header = std::move(hdr);
                         symbol_cursor = header.consumed_symbols;
                         chosen_offset = 0;
+                        data_start_sample = data_sample;
                         symbols = std::move(redemod);
                         symbol_llrs = std::move(redemod_llrs);
                         break;
@@ -1654,6 +1659,8 @@ int main(int argc, char** argv)
                                 header = std::move(imp_hdr);
                                 symbol_cursor = header.consumed_symbols;
                                 chosen_offset = 0;
+                                data_start_sample =
+                                    alignment_samples + data_sample_os2 / 2;
                                 symbols = std::move(redemod);
                                 symbol_llrs = std::move(redemod_llrs);
                                 break;
@@ -1741,6 +1748,8 @@ int main(int argc, char** argv)
                         header = std::move(hdr_os2);
                         symbol_cursor = header.consumed_symbols;
                         chosen_offset = 0;
+                        data_start_sample =
+                            alignment_samples + data_sample_os2 / 2;
                         symbols = std::move(redemod);
                         symbol_llrs = std::move(redemod_llrs);
                         break;
@@ -2064,9 +2073,14 @@ int main(int argc, char** argv)
 
             // --- multi-packet loop advance ---
             if (options.multi_packet) {
-                // Estimate burst end: alignment + all decoded symbols
-                const std::size_t symbols_consumed = symbols.size();
-                const std::size_t burst_end_sample = alignment_samples +
+                // Estimate burst end: data start + consumed symbols.
+                // data_start_sample is updated by successful re-demod
+                // to track alignment + sync_pos + quarter offset.
+                const std::size_t symbols_consumed =
+                    header.success ? symbol_cursor : symbols.size();
+                const std::size_t effective_start =
+                    header.success ? data_start_sample : alignment_samples;
+                const std::size_t burst_end_sample = effective_start +
                     symbols_consumed * static_cast<std::size_t>(sps);
                 // Advance past this burst with a small gap margin
                 const std::size_t next_offset = burst_end_sample + static_cast<std::size_t>(sps) * 4;
