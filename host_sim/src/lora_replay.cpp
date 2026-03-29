@@ -1432,6 +1432,12 @@ int main(int argc, char** argv)
                     //   drift_per_sym = sfo_ppm * sps_os2 / 1e6
                     // We compensate by adjusting the stride between
                     // successive FFT windows.
+                    //
+                    // Two passes: pass 0 skips timing refinement (fast
+                    // reject of wrong SFO candidates), pass 1 adds ±6
+                    // sample adjustments for borderline alignments.
+                    for (int os2_pass = 0;
+                         os2_pass < 2 && !header.success; ++os2_pass) {
                     for (int sfo_cand = 0; std::abs(sfo_cand) <= 100;
                          sfo_cand = sfo_cand >= 0 ? -sfo_cand - 5
                                                   : -sfo_cand) {
@@ -1442,6 +1448,9 @@ int main(int argc, char** argv)
 
                     for (int qoff : {1, 0, 2, 3}) {
                         if (header.success) break;
+                        // Fast pass: only try qoff=1 (most common),
+                        // skip timing-adjustment loop.
+                        if (os2_pass == 0 && qoff != 1) continue;
                         const std::size_t data_sample_os2 =
                             *sync_pos * static_cast<std::size_t>(sps_os2) +
                             static_cast<std::size_t>(qoff) * quarter_os2;
@@ -1454,7 +1463,52 @@ int main(int argc, char** argv)
                         demod_os2.reset_symbol_counter();
                         std::vector<uint16_t> redemod;
                         std::vector<host_sim::SymbolLLR> redemod_llrs;
-                        for (std::size_t i = 0; i < 1024; ++i) {
+
+                        // Phase 1: demod first 8 symbols for header probe
+                        for (std::size_t i = 0; i < 8; ++i) {
+                            const auto pos = static_cast<std::size_t>(
+                                std::round(static_cast<double>(
+                                               data_sample_os2) +
+                                           static_cast<double>(i) * stride));
+                            if (pos + static_cast<std::size_t>(sps_os2) >
+                                up.size())
+                                break;
+                            redemod.push_back(demod_os2.demodulate(&up[pos]));
+                            if (options.soft) {
+                                auto mags = demod_os2.get_fft_magnitudes_sq();
+                                redemod_llrs.push_back(
+                                    host_sim::compute_symbol_llrs(
+                                        mags.data(), metadata->sf,
+                                        true,
+                                        saved_cfo_int));
+                            }
+                        }
+
+                        // Early header check — skip full demod when
+                        // header clearly wrong (explicit header only).
+                        if (!metadata->implicit_header) {
+                            auto hdr_probe =
+                                try_decode_header(redemod, 0, *metadata);
+                            if (!hdr_probe.success) continue;
+                            int hlen_p = hdr_probe.payload_len > 0
+                                             ? hdr_probe.payload_len
+                                             : metadata->payload_len;
+                            int hcr_p = hdr_probe.cr > 0
+                                            ? hdr_probe.cr
+                                            : metadata->cr;
+                            if (metadata->payload_len > 0 &&
+                                hlen_p != metadata->payload_len)
+                                continue;
+                            if (metadata->cr > 0 &&
+                                hcr_p != metadata->cr)
+                                continue;
+                            if (metadata->has_crc && !hdr_probe.has_crc)
+                                continue;
+                        }
+
+                        // Phase 2: demod remaining symbols
+                        for (std::size_t i = redemod.size(); i < 1024;
+                             ++i) {
                             const auto pos = static_cast<std::size_t>(
                                 std::round(static_cast<double>(
                                                data_sample_os2) +
@@ -1509,6 +1563,7 @@ int main(int argc, char** argv)
                             if (metadata->has_crc &&
                                 !probe_payload_crc(redemod, imp_hdr,
                                                    *metadata)) {
+                                if (os2_pass == 0) continue;
                                 for (int adj = -1; std::abs(adj) <= 6;
                                      adj = adj > 0 ? -adj - 1 : -adj) {
                                     const auto adj_data =
@@ -1626,6 +1681,7 @@ int main(int argc, char** argv)
                         if ((hdr_os2.has_crc || metadata->has_crc) &&
                             !probe_payload_crc(redemod, hdr_os2,
                                                *metadata)) {
+                            if (os2_pass == 0) continue;
                             for (int adj = -1; std::abs(adj) <= 6;
                                  adj = adj > 0 ? -adj - 1 : -adj) {
                                 const auto adj_data =
@@ -1690,6 +1746,7 @@ int main(int argc, char** argv)
                         break;
                     }
                     } // sfo_cand
+                    } // os2_pass
 
                     // If OS=2 didn't produce CRC-valid decode, restore
                     // the original native-OS result.
