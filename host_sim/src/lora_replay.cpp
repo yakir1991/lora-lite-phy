@@ -1441,10 +1441,13 @@ int main(int argc, char** argv)
                     // Two passes: pass 0 skips timing refinement (fast
                     // reject of wrong SFO candidates), pass 1 adds ±6
                     // sample adjustments for borderline alignments.
+                    // Track which (sfo_cand, qoff) passed header on
+                    // pass 0 so pass 1 only retries those.
+                    std::vector<std::pair<int,int>> hdr_hit_pairs;
                     for (int os2_pass = 0;
                          os2_pass < 2 && !header.success; ++os2_pass) {
                     for (int sfo_cand = 0; std::abs(sfo_cand) <= 100;
-                         sfo_cand = sfo_cand >= 0 ? -sfo_cand - 5
+                         sfo_cand = sfo_cand >= 0 ? -sfo_cand - 10
                                                   : -sfo_cand) {
                         if (header.success) break;
                         const double stride =
@@ -1456,6 +1459,15 @@ int main(int argc, char** argv)
                         // Fast pass: only try qoff=1 (most common),
                         // skip timing-adjustment loop.
                         if (os2_pass == 0 && qoff != 1) continue;
+                        // Full pass: only retry pairs that passed
+                        // header on pass 0 (need adj refinement).
+                        if (os2_pass == 1) {
+                            bool was_hit = false;
+                            for (auto& p : hdr_hit_pairs)
+                                if (p.first == sfo_cand && p.second == qoff)
+                                    was_hit = true;
+                            if (!was_hit) continue;
+                        }
                         const std::size_t data_sample_os2 =
                             *sync_pos * static_cast<std::size_t>(sps_os2) +
                             static_cast<std::size_t>(qoff) * quarter_os2;
@@ -1491,7 +1503,22 @@ int main(int argc, char** argv)
 
                         // Early header check — skip full demod when
                         // header clearly wrong (explicit header only).
-                        if (!metadata->implicit_header) {
+                        std::size_t max_syms_needed = 1024;
+                        // For implicit header, compute cap from metadata.
+                        if (metadata->implicit_header) {
+                            if (metadata->payload_len > 0 &&
+                                metadata->cr > 0) {
+                                const std::size_t nibbles =
+                                    static_cast<std::size_t>(
+                                        metadata->payload_len) * 2 + 4;
+                                const std::size_t cw =
+                                    static_cast<std::size_t>(
+                                        metadata->cr + 4);
+                                const std::size_t blocks =
+                                    (nibbles + cw - 1) / cw;
+                                max_syms_needed = 8 + blocks * cw + 4;
+                            }
+                        } else {
                             auto hdr_probe =
                                 try_decode_header(redemod, 0, *metadata);
                             if (!hdr_probe.success) continue;
@@ -1509,11 +1536,23 @@ int main(int argc, char** argv)
                                 continue;
                             if (metadata->has_crc && !hdr_probe.has_crc)
                                 continue;
+                            // Cap demod to symbols needed for CRC check:
+                            // header_consumed + ceil(nibbles / cw_len) * cw_len + margin.
+                            if (hlen_p > 0 && hcr_p > 0) {
+                                const std::size_t nibbles =
+                                    static_cast<std::size_t>(hlen_p) * 2 + 4;
+                                const std::size_t cw = static_cast<std::size_t>(hcr_p + 4);
+                                const std::size_t blocks = (nibbles + cw - 1) / cw;
+                                const std::size_t hdr_sym =
+                                    hdr_probe.consumed_symbols > 0
+                                        ? hdr_probe.consumed_symbols : 8;
+                                max_syms_needed = hdr_sym + blocks * cw + 4;
+                            }
                         }
 
                         // Phase 2: demod remaining symbols
-                        for (std::size_t i = redemod.size(); i < 1024;
-                             ++i) {
+                        for (std::size_t i = redemod.size();
+                             i < max_syms_needed; ++i) {
                             const auto pos = static_cast<std::size_t>(
                                 std::round(static_cast<double>(
                                                data_sample_os2) +
@@ -1568,8 +1607,11 @@ int main(int argc, char** argv)
                             if (metadata->has_crc &&
                                 !probe_payload_crc(redemod, imp_hdr,
                                                    *metadata)) {
-                                if (os2_pass == 0) continue;
-                                for (int adj = -1; std::abs(adj) <= 6;
+                                if (os2_pass == 0) {
+                                    hdr_hit_pairs.push_back({sfo_cand, qoff});
+                                    continue;
+                                }
+                                for (int adj = -1; std::abs(adj) <= 3;
                                      adj = adj > 0 ? -adj - 1 : -adj) {
                                     const auto adj_data =
                                         static_cast<std::size_t>(
@@ -1584,7 +1626,7 @@ int main(int argc, char** argv)
                                         0.0f);
                                     demod_os2.reset_symbol_counter();
                                     std::vector<uint16_t> adj_syms;
-                                    for (std::size_t i = 0; i < 1024; ++i) {
+                                    for (std::size_t i = 0; i < max_syms_needed; ++i) {
                                         const auto pos = static_cast<std::size_t>(
                                             std::round(static_cast<double>(
                                                            adj_data) +
@@ -1688,8 +1730,11 @@ int main(int argc, char** argv)
                         if ((hdr_os2.has_crc || metadata->has_crc) &&
                             !probe_payload_crc(redemod, hdr_os2,
                                                *metadata)) {
-                            if (os2_pass == 0) continue;
-                            for (int adj = -1; std::abs(adj) <= 6;
+                            if (os2_pass == 0) {
+                                hdr_hit_pairs.push_back({sfo_cand, qoff});
+                                continue;
+                            }
+                            for (int adj = -1; std::abs(adj) <= 3;
                                  adj = adj > 0 ? -adj - 1 : -adj) {
                                 const auto adj_data =
                                     static_cast<std::size_t>(
@@ -1702,7 +1747,7 @@ int main(int argc, char** argv)
                                     saved_cfo_frac, saved_cfo_int, 0.0f);
                                 demod_os2.reset_symbol_counter();
                                 std::vector<uint16_t> adj_syms;
-                                for (std::size_t i = 0; i < 1024; ++i) {
+                                for (std::size_t i = 0; i < max_syms_needed; ++i) {
                                     const auto pos = static_cast<std::size_t>(
                                         std::round(static_cast<double>(
                                                        adj_data) +
