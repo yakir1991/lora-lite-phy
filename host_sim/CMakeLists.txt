@@ -638,3 +638,20 @@ add_test(
 set_tests_properties(tx_nocrc_sf7 PROPERTIES
     LABELS "tx"
 )
+
+# ===== TX hex payload roundtrip test (binary payload via payload_hex metadata) =====
+add_test(
+    NAME tx_hex_roundtrip_sf7
+    COMMAND ${CMAKE_COMMAND}
+        -DLORA_TX=$<TARGET_FILE:lora_tx>
+        -DLORA_REPLAY=$<TARGET_FILE:lora_replay>
+        -DSF=7
+        -DCR=1
+        -DBW=125000
+        -DPAYLOAD_HEX=DEADBEEF01020304FF00
+        -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tx_hex_roundtrip_sf7
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tx_hex_roundtrip_test.cmake
+)
+set_tests_properties(tx_hex_roundtrip_sf7 PROPERTIES
+    LABELS "tx"
+)

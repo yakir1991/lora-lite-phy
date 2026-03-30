@@ -11,6 +11,7 @@
 #include "host_sim/whitening.hpp"
 
 #include <algorithm>
+#include <charconv>
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
@@ -1979,6 +1980,34 @@ int main(int argc, char** argv)
                                            unwhitened.begin())) {
                         payload_match = false;
                         std::cout << "[payload] decoded payload differs from expected string\n";
+                    }
+                    if (!payload_match) {
+                        compare_failure = true;
+                    }
+                } else if (options.payload.empty() && metadata->payload_hex &&
+                           !metadata->payload_hex->empty() && expected_payload_len > 0) {
+                    // Verify against payload_hex from metadata
+                    const std::string& hex_str = *metadata->payload_hex;
+                    bool payload_match = true;
+                    if (hex_str.size() != static_cast<std::size_t>(expected_payload_len) * 2) {
+                        payload_match = false;
+                        std::cout << "[payload] payload_hex length " << hex_str.size() / 2
+                                  << " does not match decoded length "
+                                  << expected_payload_len << "\n";
+                    } else if (unwhitened.size() >= static_cast<std::size_t>(expected_payload_len)) {
+                        for (int i = 0; i < expected_payload_len; ++i) {
+                            unsigned int expected_byte = 0;
+                            auto [ptr, ec] = std::from_chars(
+                                hex_str.data() + i * 2, hex_str.data() + i * 2 + 2,
+                                expected_byte, 16);
+                            if (ec != std::errc{} || unwhitened[i] != static_cast<uint8_t>(expected_byte)) {
+                                payload_match = false;
+                                std::cout << "[payload] payload_hex mismatch at byte " << i << "\n";
+                                break;
+                            }
+                        }
+                    } else {
+                        payload_match = false;
                     }
                     if (!payload_match) {
                         compare_failure = true;
