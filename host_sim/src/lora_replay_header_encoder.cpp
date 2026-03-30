@@ -116,7 +116,7 @@ std::vector<uint8_t> build_header_nibbles(int payload_len, bool has_crc, int cr)
 }
 
 std::vector<uint16_t> encode_header_symbols(int sf,
-                                            bool ldro,
+                                            bool /*ldro*/,
                                             int payload_len,
                                             bool has_crc,
                                             int cr)

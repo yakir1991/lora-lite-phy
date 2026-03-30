@@ -244,27 +244,6 @@ void write_summary_json(const std::filesystem::path& path, const SummaryReport& 
     }
 
     std::vector<std::string> fields;
-    auto format_event_array = [](const std::string& name,
-                                 const std::vector<SummaryReport::RealTimeEvent>& events) {
-        std::ostringstream ss;
-        ss << "  \"" << name << "\": ";
-        if (events.empty()) {
-            ss << "[]";
-            return ss.str();
-        }
-        ss << "[\n";
-        for (std::size_t i = 0; i < events.size(); ++i) {
-            const auto& ev = events[i];
-            ss << "    { \"symbol\": " << ev.symbol_index << ", \"timestamp_ns\": "
-               << ev.timestamp_ns << ", \"delta_ns\": " << ev.delta_ns << " }";
-            if (i + 1 < events.size()) {
-                ss << ',';
-            }
-            ss << '\n';
-        }
-        ss << "  ]";
-        return ss.str();
-    };
     if (report.capture_path) {
         fields.push_back("  \"capture\": \"" + json_escape(*report.capture_path) + "\"");
     }

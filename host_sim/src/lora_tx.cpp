@@ -51,8 +51,6 @@ uint16_t bits_to_uint(const std::vector<bool>& bits)
     return value;
 }
 
-uint16_t gray_encode(uint16_t v) { return v ^ (v >> 1); }
-
 // ---------- Hamming encode ----------
 // Produces (4+cr)-bit codeword from a 4-bit nibble.
 // Matches GnuRadio hamming_enc_impl: data bits LSB-first, then parity bits.

@@ -301,7 +301,6 @@ FftDemodulator::FrequencyEstimate FftDemodulator::estimate_frequency_offsets(
 
     if (symbol_count >= 6) {
         const int n_diffs = symbol_count - 1;
-        const int half = n_bins_ / 2;
 
         // Mark which symbols are genuine preamble (peak at global_bin ±1)
         std::vector<bool> is_preamble(symbol_count, false);

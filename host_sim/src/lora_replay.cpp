@@ -946,7 +946,6 @@ int main(int argc, char** argv)
             // the burst start so that alignment search sees the preamble.
             std::size_t multi_search_offset = 0;
             int multi_packet_index = 0;
-            bool multi_any_failed = false;
             // Tracks where re-demod data symbols start (alignment +
             // sync_pos + quarter-offset), for multi-packet advance.
             std::size_t data_start_sample = 0;
@@ -1036,7 +1035,6 @@ int main(int argc, char** argv)
                 // Try a few offsets around the detected alignment and pick
                 // the one whose preamble symbols most agree on bin 0.
                 if (os <= 4 && !options.compare_root) {
-                    const int n_bins = 1 << metadata->sf;
                     int best_offset = 0;
                     int best_count_0 = -1;
                     for (int try_off = -3; try_off <= 3; ++try_off) {
@@ -1213,7 +1211,6 @@ int main(int argc, char** argv)
 
                 if (sync_pos) {
                     const std::size_t quarter = static_cast<std::size_t>(sps / 4);
-                    const int n_bins = 1 << metadata->sf;
 
                     // Try quarter-symbol offsets: 1 (standard), 0, 2, 3
                     for (int qoff : {1, 0, 2, 3}) {
@@ -1353,7 +1350,6 @@ int main(int argc, char** argv)
                         // payload is not.  Sweep small timing adjustments
                         // around the nominal data_sample and select the one
                         // that gives a valid CRC.
-                        bool timing_refined = false;
                         if ((hdr.has_crc || metadata->has_crc) &&
                             !probe_payload_crc(redemod, hdr, *metadata)) {
                             const int max_adj = std::max(os, 4) + 2;
@@ -1391,7 +1387,6 @@ int main(int argc, char** argv)
                                     redemod = std::move(adj_syms);
                                     redemod_llrs = std::move(adj_llrs);
                                     hdr = std::move(adj_hdr);
-                                    timing_refined = true;
                                     std::cout << "SFD re-demod: data start "
                                                  "refined by "
                                               << adj
@@ -1949,7 +1944,7 @@ int main(int argc, char** argv)
                     // GNU Radio convention: first nibble is low_nib, second is high_nib
                     // Note: CRC bytes are NOT dewhitened (matching GNU Radio behavior)
                     uint8_t low_nib, high_nib;
-                    if (byte_idx < expected_payload_len) {
+                    if (byte_idx < static_cast<std::size_t>(expected_payload_len)) {
                         // Payload bytes: apply dewhitening
                         uint8_t w = (byte_idx < whitening.size()) ? whitening[byte_idx] : 0;
                         low_nib = (payload_nibbles[i] & 0xF) ^ (w & 0x0F);
@@ -1962,28 +1957,28 @@ int main(int argc, char** argv)
                     uint8_t byte = static_cast<uint8_t>((high_nib << 4) | low_nib);
                     unwhitened.push_back(byte);
                 }
-                if (unwhitened.size() > expected_payload_len + (expected_crc ? 2 : 0)) {
-                    unwhitened.resize(expected_payload_len + (expected_crc ? 2 : 0));
+                if (unwhitened.size() > static_cast<std::size_t>(expected_payload_len) + (expected_crc ? 2u : 0u)) {
+                    unwhitened.resize(static_cast<std::size_t>(expected_payload_len) + (expected_crc ? 2u : 0u));
                 }
                 std::cout << "Payload bytes (dewhitened):";
-                for (std::size_t i = 0; i < std::min<std::size_t>(unwhitened.size(), expected_payload_len); ++i) {
+                for (std::size_t i = 0; i < std::min<std::size_t>(unwhitened.size(), static_cast<std::size_t>(expected_payload_len)); ++i) {
                     std::cout << ' ' << std::hex << std::setw(2) << std::setfill('0')
                               << static_cast<int>(unwhitened[i]) << std::dec;
                 }
                 std::cout << "\n";
                 if (expected_payload_len > 0) {
-                    std::string ascii(unwhitened.begin(), unwhitened.begin() + std::min<std::size_t>(expected_payload_len, unwhitened.size()));
+                    std::string ascii(unwhitened.begin(), unwhitened.begin() + std::min<std::size_t>(static_cast<std::size_t>(expected_payload_len), unwhitened.size()));
                     std::cout << "Payload ASCII: " << ascii << "\n";
                 }
                 if (!options.payload.empty() && expected_payload_len > 0) {
                     bool payload_match = true;
                     const std::string& expected_payload = options.payload;
-                    if (expected_payload.size() != expected_payload_len) {
+                    if (expected_payload.size() != static_cast<std::size_t>(expected_payload_len)) {
                         payload_match = false;
                         std::cout << "[payload] expected length " << expected_payload.size()
                                   << " does not match decoded length "
                                   << expected_payload_len << "\n";
-                    } else if (unwhitened.size() < expected_payload_len ||
+                    } else if (unwhitened.size() < static_cast<std::size_t>(expected_payload_len) ||
                                !std::equal(expected_payload.begin(), expected_payload.end(),
                                            unwhitened.begin())) {
                         payload_match = false;
@@ -2022,7 +2017,7 @@ int main(int argc, char** argv)
                     }
                 }
 
-                if (expected_crc && expected_payload_len >= 2 && unwhitened.size() >= expected_payload_len + 2) {
+                if (expected_crc && expected_payload_len >= 2 && unwhitened.size() >= static_cast<std::size_t>(expected_payload_len) + 2) {
                     // GNU Radio CRC verification algorithm:
                     // 1. Compute CRC on first (payload_len - 2) bytes
                     // 2. XOR with last 2 payload bytes
