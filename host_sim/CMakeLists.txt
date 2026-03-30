@@ -387,6 +387,7 @@ set(TX_SOFT_DECODE_TESTS
     "soft_sf8_cr1_snr-11"   8   1  125000  "Hello soft"      -11  20
     "soft_sf9_cr1_snr-13"   9   1  125000  "Hello soft"      -13  20
     "soft_sf12_cr1_snr-18"  12  1  125000  "Hello soft"      -18  10
+    "soft_sf6_cr1_snr-5"    6   1  125000  "Hello soft"      -5   20
 )
 list(LENGTH TX_SOFT_DECODE_TESTS _soft_total)
 math(EXPR _soft_count "${_soft_total} / 7")
@@ -409,6 +410,12 @@ foreach(_i RANGE 0 ${_soft_count})
     list(GET TX_SOFT_DECODE_TESTS ${_off5} _snr)
     list(GET TX_SOFT_DECODE_TESTS ${_off6} _seeds)
     set(_test_name "tx_${_suffix}")
+    # SF6 is always implicit-header
+    if(_sf EQUAL 6)
+        set(_impl_flag "-DIMPLICIT=1")
+    else()
+        set(_impl_flag "")
+    endif()
     add_test(
         NAME ${_test_name}
         COMMAND ${CMAKE_COMMAND}
@@ -420,6 +427,7 @@ foreach(_i RANGE 0 ${_soft_count})
             -DPAYLOAD=${_payload}
             -DSNR=${_snr}
             -DSEEDS=${_seeds}
+            ${_impl_flag}
             -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tx_${_suffix}
             -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tx_soft_decode_test.cmake
     )
@@ -554,6 +562,13 @@ set(TX_IMPLICIT_TESTS
     "impl_cfo10k"       7  1  125000  "Hello"  3  "1.0"  ""  10000  ""  125000
     "impl_100B"         7  1  125000  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"  3  "1.0"  ""  ""   ""  125000
     "impl_100B_sfo20"   7  1  125000  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"  3  "1.0"  ""  ""   20  125000
+    # Higher-SF implicit (SF10, SF12)
+    "impl_sf10_clean"       10  1  125000  "Hello"  3  "1.0"  ""   ""    ""  125000
+    "impl_sf10_cfo10k"      10  1  125000  "Hello"  3  "1.0"  ""  10000  ""  125000
+    "impl_sf10_sfo10"       10  1  125000  "Hello"  3  "1.0"  ""   ""    10  125000
+    "impl_sf12_clean"       12  1  125000  "Hello"  3  "1.0"  ""   ""    ""  125000
+    "impl_sf12_cfo10k"      12  1  125000  "Hello"  3  "1.0"  ""  10000  ""  125000
+    "impl_sf12_sfo10"       12  1  125000  "Hello"  3  "1.0"  ""   ""    10  125000
 )
 list(LENGTH TX_IMPLICIT_TESTS _impi_total)
 math(EXPR _impi_count "${_impi_total} / 11")
@@ -657,5 +672,25 @@ add_test(
         -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tx_hex_roundtrip_test.cmake
 )
 set_tests_properties(tx_hex_roundtrip_sf7 PROPERTIES
+    LABELS "tx"
+)
+
+# ===== LoRaWAN sync word 0x34 roundtrip test =====
+add_test(
+    NAME tx_syncword_lorawan_sf7
+    COMMAND ${CMAKE_COMMAND}
+        -DLORA_TX=$<TARGET_FILE:lora_tx>
+        -DLORA_REPLAY=$<TARGET_FILE:lora_replay>
+        -DSF=7
+        -DCR=1
+        -DBW=125000
+        -DPAYLOAD=LoRaWAN
+        -DSNR=20
+        -DSEEDS=3
+        -DSYNC_WORD=52
+        -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tx_syncword_lorawan_sf7
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tx_soft_decode_test.cmake
+)
+set_tests_properties(tx_syncword_lorawan_sf7 PROPERTIES
     LABELS "tx"
 )
