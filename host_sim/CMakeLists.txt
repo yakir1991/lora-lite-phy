@@ -380,6 +380,9 @@ set(TX_SOFT_DECODE_TESTS
     # suffix               SF  CR  BW      payload           SNR  SEEDS
     "soft_sf7_cr1_snr-9"    7   1  125000  "Hello soft"      -9   20
     "soft_sf7_cr4_snr-10"   7   4  125000  "Hello soft"      -10  20
+    "soft_sf8_cr1_snr-11"   8   1  125000  "Hello soft"      -11  20
+    "soft_sf9_cr1_snr-13"   9   1  125000  "Hello soft"      -13  20
+    "soft_sf12_cr1_snr-18"  12  1  125000  "Hello soft"      -18  10
 )
 list(LENGTH TX_SOFT_DECODE_TESTS _soft_total)
 math(EXPR _soft_count "${_soft_total} / 7")
@@ -600,3 +603,38 @@ foreach(_i RANGE 0 ${_impi_count})
         LABELS "tx;impairment"
     )
 endforeach()
+
+# ===== TX multi-packet test (encode two packets, decode with --multi) =====
+add_test(
+    NAME tx_multi_packet_sf7
+    COMMAND ${CMAKE_COMMAND}
+        -DLORA_TX=$<TARGET_FILE:lora_tx>
+        -DLORA_REPLAY=$<TARGET_FILE:lora_replay>
+        -DSF=7
+        -DCR=1
+        -DBW=125000
+        -DPAYLOAD1=Hello
+        -DPAYLOAD2=World
+        -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tx_multi_packet_sf7
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tx_multi_packet_test.cmake
+)
+set_tests_properties(tx_multi_packet_sf7 PROPERTIES
+    LABELS "tx"
+)
+
+# ===== TX no-CRC roundtrip test =====
+add_test(
+    NAME tx_nocrc_sf7
+    COMMAND ${CMAKE_COMMAND}
+        -DLORA_TX=$<TARGET_FILE:lora_tx>
+        -DLORA_REPLAY=$<TARGET_FILE:lora_replay>
+        -DSF=7
+        -DCR=1
+        -DBW=125000
+        -DPAYLOAD=NoCRC
+        -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tx_nocrc_sf7
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tx_nocrc_test.cmake
+)
+set_tests_properties(tx_nocrc_sf7 PROPERTIES
+    LABELS "tx"
+)
