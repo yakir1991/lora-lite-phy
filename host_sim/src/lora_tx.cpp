@@ -138,7 +138,7 @@ std::vector<uint16_t> interleave_block(const std::vector<uint8_t>& codewords,
 // Subsequent payload blocks each consume sf_app nibbles at the
 // packet's actual CR, where sf_app = sf (no LDRO) or sf-2 (LDRO).
 std::vector<uint16_t> encode_packet_symbols(
-    int sf, int cr, bool has_crc, bool ldro,
+    int sf, int cr, bool has_crc, bool ldro, bool implicit_header,
     const std::vector<uint8_t>& payload)
 {
     // 1. CRC on raw payload; whiten only the payload bytes.
@@ -160,17 +160,25 @@ std::vector<uint16_t> encode_packet_symbols(
         data_nibbles.push_back(static_cast<uint8_t>((byte >> 4) & 0xF));
     }
 
-    // 3. Build the merged nibble stream for the header block:
-    //    5 header nibbles + first max(0, sf-7) data nibbles
-    auto header_nibbles = host_sim::lora_replay::build_header_nibbles(
-        static_cast<int>(payload.size()), has_crc, cr);
-    // header_nibbles has exactly 5 entries
-
+    // 3. Build the merged nibble stream for the header block.
+    //    Explicit: 5 header nibbles + first max(0, sf-7) data nibbles
+    //    Implicit: all sf-2 nibbles are data (no header field)
     const int sf_app_hdr = sf - 2;
-    const int data_in_header = std::max(0, sf_app_hdr - 5);
-    std::vector<uint8_t> header_block_nibbles = header_nibbles;
-    for (int i = 0; i < data_in_header && i < static_cast<int>(data_nibbles.size()); ++i) {
-        header_block_nibbles.push_back(data_nibbles[i]);
+    int data_in_header;
+    std::vector<uint8_t> header_block_nibbles;
+    if (implicit_header) {
+        data_in_header = sf_app_hdr;
+        for (int i = 0; i < data_in_header && i < static_cast<int>(data_nibbles.size()); ++i) {
+            header_block_nibbles.push_back(data_nibbles[i]);
+        }
+    } else {
+        auto header_nibbles = host_sim::lora_replay::build_header_nibbles(
+            static_cast<int>(payload.size()), has_crc, cr);
+        data_in_header = std::max(0, sf_app_hdr - 5);
+        header_block_nibbles = header_nibbles;
+        for (int i = 0; i < data_in_header && i < static_cast<int>(data_nibbles.size()); ++i) {
+            header_block_nibbles.push_back(data_nibbles[i]);
+        }
     }
 
     // 4. Encode header block: CR=4, sf_app=sf-2, cw_len=8
@@ -278,6 +286,7 @@ struct TxOptions
     int preamble_len{8};
     int sync_word{0x12};
     bool has_crc{true};
+    bool implicit_header{false};
     bool ldro_auto{true};
     bool ldro{false};
     float snr_db{NAN};    // NaN = no noise
@@ -299,6 +308,7 @@ void print_usage(const char* prog)
         << "  --preamble <n>       Preamble length (default: 8)\n"
         << "  --sync-word <hex>    Sync word (default: 0x12)\n"
         << "  --no-crc             Disable CRC\n"
+        << "  --implicit           Implicit header mode\n"
         << "  --ldro               Force LDRO on\n"
         << "  --no-ldro            Force LDRO off\n"
         << "  --snr <dB>           Add AWGN at given SNR (default: off)\n"
@@ -329,6 +339,7 @@ std::optional<TxOptions> parse_args(int argc, char* argv[])
         else if (arg == "--preamble") { opts.preamble_len = std::stoi(next()); }
         else if (arg == "--sync-word") { opts.sync_word = std::stoi(next(), nullptr, 16); }
         else if (arg == "--no-crc") { opts.has_crc = false; }
+        else if (arg == "--implicit") { opts.implicit_header = true; }
         else if (arg == "--ldro") { opts.ldro_auto = false; opts.ldro = true; }
         else if (arg == "--no-ldro") { opts.ldro_auto = false; opts.ldro = false; }
         else if (arg == "--payload") { opts.payload = next(); }
@@ -398,7 +409,9 @@ int main(int argc, char* argv[])
               << " LDRO=" << (opts.ldro ? "on" : "off") << "\n"
               << "  Preamble=" << opts.preamble_len
               << " SyncWord=0x" << std::hex << opts.sync_word << std::dec
-              << " CRC=" << (opts.has_crc ? "on" : "off") << "\n"
+              << " CRC=" << (opts.has_crc ? "on" : "off")
+              << " HDR=" << (opts.implicit_header ? "implicit" : "explicit")
+              << "\n"
               << "  Payload (" << payload_bytes.size() << " bytes): ";
     for (uint8_t b : payload_bytes) {
         if (std::isprint(b)) std::cout << static_cast<char>(b);
@@ -408,7 +421,8 @@ int main(int argc, char* argv[])
 
     // Encode
     auto data_symbols = encode_packet_symbols(
-        opts.sf, opts.cr, opts.has_crc, opts.ldro, payload_bytes);
+        opts.sf, opts.cr, opts.has_crc, opts.ldro, opts.implicit_header,
+        payload_bytes);
 
     std::cout << "  Data symbols: " << data_symbols.size() << "\n";
 

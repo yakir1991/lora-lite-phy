@@ -21,9 +21,15 @@ else()
     set(LDRO "false")
 endif()
 
+if(DEFINED IMPLICIT AND "${IMPLICIT}" STREQUAL "1")
+    set(_implicit_json "true")
+else()
+    set(_implicit_json "false")
+endif()
+
 set(META "${WORK_DIR}/meta.json")
 file(WRITE "${META}"
-    "{\"sf\":${SF},\"bw\":${BW},\"sample_rate\":${SAMPLE_RATE},\"cr\":${CR},\"payload_len\":${PAYLOAD_LEN},\"has_crc\":true,\"implicit_header\":false,\"ldro\":${LDRO},\"preamble_len\":8,\"sync_word\":18}")
+    "{\"sf\":${SF},\"bw\":${BW},\"sample_rate\":${SAMPLE_RATE},\"cr\":${CR},\"payload_len\":${PAYLOAD_LEN},\"has_crc\":true,\"implicit_header\":${_implicit_json},\"ldro\":${LDRO},\"preamble_len\":8,\"sync_word\":18}")
 
 # Build impairment description for logging
 set(_impair_desc "")
@@ -56,6 +62,9 @@ foreach(_seed RANGE 1 ${SEEDS})
     endif()
     if(DEFINED SFO AND NOT "${SFO}" STREQUAL "")
         list(APPEND _tx_cmd --sfo "${SFO}")
+    endif()
+    if(DEFINED IMPLICIT AND "${IMPLICIT}" STREQUAL "1")
+        list(APPEND _tx_cmd --implicit)
     endif()
 
     execute_process(
