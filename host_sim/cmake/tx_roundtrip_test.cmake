@@ -23,16 +23,25 @@ if(_sym_dur_us GREATER 16000)
 else()
     set(LDRO "false")
 endif()
+if(DEFINED IMPLICIT AND "${IMPLICIT}" STREQUAL "1")
+    set(_implicit_json "true")
+else()
+    set(_implicit_json "false")
+endif()
 file(WRITE "${META}"
-    "{\"sf\":${SF},\"bw\":${BW},\"sample_rate\":${SAMPLE_RATE},\"cr\":${CR},\"payload_len\":${PAYLOAD_LEN},\"has_crc\":true,\"implicit_header\":false,\"ldro\":${LDRO},\"preamble_len\":8,\"sync_word\":18}")
+    "{\"sf\":${SF},\"bw\":${BW},\"sample_rate\":${SAMPLE_RATE},\"cr\":${CR},\"payload_len\":${PAYLOAD_LEN},\"has_crc\":true,\"implicit_header\":${_implicit_json},\"ldro\":${LDRO},\"preamble_len\":8,\"sync_word\":18}")
 
 # TX encode
+set(_tx_cmd "${LORA_TX}"
+    --sf "${SF}" --cr "${CR}" --bw "${BW}"
+    --sample-rate "${SAMPLE_RATE}"
+    --payload "${PAYLOAD}"
+    --output "${TX_IQ}")
+if(DEFINED IMPLICIT AND "${IMPLICIT}" STREQUAL "1")
+    list(APPEND _tx_cmd --implicit)
+endif()
 execute_process(
-    COMMAND "${LORA_TX}"
-        --sf "${SF}" --cr "${CR}" --bw "${BW}"
-        --sample-rate "${SAMPLE_RATE}"
-        --payload "${PAYLOAD}"
-        --output "${TX_IQ}"
+    COMMAND ${_tx_cmd}
     OUTPUT_VARIABLE _tx_out
     ERROR_VARIABLE  _tx_err
     RESULT_VARIABLE _tx_rc

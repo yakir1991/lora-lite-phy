@@ -263,6 +263,7 @@ set(TX_ROUNDTRIP_TESTS
     "sf8_cr2"      8   2  125000  "SF8 test"
     "sf9_cr3"      9   3  125000  "SF9"
     "sf10_cr4"    10   4  125000  "SF10 long payload test!"
+    "sf11_cr1"    11   1  125000  "SF11"
     "sf12_cr1"    12   1  125000  "SF12"
     "sf7_bw250"    7   1  250000  "BW250"
     "sf7_bw500"    7   1  500000  "BW500k test"
@@ -337,6 +338,33 @@ foreach(_i RANGE 0 ${_tx_os1_count})
             -DBW=${_bw}
             -DSAMPLE_RATE=${_bw}
             -DPAYLOAD=${_payload}
+            -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tx_roundtrip_${_suffix}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tx_roundtrip_test.cmake
+    )
+    set_tests_properties(${_test_name} PROPERTIES
+        LABELS "tx"
+    )
+endforeach()
+
+# ----- SF6 TX round-trip (always implicit header) -----
+foreach(_sf6_entry "sf6_cr1;6;1;125000;SF6 test" "sf6_cr2;6;2;125000;SF6 CR2")
+    string(REPLACE ";" ";" _parts "${_sf6_entry}")
+    list(GET _parts 0 _suffix)
+    list(GET _parts 1 _sf)
+    list(GET _parts 2 _cr)
+    list(GET _parts 3 _bw)
+    list(GET _parts 4 _payload)
+    set(_test_name "tx_roundtrip_${_suffix}")
+    add_test(
+        NAME ${_test_name}
+        COMMAND ${CMAKE_COMMAND}
+            -DLORA_TX=$<TARGET_FILE:lora_tx>
+            -DLORA_REPLAY=$<TARGET_FILE:lora_replay>
+            -DSF=${_sf}
+            -DCR=${_cr}
+            -DBW=${_bw}
+            -DPAYLOAD=${_payload}
+            -DIMPLICIT=1
             -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tx_roundtrip_${_suffix}
             -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tx_roundtrip_test.cmake
     )
