@@ -23,6 +23,7 @@ add_library(host_sim_core STATIC
     src/lora_replay_header_encoder.cpp
     src/lora_replay_stage_processing.cpp
     third_party/kissfft/kiss_fft.c
+    third_party/kissfft/kiss_fft_q15.c
 )
 
 add_library(host_sim ALIAS host_sim_core)
@@ -136,6 +137,18 @@ if (BUILD_TESTING)
         COMMAND host_sim_numeric_modes
     )
     set_tests_properties(host_sim_numeric_modes PROPERTIES LABELS "host-sim")
+
+    add_executable(host_sim_q15_demod
+        tests/test_q15_demod.cpp
+    )
+    target_link_libraries(host_sim_q15_demod
+        PRIVATE host_sim_core
+    )
+    add_test(
+        NAME host_sim_q15_demod
+        COMMAND host_sim_q15_demod
+    )
+    set_tests_properties(host_sim_q15_demod PROPERTIES LABELS "host-sim")
 
     add_test(
         NAME host_sim_summary_metrics
