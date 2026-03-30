@@ -1,3 +1,21 @@
-gr_lora_sdr/data/generated/
+# Build artifacts
 build/
+bin/
+
+# Test / temporary data
+output/
+tmp/
+Testing/
+*.iq
+*.pyc
 __pycache__/
+
+# Vendor / submodules
+gr_lora_sdr/
+third_party/CMSIS-DSP/
+
+# Editor / OS
+.vscode/
+.venv/
+*.swp
+.DS_Store

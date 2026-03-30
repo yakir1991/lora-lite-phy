@@ -99,7 +99,7 @@ Prints `CRC OK` / `CRC FAIL` and `Payload MATCH` / `Payload MISMATCH`.
 
 ## Tests
 
-The project ships with **137 CTests** covering:
+The project ships with **138 CTests** covering:
 
 - OTA golden-file regression (real RFM95 captures, SF5–SF12)
 - TX→RX roundtrip (SF6–SF12, CR 1–4, BW 62.5k–500k)
