@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <climits>
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
@@ -970,10 +971,13 @@ int main(int argc, char** argv)
             // Create a view of samples starting at the burst.
             const std::complex<float>* burst_samples = samples.data() + burst_offset;
             const std::size_t burst_len = samples.size() - burst_offset;
-            // Wrap in a temporary vector for alignment functions that
-            // take vector reference (no copy — we'll build a lightweight span).
+            // Limit the alignment-search window to preamble + SFD + margin
+            // to avoid copying the entire remaining capture.
+            const std::size_t align_window = static_cast<std::size_t>(sps) *
+                static_cast<std::size_t>(metadata->preamble_len + 6);
+            const std::size_t view_len = std::min(burst_len, align_window);
             const std::vector<std::complex<float>> burst_view(
-                burst_samples, burst_samples + burst_len);
+                burst_samples, burst_samples + view_len);
 
             // --- Stage 1: alignment ---
             // At low oversampling (os<=4), the polyphase anti-aliasing is weak
@@ -999,10 +1003,11 @@ int main(int argc, char** argv)
             }
             if (options.verbose) std::cerr << "[debug] alignment done" << std::endl;
 
-            const int available_symbols = static_cast<int>(
+            const int available_symbols = static_cast<int>(std::min<std::size_t>(
                 (samples.size() > alignment_samples
-                     ? (samples.size() - alignment_samples) / sps
-                     : 0));
+                     ? (samples.size() - alignment_samples) / static_cast<std::size_t>(sps)
+                     : 0),
+                static_cast<std::size_t>(INT_MAX)));
             const int preamble_symbols_to_use =
                 std::min(std::max(metadata->preamble_len - 1, 0), available_symbols);
             if (preamble_symbols_to_use > 0) {
@@ -1072,7 +1077,7 @@ int main(int argc, char** argv)
                 // Enable with HOST_SIM_CFO_TRACK_ALPHA env variable.
                 static const char* alpha_env = std::getenv("HOST_SIM_CFO_TRACK_ALPHA");
                 if (alpha_env) {
-                    demod.set_cfo_tracking(std::stof(alpha_env));
+                    demod.set_cfo_tracking(std::stof(alpha_env), 8);
                 }
                 std::cout << "Frequency offsets: CFO_int=" << freq_est.cfo_int
                           << " CFO_frac=" << freq_est.cfo_frac
@@ -1083,8 +1088,11 @@ int main(int argc, char** argv)
                 demod.reset_symbol_counter();
             }
 
-            const int usable_samples = static_cast<int>(samples.size() > alignment_samples ? samples.size() - alignment_samples : 0);
-            const int symbol_count = usable_samples / sps;
+            const int symbol_count = static_cast<int>(std::min<std::size_t>(
+                (samples.size() > alignment_samples
+                     ? (samples.size() - alignment_samples) / static_cast<std::size_t>(sps)
+                     : 0),
+                static_cast<std::size_t>(INT_MAX)));
             symbols.reserve(symbol_count);
             for (int idx = 0; idx < symbol_count; ++idx) {
                 uint16_t value = demod.demodulate(&samples[alignment_samples + static_cast<std::size_t>(idx) * sps]);

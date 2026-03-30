@@ -437,12 +437,17 @@ int main(int argc, char* argv[])
 
     // CFO: apply progressive phase rotation  e^(j*2π*cfo*n/Fs)
     if (opts.cfo_hz != 0.0f) {
-        const float phase_per_sample =
-            2.0f * static_cast<float>(M_PI) * opts.cfo_hz /
-            static_cast<float>(opts.sample_rate);
+        const double phase_per_sample =
+            2.0 * M_PI * static_cast<double>(opts.cfo_hz) /
+            static_cast<double>(opts.sample_rate);
+        double phi = 0.0;
         for (std::size_t n = 0; n < iq.size(); ++n) {
-            const float phi = phase_per_sample * static_cast<float>(n);
-            iq[n] *= std::complex<float>(std::cos(phi), std::sin(phi));
+            iq[n] *= std::complex<float>(static_cast<float>(std::cos(phi)),
+                                         static_cast<float>(std::sin(phi)));
+            phi += phase_per_sample;
+            // Keep phase in [-π, π] to maintain precision
+            if (phi > M_PI) phi -= 2.0 * M_PI;
+            else if (phi < -M_PI) phi += 2.0 * M_PI;
         }
         std::cout << "  CFO applied: " << opts.cfo_hz << " Hz\n";
     }
