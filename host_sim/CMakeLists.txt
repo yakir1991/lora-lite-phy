@@ -447,6 +447,15 @@ set(TX_IMPAIRMENT_TESTS
     "bw500k_100B_sfo30"  7  1  500000  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"  3  "1.0"  ""  ""  30  500000
     # Noise + SFO combined
     "awgn_snr-5_sfo20"   7  1  125000  "Hello"  10  "0.8"  -5  ""  20  125000
+    # CR>1 + SFO
+    "cr2_sfo20"       7  2  125000  "Hello"  5  "1.0"  ""  ""  20  125000
+    "cr4_cfo10k_sfo10"  7  4  125000  "Hello"  5  "1.0"  ""  10000  10  125000
+    # SF8 impairments
+    "sf8_cfo20k"      8  1  125000  "Hello"  5  "1.0"  ""  20000  ""  125000
+    "sf8_sfo20"       8  1  125000  "Hello"  5  "1.0"  ""  ""     20  125000
+    # SF11 impairments
+    "sf11_cfo10k"    11  1  125000  "Hello"  3  "1.0"  ""  10000  ""  125000
+    "sf11_sfo10"     11  1  125000  "Hello"  3  "1.0"  ""  ""     10  125000
     # BW=62.5kHz with CFO
     "bw62k5_cfo10k"   7  1  62500  "Hello"  5  "1.0"  ""  10000   ""  62500
 )

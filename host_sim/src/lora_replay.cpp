@@ -138,6 +138,7 @@ struct Options
     std::optional<std::filesystem::path> summary_output;
     bool multi_packet{false};
     bool soft{false};
+    bool verbose{false};
 };
 
 struct HeaderDecodeResult
@@ -203,6 +204,7 @@ void print_usage(const char* binary)
               << " [--dump-payload <file.bin>]"
               << " [--summary <file.json>]"
               << " [--multi]"
+              << " [--verbose]"
               << "\n";
 }
 
@@ -235,6 +237,8 @@ Options parse_arguments(int argc, char** argv)
             opts.multi_packet = true;
         } else if (arg == "--soft") {
             opts.soft = true;
+        } else if (arg == "--verbose" || arg == "-v") {
+            opts.verbose = true;
         } else if (arg == "--help" || arg == "-h") {
             print_usage(argv[0]);
             std::exit(EXIT_SUCCESS);
@@ -877,13 +881,13 @@ std::vector<StageComparisonResult> compare_with_reference(const StageOutputs& ou
 int main(int argc, char** argv)
 {
     try {
-        std::cerr << "[debug] entering lora_replay" << std::endl;
         const Options options = parse_arguments(argc, argv);
+        if (options.verbose) std::cerr << "[debug] entering lora_replay" << std::endl;
 
         const auto samples = host_sim::load_cf32(options.iq_file);
-        std::cerr << "[debug] loaded samples=" << samples.size() << std::endl;
+        if (options.verbose) std::cerr << "[debug] loaded samples=" << samples.size() << std::endl;
         const auto stats = host_sim::analyse_capture(samples);
-        std::cerr << "[debug] analysed capture" << std::endl;
+        if (options.verbose) std::cerr << "[debug] analysed capture" << std::endl;
 
         SummaryReport summary;
         if (!options.iq_file.empty()) {
@@ -901,7 +905,7 @@ int main(int argc, char** argv)
                   << "  Max |x|: " << std::setprecision(6) << stats.max_magnitude << "\n"
                   << "  Mean power: " << std::setprecision(6) << stats.mean_power << "\n";
 
-        std::cerr << "[debug] preparing metadata" << std::endl;
+        if (options.verbose) std::cerr << "[debug] preparing metadata" << std::endl;
         std::optional<host_sim::LoRaMetadata> metadata;
         if (options.metadata) {
             metadata = host_sim::load_metadata(*options.metadata);
@@ -912,7 +916,7 @@ int main(int argc, char** argv)
                 metadata = host_sim::load_metadata(guess);
             }
         }
-        std::cerr << "[debug] metadata loaded? " << (metadata.has_value()) << std::endl;
+        if (options.verbose) std::cerr << "[debug] metadata loaded? " << (metadata.has_value()) << std::endl;
         if (metadata) {
             summary.metadata = *metadata;
         }
@@ -927,11 +931,11 @@ int main(int argc, char** argv)
             std::cout << "Metadata: SF=" << metadata->sf << ", CR=" << metadata->cr
                       << ", BW=" << metadata->bw << ", Fs=" << metadata->sample_rate
                       << ", payload_len=" << metadata->payload_len << "\n";
-            std::cerr << "[debug] after metadata print" << std::endl;
+            if (options.verbose) std::cerr << "[debug] after metadata print" << std::endl;
 
             host_sim::FftDemodulator demod(metadata->sf, metadata->sample_rate, metadata->bw);
             host_sim::FftDemodReference demod_ref(metadata->sf, metadata->sample_rate, metadata->bw);
-            std::cerr << "[debug] demodulators constructed" << std::endl;
+            if (options.verbose) std::cerr << "[debug] demodulators constructed" << std::endl;
             const int sps = demod.samples_per_symbol();
             int detected_preamble_bin = 0;
 
@@ -992,7 +996,7 @@ int main(int argc, char** argv)
                 std::cout << "Alignment offset: " << alignment_samples
                           << " samples" << std::endl;
             }
-            std::cerr << "[debug] alignment done" << std::endl;
+            if (options.verbose) std::cerr << "[debug] alignment done" << std::endl;
 
             const int available_symbols = static_cast<int>(
                 (samples.size() > alignment_samples
