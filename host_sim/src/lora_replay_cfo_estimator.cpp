@@ -171,7 +171,7 @@ HeaderDecodeResult try_decode_header(const std::vector<uint16_t>& symbols,
                                      std::size_t start,
                                      const host_sim::LoRaMetadata& meta)
 {
-    const bool debug_header = (std::getenv("HOST_SIM_DEBUG_HEADER") != nullptr);
+    static const bool debug_header = (std::getenv("HOST_SIM_DEBUG_HEADER") != nullptr);
     const bool header_auto_ldro = (meta.sf > 6);
     auto decode_with = [&](bool force_header_no_ldro, bool use_legacy_gray) {
         return decode_header_block(symbols, start, meta, force_header_no_ldro, debug_header, use_legacy_gray);

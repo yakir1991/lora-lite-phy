@@ -25,7 +25,8 @@ public:
     uint16_t demodulate(const std::complex<float>* symbol_samples) const;
 
     // Return |fft_out_[n]|² for all N bins after the most recent demodulate() call.
-    std::vector<float> get_fft_magnitudes_sq() const;
+    // Returns a reference to an internal buffer; valid until next demodulate/get_fft_magnitudes_sq call.
+    const std::vector<float>& get_fft_magnitudes_sq() const;
 
     int samples_per_symbol() const { return samples_per_symbol_; }
 
@@ -71,6 +72,7 @@ private:
     kiss_fft_cfg kiss_cfg_{nullptr};
     mutable std::vector<kiss_fft_cpx> fft_in_;
     mutable std::vector<kiss_fft_cpx> fft_out_;
+    mutable std::vector<float> mag_sq_buf_;
     mutable float cfo_frac_{0.0f};
     int cfo_int_{0};
     float sfo_slope_{0.0f};

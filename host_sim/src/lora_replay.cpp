@@ -274,7 +274,7 @@ HeaderDecodeResult try_decode_header(const std::vector<uint16_t>& symbols,
                                      std::size_t start,
                                      const host_sim::LoRaMetadata& meta)
 {
-    const bool debug_header = (std::getenv("HOST_SIM_DEBUG_HEADER") != nullptr);
+    static const bool debug_header = (std::getenv("HOST_SIM_DEBUG_HEADER") != nullptr);
     HeaderDecodeResult result;
     if (start + 8 > symbols.size()) {
         return result;
@@ -1069,7 +1069,8 @@ int main(int argc, char** argv)
                 demod.reset_symbol_counter();
                 // Per-symbol CFO tracking: disabled by default.
                 // Enable with HOST_SIM_CFO_TRACK_ALPHA env variable.
-                if (const char* alpha_env = std::getenv("HOST_SIM_CFO_TRACK_ALPHA")) {
+                static const char* alpha_env = std::getenv("HOST_SIM_CFO_TRACK_ALPHA");
+                if (alpha_env) {
                     demod.set_cfo_tracking(std::stof(alpha_env));
                 }
                 std::cout << "Frequency offsets: CFO_int=" << freq_est.cfo_int
@@ -1088,7 +1089,7 @@ int main(int argc, char** argv)
                 uint16_t value = demod.demodulate(&samples[alignment_samples + static_cast<std::size_t>(idx) * sps]);
                 symbols.push_back(value);
                 if (options.soft) {
-                    auto mags = demod.get_fft_magnitudes_sq();
+                    const auto& mags = demod.get_fft_magnitudes_sq();
                     symbol_llrs.push_back(host_sim::compute_symbol_llrs(
                         mags.data(), metadata->sf,
                         (idx < 8) || metadata->ldro,
@@ -1227,7 +1228,7 @@ int main(int argc, char** argv)
                             redemod.push_back(demod.demodulate(
                                 &samples[data_sample + i * sps]));
                             if (options.soft) {
-                                auto mags = demod.get_fft_magnitudes_sq();
+                                const auto& mags = demod.get_fft_magnitudes_sq();
                                 redemod_llrs.push_back(host_sim::compute_symbol_llrs(
                                     mags.data(), metadata->sf,
                                     (static_cast<int>(i) < 8) || metadata->ldro,
@@ -1286,7 +1287,7 @@ int main(int argc, char** argv)
                                         adj_syms.push_back(demod.demodulate(
                                             &samples[adj_data + i * sps]));
                                         if (options.soft) {
-                                            auto mags = demod.get_fft_magnitudes_sq();
+                                            const auto& mags = demod.get_fft_magnitudes_sq();
                                             adj_llrs.push_back(host_sim::compute_symbol_llrs(
                                                 mags.data(), metadata->sf,
                                                 (static_cast<int>(i) < 8) || metadata->ldro,
@@ -1366,7 +1367,7 @@ int main(int argc, char** argv)
                                     adj_syms.push_back(demod.demodulate(
                                         &samples[adj_data + i * sps]));
                                     if (options.soft) {
-                                        auto mags = demod.get_fft_magnitudes_sq();
+                                        const auto& mags = demod.get_fft_magnitudes_sq();
                                         adj_llrs.push_back(host_sim::compute_symbol_llrs(
                                             mags.data(), metadata->sf,
                                             (static_cast<int>(i) < 8) || metadata->ldro,
@@ -1496,7 +1497,7 @@ int main(int argc, char** argv)
                                 break;
                             redemod.push_back(demod_os2.demodulate(&up[pos]));
                             if (options.soft) {
-                                auto mags = demod_os2.get_fft_magnitudes_sq();
+                                const auto& mags = demod_os2.get_fft_magnitudes_sq();
                                 redemod_llrs.push_back(
                                     host_sim::compute_symbol_llrs(
                                         mags.data(), metadata->sf,
@@ -1566,7 +1567,7 @@ int main(int argc, char** argv)
                                 break;
                             redemod.push_back(demod_os2.demodulate(&up[pos]));
                             if (options.soft) {
-                                auto mags = demod_os2.get_fft_magnitudes_sq();
+                                const auto& mags = demod_os2.get_fft_magnitudes_sq();
                                 redemod_llrs.push_back(
                                     host_sim::compute_symbol_llrs(
                                         mags.data(), metadata->sf,
@@ -1984,7 +1985,7 @@ int main(int argc, char** argv)
                     }
                 }
 
-                if (expected_crc && unwhitened.size() >= expected_payload_len + 2) {
+                if (expected_crc && expected_payload_len >= 2 && unwhitened.size() >= expected_payload_len + 2) {
                     // GNU Radio CRC verification algorithm:
                     // 1. Compute CRC on first (payload_len - 2) bytes
                     // 2. XOR with last 2 payload bytes
@@ -2046,7 +2047,7 @@ int main(int argc, char** argv)
                     auto stage_results = compare_with_reference(stage_outputs, *options.compare_root);
                     summary.stage_results = stage_results;
                     summary.compare_run = true;
-                    const bool verbose_compare = (std::getenv("HOST_SIM_VERBOSE_COMPARE") != nullptr);
+                    static const bool verbose_compare = (std::getenv("HOST_SIM_VERBOSE_COMPARE") != nullptr);
                     std::size_t stage_total = 0;
                     std::ostringstream summary_line;
                     summary_line << "[compare] summary:";

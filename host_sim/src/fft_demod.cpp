@@ -69,7 +69,7 @@ void FftDemodulator::compute_fft(const std::complex<float>* symbol_samples,
 
 uint16_t FftDemodulator::demodulate(const std::complex<float>* symbol_samples) const
 {
-    const bool debug_fft = (std::getenv("HOST_SIM_DEBUG_FFT_DETAIL") != nullptr);
+    static const bool debug_fft = (std::getenv("HOST_SIM_DEBUG_FFT_DETAIL") != nullptr);
     const float fractional_offset =
         cfo_frac_ + sfo_slope_ * static_cast<float>(symbol_counter_);
     const bool apply_sfo = std::abs(sfo_slope_) > 0.0f;
@@ -214,13 +214,13 @@ uint16_t FftDemodulator::demodulate(const std::complex<float>* symbol_samples) c
     return static_cast<uint16_t>(corrected_bin);
 }
 
-std::vector<float> FftDemodulator::get_fft_magnitudes_sq() const
+const std::vector<float>& FftDemodulator::get_fft_magnitudes_sq() const
 {
-    std::vector<float> mags(n_bins_);
+    mag_sq_buf_.resize(n_bins_);
     for (int i = 0; i < n_bins_; ++i) {
-        mags[i] = fft_out_[i].r * fft_out_[i].r + fft_out_[i].i * fft_out_[i].i;
+        mag_sq_buf_[i] = fft_out_[i].r * fft_out_[i].r + fft_out_[i].i * fft_out_[i].i;
     }
-    return mags;
+    return mag_sq_buf_;
 }
 
 FftDemodulator::FrequencyEstimate FftDemodulator::estimate_frequency_offsets(
@@ -378,7 +378,8 @@ FftDemodulator::FrequencyEstimate FftDemodulator::estimate_frequency_offsets(
                 }
                 const double r_squared = (ss_tot > 1e-12) ? 1.0 - ss_res / ss_tot : 0.0;
 
-                if (std::getenv("HOST_SIM_DEBUG_SFO")) {
+                static const bool debug_sfo = (std::getenv("HOST_SIM_DEBUG_SFO") != nullptr);
+                if (debug_sfo) {
                     std::cerr << "[SFO_debug] n_diffs=" << n_diffs
                               << " n_inliers=" << n_inliers
                               << " slope_rad=" << slope
