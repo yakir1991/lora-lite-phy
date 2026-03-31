@@ -24,13 +24,12 @@ third_party/CMSIS-DSP/
 *.cf32
 !host_sim/data/**/*.cf32
 
-# Docs — keep only rev_eng, images, notes, and reference JSONs
+# Docs — keep only rev_eng, images, and reference JSONs
 docs/*
 !docs/rev_eng_lora.md
 !docs/images/
 docs/images/*
 !docs/images/rev_eng_lora_fig_*
-!docs/notes/
 !docs/reference_stage_manifest.json
 !docs/reference_summary_metrics.json
 

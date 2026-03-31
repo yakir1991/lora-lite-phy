@@ -4,6 +4,11 @@ A lightweight, standalone LoRa PHY-layer implementation in C++20.
 Encodes and decodes LoRa packets entirely in software — no radio hardware or
 GNU Radio required.
 
+Verified bit-exact against the
+[gr-lora_sdr](https://github.com/tapparelj/gr-lora_sdr) GNU Radio reference
+across all SF/BW/CR combinations, and validated over-the-air with a Semtech
+RFM95 transceiver.
+
 ## Features
 
 | Capability | Details |
@@ -16,23 +21,35 @@ GNU Radio required.
 | Soft-decision decoding | Soft Hamming via FFT magnitude ratios |
 | CFO tracking | Per-symbol EMA-based carrier frequency offset estimation |
 | SFO compensation | Two-pass sweep with OS=2 upsample fallback |
+| Fixed-point demod | Native Q15 FFT pipeline (KissFFT FIXED_POINT=16) |
 | LDRO | Automatic low-data-rate optimisation |
 | Sync words | Configurable (0x12 default, 0x34 LoRaWAN) |
 | Multi-packet | Streaming decode of concatenated captures |
 | Impairment injection | AWGN, CFO, SFO for controlled testing |
 
-## Project layout
+## Architecture
 
 ```
-host_sim/           C++ core library, TX encoder, RX decoder
-  src/              Source files (~7.5 k lines)
-  include/          Public headers
-  cmake/            CTest helper scripts
-arduino/            RFM95 TX/RX sketches for OTA interop testing
-tools/              Python & bash analysis/sweep scripts
-docs/               Reverse-engineering notes, stage reports, hardware plans
-third_party/        KissFFT (vendored), CMSIS-DSP
+host_sim/
+  include/host_sim/   Public headers (demod, chirp, hamming, scheduler, …)
+  src/                 Core library + TX encoder + RX decoder (~7.5 k LoC)
+  tests/               Unit & integration tests (Q15, scheduler, stage-processing)
+  cmake/               CTest helper scripts
+  data/ota/            Golden OTA captures from an RFM95 transceiver
+  third_party/kissfft/ Vendored KissFFT (float + Q15 builds)
+arduino/               RFM95 TX/RX/param-sweep sketches for OTA interop
+docs/                  Reverse-engineering paper + technical figures
+tools/                 CI helper scripts (manifest checker, metrics comparator)
 ```
+
+**Signal-processing pipeline:**
+
+1. **Burst detection** — energy + preamble chirp correlation
+2. **Time/frequency alignment** — sub-sample STO refinement, coarse CFO from SFD
+3. **Dechirp + FFT demodulation** — float or native Q15 path, parabolic peak interpolation
+4. **Per-symbol CFO tracking** — EMA filter on fractional-bin residuals
+5. **SFO compensation** — two-pass grid sweep; OS=2 upsample fallback
+6. **Gray decode → deinterleave → Hamming FEC → de-whitening → CRC**
 
 ## Building
 
@@ -100,19 +117,28 @@ Prints `CRC OK` / `CRC FAIL` and `Payload MATCH` / `Payload MISMATCH`.
 ## Tests
 
 The project ships with **138 CTests** (when GNU Radio reference data is
-available locally; CI runs the ~123 self-contained tests):
+present locally; CI runs the ~123 self-contained tests):
 
-- GNU Radio parity — bit-exact match against `gr_lora_sdr` reference output
-- OTA golden-file regression (real RFM95 captures, SF5–SF12)
-- TX→RX roundtrip (SF6–SF12, CR 1–4, BW 62.5k–500k)
-- Soft-decision decode under AWGN (SF6–SF12)
-- Impairment sweep (CFO up to 40 kHz, SFO up to 50 ppm, combined)
-- Implicit-header mode (SF7, SF10, SF12 with impairments)
-- Multi-packet streaming, no-CRC, hex payload, LoRaWAN sync word
+| Category | Count | Description |
+|---|---|---|
+| GNU Radio parity | 15 | Bit-exact match against `gr_lora_sdr` reference output |
+| OTA golden-file | 44 | Real RFM95 captures, SF6–SF12, BW 125–500 kHz, CR 4/5–4/8 |
+| TX→RX roundtrip | 9 | SF6–SF12, CR 1–4, BW 62.5k–500k |
+| Soft-decision AWGN | 6 | SF6–SF12 under noise, soft Hamming decode |
+| Impairment sweep | 52 | CFO ≤40 kHz, SFO ≤50 ppm, combined |
+| Implicit header | 11 | SF7, SF10, SF12 with impairments |
+| Misc | 1 | Multi-packet, no-CRC, hex payload, LoRaWAN sync word |
 
 ```bash
 cd build && ctest -j$(nproc)
 ```
+
+## Documentation
+
+The [reverse-engineering paper](docs/rev_eng_lora.md) provides a detailed
+technical walkthrough of the LoRa PHY layer — modulation, coding, packet
+structure, synchronisation, and demodulation — including 12 figures and
+measured FER results against hardware.
 
 ## TX CLI reference
 
@@ -149,4 +175,4 @@ cd build && ctest -j$(nproc)
 
 ## Licence
 
-See individual source files for licence information.
+MIT — see individual source files for details.
