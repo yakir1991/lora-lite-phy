@@ -140,6 +140,11 @@ technical walkthrough of the LoRa PHY layer — modulation, coding, packet
 structure, synchronisation, and demodulation — including 12 figures and
 measured FER results against hardware.
 
+| Report | Description |
+|--------|-------------|
+| [GNU Radio Compatibility](docs/gnu_radio_compatibility_report.md) | Payload-matching results across 72 SF/BW/CR configurations and 59 impairment scenarios |
+| [Performance Sweep](docs/receiver_vs_gnuradio_sweep_report.md) | Decode latency comparison — standalone vs gr-lora_sdr |
+
 ## TX CLI reference
 
 | Flag | Default | Description |
