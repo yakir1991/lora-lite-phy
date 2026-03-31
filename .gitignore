@@ -9,10 +9,37 @@ Testing/
 *.iq
 *.pyc
 __pycache__/
+payload.txt
+temp_metadata.json
+--output
+generate_and_verify.sh
+.gitmodules
 
 # Vendor / submodules
 gr_lora_sdr/
 third_party/CMSIS-DSP/
+
+# Binary / generated
+*.pdf
+*.cf32
+!host_sim/data/**/*.cf32
+
+# Docs — keep only rev_eng, images, notes, and reference JSONs
+docs/*
+!docs/rev_eng_lora.md
+!docs/images/
+docs/images/*
+!docs/images/rev_eng_lora_fig_*
+!docs/notes/
+!docs/reference_stage_manifest.json
+!docs/reference_summary_metrics.json
+
+# Tools — keep only CTest-used scripts
+tools/*
+!tools/check_reference_manifest.py
+!tools/compare_summary_metrics.py
+!tools/generate_summary_metrics.py
+!tools/run_summary_metrics_check.py
 
 # Editor / OS
 .vscode/

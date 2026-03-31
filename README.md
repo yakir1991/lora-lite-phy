@@ -99,8 +99,10 @@ Prints `CRC OK` / `CRC FAIL` and `Payload MATCH` / `Payload MISMATCH`.
 
 ## Tests
 
-The project ships with **138 CTests** covering:
+The project ships with **138 CTests** (when GNU Radio reference data is
+available locally; CI runs the ~123 self-contained tests):
 
+- GNU Radio parity — bit-exact match against `gr_lora_sdr` reference output
 - OTA golden-file regression (real RFM95 captures, SF5–SF12)
 - TX→RX roundtrip (SF6–SF12, CR 1–4, BW 62.5k–500k)
 - Soft-decision decode under AWGN (SF6–SF12)

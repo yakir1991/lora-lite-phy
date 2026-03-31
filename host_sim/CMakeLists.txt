@@ -55,36 +55,43 @@ target_link_libraries(lora_tx
 if (BUILD_TESTING)
     set(LORA_REFERENCE_DATA_DIR "${PROJECT_SOURCE_DIR}/gr_lora_sdr/data/generated")
 
-    function(add_lora_compare_test name basename)
+    # --- GNU Radio parity tests (require reference dataset) ---
+    if(EXISTS "${LORA_REFERENCE_DATA_DIR}")
+        message(STATUS "GNU Radio reference data found — registering parity tests")
+
+        function(add_lora_compare_test name basename)
+            add_test(
+                NAME ${name}
+                COMMAND lora_replay
+                    --iq "${LORA_REFERENCE_DATA_DIR}/${basename}.cf32"
+                    --compare-root "${LORA_REFERENCE_DATA_DIR}/${basename}.cf32"
+            )
+            set_tests_properties(${name} PROPERTIES LABELS "host-sim")
+        endfunction()
+
+        add_lora_compare_test(lora_replay_sf7_cr1_short tx_rx_sf7_bw125000_cr1_snrm5p0_short)
+        add_lora_compare_test(lora_replay_sf7_cr2_short tx_rx_sf7_bw125000_cr2_snrm5p0_short)
+        add_lora_compare_test(lora_replay_sf9_cr3_short tx_rx_sf9_bw125000_cr3_snrm2p0_short)
+
+        add_lora_compare_test(lora_replay_sf5_cr1 tx_rx_sf5_bw125000_cr1_snrm5p0)
+        add_lora_compare_test(lora_replay_sf5_cr2 tx_rx_sf5_bw125000_cr2_snrm5p0)
+        add_lora_compare_test(lora_replay_sf6_cr1 tx_rx_sf6_bw125000_cr1_snrm5p0)
+        add_lora_compare_test(lora_replay_sf6_cr2 tx_rx_sf6_bw125000_cr2_snrm5p0)
+        add_lora_compare_test(lora_replay_sf7_cr1_full tx_rx_sf7_bw125000_cr1_snrm5p0)
+        add_lora_compare_test(lora_replay_sf7_cr2_full tx_rx_sf7_bw125000_cr2_snrm5p0)
+        add_lora_compare_test(lora_replay_sf9_cr3_full tx_rx_sf9_bw125000_cr3_snrm2p0)
+        add_lora_compare_test(lora_replay_sf10_cr4_full tx_rx_sf10_bw250000_cr4_snrp0p0)
+
         add_test(
-            NAME ${name}
-            COMMAND lora_replay
-                --iq "${LORA_REFERENCE_DATA_DIR}/${basename}.cf32"
-                --compare-root "${LORA_REFERENCE_DATA_DIR}/${basename}.cf32"
+            NAME host_sim_verify_manifest
+            COMMAND python3 "${PROJECT_SOURCE_DIR}/tools/check_reference_manifest.py"
+                    "${PROJECT_SOURCE_DIR}/docs/reference_stage_manifest.json"
+                    --data-dir "${PROJECT_SOURCE_DIR}/gr_lora_sdr/data/generated"
         )
-        set_tests_properties(${name} PROPERTIES LABELS "host-sim")
-    endfunction()
-
-    add_lora_compare_test(lora_replay_sf7_cr1_short tx_rx_sf7_bw125000_cr1_snrm5p0_short)
-    add_lora_compare_test(lora_replay_sf7_cr2_short tx_rx_sf7_bw125000_cr2_snrm5p0_short)
-    add_lora_compare_test(lora_replay_sf9_cr3_short tx_rx_sf9_bw125000_cr3_snrm2p0_short)
-
-    add_lora_compare_test(lora_replay_sf5_cr1 tx_rx_sf5_bw125000_cr1_snrm5p0)
-    add_lora_compare_test(lora_replay_sf5_cr2 tx_rx_sf5_bw125000_cr2_snrm5p0)
-    add_lora_compare_test(lora_replay_sf6_cr1 tx_rx_sf6_bw125000_cr1_snrm5p0)
-    add_lora_compare_test(lora_replay_sf6_cr2 tx_rx_sf6_bw125000_cr2_snrm5p0)
-    add_lora_compare_test(lora_replay_sf7_cr1_full tx_rx_sf7_bw125000_cr1_snrm5p0)
-    add_lora_compare_test(lora_replay_sf7_cr2_full tx_rx_sf7_bw125000_cr2_snrm5p0)
-    add_lora_compare_test(lora_replay_sf9_cr3_full tx_rx_sf9_bw125000_cr3_snrm2p0)
-    add_lora_compare_test(lora_replay_sf10_cr4_full tx_rx_sf10_bw250000_cr4_snrp0p0)
-
-    add_test(
-        NAME host_sim_verify_manifest
-        COMMAND python3 "${PROJECT_SOURCE_DIR}/tools/check_reference_manifest.py"
-                "${PROJECT_SOURCE_DIR}/docs/reference_stage_manifest.json"
-                --data-dir "${PROJECT_SOURCE_DIR}/gr_lora_sdr/data/generated"
-    )
-    set_tests_properties(host_sim_verify_manifest PROPERTIES LABELS "host-sim")
+        set_tests_properties(host_sim_verify_manifest PROPERTIES LABELS "host-sim")
+    else()
+        message(STATUS "GNU Radio reference data not found — skipping parity tests")
+    endif()
 
     add_custom_target(host-sim
         COMMAND ${CMAKE_CTEST_COMMAND} -L host-sim
@@ -105,11 +112,13 @@ if (BUILD_TESTING)
     target_compile_definitions(host_sim_scheduler_smoke
         PRIVATE PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
     )
-    add_test(
-        NAME host_sim_scheduler_smoke
-        COMMAND host_sim_scheduler_smoke
-    )
-    set_tests_properties(host_sim_scheduler_smoke PROPERTIES LABELS "host-sim")
+    if(EXISTS "${LORA_REFERENCE_DATA_DIR}")
+        add_test(
+            NAME host_sim_scheduler_smoke
+            COMMAND host_sim_scheduler_smoke
+        )
+        set_tests_properties(host_sim_scheduler_smoke PROPERTIES LABELS "host-sim")
+    endif()
 
     add_executable(host_sim_numeric_traits
         tests/test_numeric_traits.cpp
@@ -132,11 +141,13 @@ if (BUILD_TESTING)
     target_compile_definitions(host_sim_numeric_modes
         PRIVATE PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
     )
-    add_test(
-        NAME host_sim_numeric_modes
-        COMMAND host_sim_numeric_modes
-    )
-    set_tests_properties(host_sim_numeric_modes PROPERTIES LABELS "host-sim")
+    if(EXISTS "${LORA_REFERENCE_DATA_DIR}")
+        add_test(
+            NAME host_sim_numeric_modes
+            COMMAND host_sim_numeric_modes
+        )
+        set_tests_properties(host_sim_numeric_modes PROPERTIES LABELS "host-sim")
+    endif()
 
     add_executable(host_sim_q15_demod
         tests/test_q15_demod.cpp
@@ -150,16 +161,18 @@ if (BUILD_TESTING)
     )
     set_tests_properties(host_sim_q15_demod PROPERTIES LABELS "host-sim")
 
-    add_test(
-        NAME host_sim_summary_metrics
-        COMMAND python3 ${PROJECT_SOURCE_DIR}/tools/run_summary_metrics_check.py
-                ${PROJECT_SOURCE_DIR}/docs/reference_stage_manifest.json
-                ${PROJECT_SOURCE_DIR}/gr_lora_sdr/data/generated
-                ${CMAKE_BINARY_DIR}/summary
-                ${PROJECT_SOURCE_DIR}/docs/reference_summary_metrics.json
-                --lora-replay ${CMAKE_CURRENT_BINARY_DIR}/lora_replay
-    )
-    set_tests_properties(host_sim_summary_metrics PROPERTIES LABELS "host-sim")
+    if(EXISTS "${LORA_REFERENCE_DATA_DIR}")
+        add_test(
+            NAME host_sim_summary_metrics
+            COMMAND python3 ${PROJECT_SOURCE_DIR}/tools/run_summary_metrics_check.py
+                    ${PROJECT_SOURCE_DIR}/docs/reference_stage_manifest.json
+                    ${PROJECT_SOURCE_DIR}/gr_lora_sdr/data/generated
+                    ${CMAKE_BINARY_DIR}/summary
+                    ${PROJECT_SOURCE_DIR}/docs/reference_summary_metrics.json
+                    --lora-replay ${CMAKE_CURRENT_BINARY_DIR}/lora_replay
+        )
+        set_tests_properties(host_sim_summary_metrics PROPERTIES LABELS "host-sim")
+    endif()
 
     # ----- OTA regression tests (offline decode of real-world captures) -----
     set(OTA_DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data/ota")
