@@ -28,11 +28,11 @@
 | SCK | GPIO18 | D18 |
 | MISO | GPIO19 | D19 |
 | MOSI | GPIO23 | D23 |
-| NSS | GPIO5 | D5 |`
+| NSS | GPIO5 | D5 |
 | RST | GPIO14 | D14 |
 | DIO0 | GPIO26 | D26 |
 
-> 💡 **GPIO18 = D18** - זה אותו פין, רק סימון שונה על הבורד
+> GPIO numbers and D-labels refer to the same physical pins.
 
 ## Software Setup
 
@@ -43,17 +43,15 @@
 
 ## Test Procedure
 
-### Test 1: RFM95W TX → HackRF RX
+### Test 1: RFM95W TX → Software RX
 1. Upload `rfm95_tx_test.ino` to Arduino
-2. Connect RFM95 antenna → attenuators → HackRF
-3. Run: `./tools/hackrf_capture_lora.sh`
-4. Check if decoder detects packets
+2. Connect RFM95 antenna → attenuator → SDR receiver
+3. Capture IQ data and decode with `lora_replay`
 
-### Test 2: HackRF TX → RFM95W RX
+### Test 2: Software TX → RFM95W RX
 1. Upload `rfm95_rx_test.ino` to Arduino
-2. Connect HackRF → attenuators → RFM95 antenna
-3. Run: `python tools/hackrf_ota_loopback.py --iq <file> --mode tx_only`
-4. Check Serial Monitor for received packets
+2. Generate an IQ file with `lora_tx` and transmit via SDR
+3. Check Serial Monitor for received packets
 
 ### Test 3: Full Loopback
 1. RFM95 #1 (TX) → attenuators → RFM95 #2 (RX)
