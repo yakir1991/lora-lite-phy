@@ -178,6 +178,18 @@ measured FER results against hardware.
 | `--multi` | Decode multiple packets |
 | `--verbose` | Per-symbol debug output |
 
+## Acknowledgments
+
+- **[gr-lora_sdr](https://github.com/tapparelj/gr-lora_sdr)** by Joachim Tapparel
+  et al. (EPFL TCL) — GNU Radio LoRa transceiver used as the bit-exact
+  reference for payload verification.  Licensed under GPL-3.0.
+- **[KissFFT](https://github.com/mborgerding/kissfft)** by Mark Borgerding —
+  vendored FFT library (float + Q15 builds).  Licensed under BSD-3-Clause.
+- **[RadioLib](https://github.com/jgromes/RadioLib)** by Jan Gromeš —
+  Arduino library used in the RFM95 OTA test sketches.  Licensed under MIT.
+
 ## Licence
 
-MIT — see individual source files for details.
+Non-commercial — free for personal, academic, and research use.
+Commercial use requires prior written permission from the author.
+See [LICENSE](LICENSE) for full terms.
