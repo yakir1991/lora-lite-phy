@@ -11,7 +11,6 @@ Testing/
 __pycache__/
 payload.txt
 temp_metadata.json
---output
 generate_and_verify.sh
 .gitmodules
 
@@ -35,15 +34,19 @@ docs/images/*
 !docs/reference_stage_manifest.json
 !docs/reference_summary_metrics.json
 
-# Tools — keep only CTest-used scripts
+# Tools — keep only CTest-used scripts and helpers
 tools/*
 !tools/check_reference_manifest.py
 !tools/compare_summary_metrics.py
 !tools/generate_summary_metrics.py
 !tools/run_summary_metrics_check.py
+!tools/hackrf_live_decode.sh
 
 # Editor / OS
 .vscode/
 .venv/
 *.swp
 .DS_Store
+
+# Doxygen output
+docs/api/

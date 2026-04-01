@@ -36,6 +36,7 @@ target_include_directories(host_sim_core
 
 add_executable(lora_replay
     src/lora_replay.cpp
+    src/lora_replay_options.cpp
 )
 
 target_link_libraries(lora_replay
@@ -50,6 +51,21 @@ add_executable(lora_tx
 target_link_libraries(lora_tx
     PRIVATE
         host_sim_core
+)
+
+# --- Install targets ---
+include(GNUInstallDirs)
+
+install(TARGETS host_sim_core
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+install(DIRECTORY include/host_sim
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(TARGETS lora_replay lora_tx
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 if (BUILD_TESTING)

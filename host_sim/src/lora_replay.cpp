@@ -5,6 +5,7 @@
 #include "host_sim/fft_demod_ref.hpp"
 #include "host_sim/hamming.hpp"
 #include "host_sim/lora_params.hpp"
+#include "host_sim/lora_replay/options.hpp"
 #include "host_sim/soft_decode.hpp"
 #include "host_sim/scheduler.hpp"
 #include "host_sim/stages/demod_stage.hpp"
@@ -126,22 +127,8 @@ InstrumentationResult run_scheduler_instrumentation(const std::vector<std::compl
     return result;
 }
 
-struct Options
-{
-    std::filesystem::path iq_file;
-    std::string payload;
-    std::optional<std::filesystem::path> stats_output;
-    std::optional<std::filesystem::path> metadata;
-    std::optional<std::filesystem::path> dump_symbols;
-    std::optional<std::filesystem::path> dump_iq;
-    std::optional<std::filesystem::path> compare_root;
-    std::optional<std::filesystem::path> dump_stages;
-    std::optional<std::filesystem::path> dump_payload;
-    std::optional<std::filesystem::path> summary_output;
-    bool multi_packet{false};
-    bool soft{false};
-    bool verbose{false};
-};
+using host_sim::lora_replay::Options;
+using host_sim::lora_replay::parse_arguments;
 
 struct HeaderDecodeResult
 {
@@ -192,67 +179,6 @@ struct SummaryReport
     std::vector<double> stage_timings_ns;
     std::vector<std::size_t> memory_usage_bytes;
 };
-
-void print_usage(const char* binary)
-{
-    std::cerr << "Usage: " << binary << " --iq <capture.cf32>"
-              << " [--metadata <file.json>]"
-              << " [--payload <ascii>]"
-              << " [--stats <file.json>]"
-              << " [--dump-symbols <file.txt>]"
-              << " [--dump-iq <file.cf32>]"
-              << " [--compare-root <path/prefix>]"
-              << " [--dump-stages <path/prefix>]"
-              << " [--dump-payload <file.bin>]"
-              << " [--summary <file.json>]"
-              << " [--multi]"
-              << " [--verbose]"
-              << "\n";
-}
-
-Options parse_arguments(int argc, char** argv)
-{
-    Options opts;
-    for (int i = 1; i < argc; ++i) {
-        const std::string_view arg{argv[i]};
-        if (arg == "--iq" && i + 1 < argc) {
-            opts.iq_file = argv[++i];
-        } else if (arg == "--payload" && i + 1 < argc) {
-            opts.payload = argv[++i];
-        } else if (arg == "--metadata" && i + 1 < argc) {
-            opts.metadata = std::filesystem::path{argv[++i]};
-        } else if (arg == "--stats" && i + 1 < argc) {
-            opts.stats_output = std::filesystem::path{argv[++i]};
-        } else if (arg == "--dump-symbols" && i + 1 < argc) {
-            opts.dump_symbols = std::filesystem::path{argv[++i]};
-        } else if (arg == "--dump-iq" && i + 1 < argc) {
-            opts.dump_iq = std::filesystem::path{argv[++i]};
-        } else if (arg == "--compare-root" && i + 1 < argc) {
-            opts.compare_root = std::filesystem::path{argv[++i]};
-        } else if (arg == "--dump-stages" && i + 1 < argc) {
-            opts.dump_stages = std::filesystem::path{argv[++i]};
-        } else if (arg == "--dump-payload" && i + 1 < argc) {
-            opts.dump_payload = std::filesystem::path{argv[++i]};
-        } else if (arg == "--summary" && i + 1 < argc) {
-            opts.summary_output = std::filesystem::path{argv[++i]};
-        } else if (arg == "--multi") {
-            opts.multi_packet = true;
-        } else if (arg == "--soft") {
-            opts.soft = true;
-        } else if (arg == "--verbose" || arg == "-v") {
-            opts.verbose = true;
-        } else if (arg == "--help" || arg == "-h") {
-            print_usage(argv[0]);
-            std::exit(EXIT_SUCCESS);
-        } else {
-            throw std::runtime_error("Unknown or incomplete argument: " + std::string(arg));
-        }
-    }
-    if (opts.iq_file.empty()) {
-        throw std::runtime_error("Missing required --iq argument");
-    }
-    return opts;
-}
 
 void write_stats_json(const std::filesystem::path& path,
                       const host_sim::CaptureStats& stats,
@@ -886,7 +812,20 @@ int main(int argc, char** argv)
         const Options options = parse_arguments(argc, argv);
         if (options.verbose) std::cerr << "[debug] entering lora_replay" << std::endl;
 
-        const auto samples = host_sim::load_cf32(options.iq_file);
+        std::vector<std::complex<float>> samples;
+        if (options.read_stdin) {
+            if (options.verbose) std::cerr << "[debug] reading IQ from stdin"
+                << (options.iq_format == Options::IqFormat::hackrf ? " (hackrf int8)" : " (cf32)")
+                << std::endl;
+            if (options.iq_format == Options::IqFormat::hackrf) {
+                samples = host_sim::load_hackrf_stdin();
+            } else {
+                samples = host_sim::load_cf32_stdin();
+            }
+            if (options.verbose) std::cerr << "[debug] read " << samples.size() << " samples from stdin" << std::endl;
+        } else {
+            samples = host_sim::load_cf32(options.iq_file);
+        }
         if (options.verbose) std::cerr << "[debug] loaded samples=" << samples.size() << std::endl;
         const auto stats = host_sim::analyse_capture(samples);
         if (options.verbose) std::cerr << "[debug] analysed capture" << std::endl;
@@ -901,7 +840,7 @@ int main(int argc, char** argv)
         std::vector<host_sim::SymbolLLR> symbol_llrs;
         std::size_t alignment_samples = 0;
 
-        std::cout << "Loaded capture: " << options.iq_file << "\n"
+        std::cout << "Loaded capture: " << (options.read_stdin ? "<stdin>" : options.iq_file.string()) << "\n"
                   << "  Samples: " << stats.sample_count << "\n"
                   << "  Min |x|: " << std::setprecision(6) << stats.min_magnitude << "\n"
                   << "  Max |x|: " << std::setprecision(6) << stats.max_magnitude << "\n"
@@ -911,7 +850,7 @@ int main(int argc, char** argv)
         std::optional<host_sim::LoRaMetadata> metadata;
         if (options.metadata) {
             metadata = host_sim::load_metadata(*options.metadata);
-        } else {
+        } else if (!options.read_stdin) {
             auto guess = options.iq_file;
             guess.replace_extension(".json");
             if (std::filesystem::exists(guess)) {
