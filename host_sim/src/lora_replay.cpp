@@ -6,6 +6,7 @@
 #include "host_sim/hamming.hpp"
 #include "host_sim/lora_params.hpp"
 #include "host_sim/lora_replay/options.hpp"
+#include "host_sim/lora_replay/stage_processing.hpp"
 #include "host_sim/soft_decode.hpp"
 #include "host_sim/scheduler.hpp"
 #include "host_sim/stages/demod_stage.hpp"
@@ -72,7 +73,10 @@ private:
     std::size_t index_{0};
 };
 
-uint16_t compute_lora_crc(const std::vector<uint8_t>& payload)
+// Local CRC-16/CCITT: computes CRC over ALL input bytes (no XOR with trailing bytes).
+// Different from host_sim::lora_replay::compute_lora_crc which includes the
+// gr-lora_sdr last-2-byte XOR.  Used by probe_payload_crc which does the XOR manually.
+uint16_t compute_raw_crc16(const std::vector<uint8_t>& payload)
 {
     uint16_t crc = 0x0000;
     for (uint8_t byte : payload) {
@@ -129,56 +133,19 @@ InstrumentationResult run_scheduler_instrumentation(const std::vector<std::compl
 
 using host_sim::lora_replay::Options;
 using host_sim::lora_replay::parse_arguments;
-
-struct HeaderDecodeResult
-{
-    bool success{false};
-    int payload_len{0};
-    bool has_crc{false};
-    int cr{0};
-    int checksum_field{0};
-    int checksum_computed{0};
-    std::size_t consumed_symbols{0};
-    std::vector<uint16_t> codewords;
-    std::vector<uint8_t> nibbles;
-};
-
-struct StageOutputs
-{
-    std::vector<uint16_t> fft;
-    std::vector<uint16_t> gray;
-    std::vector<uint16_t> deinterleaver;
-    std::vector<uint8_t> hamming;
-};
-
-struct StageComparisonResult
-{
-    std::string label;
-    std::size_t host_count{0};
-    std::size_t ref_count{0};
-    std::size_t mismatches{0};
-    std::optional<std::size_t> alignment_offset;
-    bool alignment_relative_to_reference{true};
-    std::optional<std::size_t> first_diff_index;
-    std::optional<long long> host_value;
-    std::optional<long long> ref_value;
-    bool reference_missing{false};
-};
-
-struct SummaryReport
-{
-    std::optional<std::string> capture_path;
-    std::optional<host_sim::LoRaMetadata> metadata;
-    std::optional<host_sim::CaptureStats> stats;
-    std::vector<uint16_t> preview_symbols;
-    std::vector<StageComparisonResult> stage_results;
-    std::size_t reference_mismatches{0};
-    std::size_t stage_mismatches{0};
-    bool whitening_roundtrip_ok{true};
-    bool compare_run{false};
-    std::vector<double> stage_timings_ns;
-    std::vector<std::size_t> memory_usage_bytes;
-};
+using host_sim::lora_replay::HeaderDecodeResult;
+using host_sim::lora_replay::StageOutputs;
+using host_sim::lora_replay::StageComparisonResult;
+using host_sim::lora_replay::SummaryReport;
+using host_sim::lora_replay::normalize_fft_symbol;
+using host_sim::lora_replay::append_fft_gray;
+using host_sim::lora_replay::read_stage_file;
+using host_sim::lora_replay::write_stage_file;
+using host_sim::lora_replay::compare_stage;
+using host_sim::lora_replay::build_stage_summary_token;
+using host_sim::lora_replay::write_summary_json;
+using host_sim::lora_replay::compare_with_reference;
+using host_sim::lora_replay::compute_lora_crc;
 
 void write_stats_json(const std::filesystem::path& path,
                       const host_sim::CaptureStats& stats,
@@ -388,7 +355,7 @@ bool probe_payload_crc(const std::vector<uint16_t>& symbols,
 
     std::vector<uint8_t> crc_data(unwhitened.begin(),
                                   unwhitened.begin() + pl - 2);
-    uint16_t computed = compute_lora_crc(crc_data);
+    uint16_t computed = compute_raw_crc16(crc_data);
     if (pl >= 2) {
         computed ^= unwhitened[pl - 1];
         computed ^= static_cast<uint16_t>(unwhitened[pl - 2]) << 8;
@@ -396,412 +363,6 @@ bool probe_payload_crc(const std::vector<uint16_t>& symbols,
     const uint16_t decoded = static_cast<uint16_t>(unwhitened[pl]) |
                              (static_cast<uint16_t>(unwhitened[pl + 1]) << 8);
     return computed == decoded;
-}
-
-uint16_t normalize_fft_symbol(uint16_t symbol, bool reduce_by_four, int sf)
-{
-    const uint16_t mask_full = static_cast<uint16_t>((1u << sf) - 1u);
-    uint16_t adjusted = static_cast<uint16_t>((symbol - 1u) & mask_full);
-    if (reduce_by_four) {
-        adjusted = static_cast<uint16_t>(adjusted >> 2);
-    }
-    return adjusted;
-}
-
-void append_fft_gray(const std::vector<uint16_t>& block_symbols,
-                     bool is_header_block,
-                     bool ldro_enabled,
-                     int sf,
-                     StageOutputs& outputs)
-{
-    for (uint16_t symbol : block_symbols) {
-        const bool reduce = is_header_block || ldro_enabled;
-        const uint16_t fft_val = normalize_fft_symbol(symbol, reduce, sf);
-        outputs.fft.push_back(fft_val);
-        outputs.gray.push_back(static_cast<uint16_t>(fft_val ^ (fft_val >> 1u)));
-    }
-}
-
-std::vector<long long> read_stage_file(const std::filesystem::path& path)
-{
-    std::vector<long long> values;
-    std::ifstream input(path);
-    if (!input) {
-        return values;
-    }
-    long long value = 0;
-    while (input >> value) {
-        values.push_back(value);
-    }
-    return values;
-}
-
-template <typename Value>
-void write_stage_file(const std::filesystem::path& path, const std::vector<Value>& values)
-{
-    std::ofstream out(path);
-    if (!out) {
-        throw std::runtime_error("Failed to write stage dump: " + path.string());
-    }
-    for (auto value : values) {
-        out << static_cast<long long>(value) << '\n';
-    }
-}
-
-template <typename HostType>
-StageComparisonResult compare_stage(const std::string& label,
-                                    const std::vector<HostType>& host,
-                                    const std::vector<long long>& reference)
-{
-    StageComparisonResult result;
-    result.label = label;
-    result.host_count = host.size();
-    result.ref_count = reference.size();
-
-    if (host.empty()) {
-        if (!reference.empty()) {
-            result.mismatches = reference.size();
-            result.alignment_offset = 0;
-            result.first_diff_index = 0;
-            result.ref_value = reference.front();
-        }
-        return result;
-    }
-
-    if (reference.empty()) {
-        result.mismatches = result.host_count;
-        result.alignment_relative_to_reference = false;
-        result.alignment_offset = 0;
-        result.first_diff_index = 0;
-        result.host_value = static_cast<long long>(host.front());
-        return result;
-    }
-
-    const bool host_is_longer = result.host_count >= result.ref_count;
-    const std::size_t compare_len = host_is_longer ? result.ref_count : result.host_count;
-    if (compare_len == 0) {
-        return result;
-    }
-
-    const std::size_t max_offset =
-        host_is_longer ? (result.host_count - compare_len) : (result.ref_count - compare_len);
-
-    auto evaluate_alignment = [&](std::size_t host_start, std::size_t ref_start) {
-        std::size_t mismatches = 0;
-        std::optional<std::size_t> first_diff;
-        std::optional<long long> first_host;
-        std::optional<long long> first_ref;
-        for (std::size_t idx = 0; idx < compare_len; ++idx) {
-            const long long host_val = static_cast<long long>(host[host_start + idx]);
-            const long long ref_val = reference[ref_start + idx];
-            if (host_val != ref_val) {
-                ++mismatches;
-                if (!first_diff) {
-                    first_diff = idx;
-                    first_host = host_val;
-                    first_ref = ref_val;
-                }
-            }
-        }
-        return std::tuple<std::size_t, std::optional<std::size_t>, std::optional<long long>, std::optional<long long>>(
-            mismatches, first_diff, first_host, first_ref);
-    };
-
-    std::size_t best_offset = 0;
-    std::size_t best_mismatches = std::numeric_limits<std::size_t>::max();
-    std::optional<std::size_t> best_first_diff;
-    std::optional<long long> best_host_value;
-    std::optional<long long> best_ref_value;
-
-    for (std::size_t offset = 0; offset <= max_offset; ++offset) {
-        const std::size_t host_start = host_is_longer ? offset : 0;
-        const std::size_t ref_start = host_is_longer ? 0 : offset;
-        auto [mism, first_diff, host_val, ref_val] = evaluate_alignment(host_start, ref_start);
-        if (mism < best_mismatches) {
-            best_mismatches = mism;
-            best_offset = offset;
-            best_first_diff = first_diff;
-            best_host_value = host_val;
-            best_ref_value = ref_val;
-            if (best_mismatches == 0) {
-                break;
-            }
-        }
-    }
-
-    result.mismatches = (best_mismatches == std::numeric_limits<std::size_t>::max())
-                            ? compare_len
-                            : best_mismatches;
-    result.alignment_offset = best_offset;
-    result.alignment_relative_to_reference = !host_is_longer;
-    if (best_first_diff) {
-        result.first_diff_index = best_first_diff;
-        result.host_value = best_host_value;
-        result.ref_value = best_ref_value;
-    }
-
-    return result;
-}
-
-std::string build_stage_summary_token(const StageComparisonResult& result)
-{
-    std::ostringstream token;
-    if (result.reference_missing) {
-        token << "missing";
-        return token.str();
-    }
-
-    if (result.mismatches == 0) {
-        token << "OK";
-        return token.str();
-    }
-
-    token << "FAIL(" << result.mismatches;
-    if (result.host_count > 0) {
-        token << '/' << result.host_count;
-    }
-    if (result.first_diff_index) {
-        token << "@idx" << *result.first_diff_index;
-    }
-    token << ')';
-    return token.str();
-}
-
-inline const char* json_bool(bool value)
-{
-    return value ? "true" : "false";
-}
-
-std::string json_escape(const std::string& value)
-{
-    std::string result;
-    result.reserve(value.size() + 4);
-    const char* hex = "0123456789abcdef";
-    for (unsigned char ch : value) {
-        switch (ch) {
-        case '\\':
-            result += "\\\\";
-            break;
-        case '"':
-            result += "\\\"";
-            break;
-        case '\b':
-            result += "\\b";
-            break;
-        case '\f':
-            result += "\\f";
-            break;
-        case '\n':
-            result += "\\n";
-            break;
-        case '\r':
-            result += "\\r";
-            break;
-        case '\t':
-            result += "\\t";
-            break;
-        default:
-            if (ch < 0x20) {
-                result += "\\u00";
-                result += hex[(ch >> 4) & 0xF];
-                result += hex[ch & 0xF];
-            } else {
-                result += static_cast<char>(ch);
-            }
-            break;
-        }
-    }
-    return result;
-}
-
-void write_summary_json(const std::filesystem::path& path, const SummaryReport& report)
-{
-    std::ofstream out(path);
-    if (!out) {
-        throw std::runtime_error("Failed to open summary output file: " + path.string());
-    }
-
-    std::vector<std::string> fields;
-    if (report.capture_path) {
-        fields.push_back("  \"capture\": \"" + json_escape(*report.capture_path) + "\"");
-    }
-    if (report.metadata) {
-        const auto& meta = *report.metadata;
-        std::vector<std::string> meta_fields;
-        meta_fields.push_back("    \"sf\": " + std::to_string(meta.sf));
-        meta_fields.push_back("    \"bw\": " + std::to_string(meta.bw));
-        meta_fields.push_back("    \"sample_rate\": " + std::to_string(meta.sample_rate));
-        meta_fields.push_back("    \"cr\": " + std::to_string(meta.cr));
-        meta_fields.push_back("    \"payload_len\": " + std::to_string(meta.payload_len));
-        meta_fields.push_back("    \"preamble_len\": " + std::to_string(meta.preamble_len));
-        meta_fields.push_back("    \"has_crc\": " + std::string(json_bool(meta.has_crc)));
-        meta_fields.push_back("    \"implicit_header\": " + std::string(json_bool(meta.implicit_header)));
-        meta_fields.push_back("    \"ldro\": " + std::string(json_bool(meta.ldro)));
-        meta_fields.push_back("    \"sync_word\": " + std::to_string(meta.sync_word));
-        if (meta.payload_hex && !meta.payload_hex->empty()) {
-            meta_fields.push_back("    \"payload_hex\": \"" + json_escape(*meta.payload_hex) + "\"");
-        }
-        std::ostringstream meta_ss;
-        meta_ss << "  \"metadata\": {\n";
-        for (std::size_t i = 0; i < meta_fields.size(); ++i) {
-            meta_ss << meta_fields[i];
-            if (i + 1 < meta_fields.size()) {
-                meta_ss << ',';
-            }
-            meta_ss << '\n';
-        }
-        meta_ss << "  }";
-        fields.push_back(meta_ss.str());
-    }
-    if (report.stats) {
-        const auto& st = *report.stats;
-        std::ostringstream stats_ss;
-        stats_ss << "  \"stats\": {\n";
-        stats_ss << "    \"sample_count\": " << st.sample_count << ",\n";
-        stats_ss << "    \"min_magnitude\": " << std::setprecision(6) << std::fixed << st.min_magnitude << ",\n";
-        stats_ss << "    \"max_magnitude\": " << std::setprecision(6) << std::fixed << st.max_magnitude << ",\n";
-        stats_ss << "    \"mean_power\": " << std::setprecision(6) << std::fixed << st.mean_power << "\n";
-        stats_ss << "  }";
-        fields.push_back(stats_ss.str());
-    }
-    fields.push_back("  \"reference_mismatches\": " + std::to_string(report.reference_mismatches));
-    fields.push_back("  \"stage_mismatches\": " + std::to_string(report.stage_mismatches));
-    fields.push_back("  \"whitening_roundtrip_ok\": " + std::string(json_bool(report.whitening_roundtrip_ok)));
-    fields.push_back("  \"compare_run\": " + std::string(json_bool(report.compare_run)));
-
-    if (!report.stage_timings_ns.empty()) {
-        std::ostringstream timings_ss;
-        timings_ss << "  \"stage_timings_ns\": [";
-        for (std::size_t i = 0; i < report.stage_timings_ns.size(); ++i) {
-            if (i > 0) {
-                timings_ss << ", ";
-            }
-            timings_ss << report.stage_timings_ns[i];
-        }
-        timings_ss << "]";
-        fields.push_back(timings_ss.str());
-    }
-
-    if (!report.memory_usage_bytes.empty()) {
-        std::ostringstream mem_ss;
-        mem_ss << "  \"symbol_memory_bytes\": [";
-        for (std::size_t i = 0; i < report.memory_usage_bytes.size(); ++i) {
-            if (i > 0) {
-                mem_ss << ", ";
-            }
-            mem_ss << report.memory_usage_bytes[i];
-        }
-        mem_ss << "]";
-        fields.push_back(mem_ss.str());
-    }
-
-    if (!report.preview_symbols.empty()) {
-        std::ostringstream preview_ss;
-        preview_ss << "  \"preview_symbols\": [";
-        for (std::size_t i = 0; i < report.preview_symbols.size(); ++i) {
-            if (i > 0) {
-                preview_ss << ", ";
-            }
-            preview_ss << report.preview_symbols[i];
-        }
-        preview_ss << "]";
-        fields.push_back(preview_ss.str());
-    }
-
-    {
-        std::ostringstream stages_ss;
-        if (report.stage_results.empty()) {
-            stages_ss << "  \"stages\": []";
-        } else {
-            stages_ss << "  \"stages\": [\n";
-            for (std::size_t i = 0; i < report.stage_results.size(); ++i) {
-                const auto& res = report.stage_results[i];
-                std::vector<std::string> stage_fields;
-                stage_fields.push_back("      \"label\": \"" + json_escape(res.label) + "\"");
-                stage_fields.push_back("      \"host\": " + std::to_string(res.host_count));
-                stage_fields.push_back("      \"ref\": " + std::to_string(res.ref_count));
-                stage_fields.push_back("      \"mismatches\": " + std::to_string(res.mismatches));
-                stage_fields.push_back("      \"summary\": \"" + json_escape(build_stage_summary_token(res)) + "\"");
-                stage_fields.push_back("      \"reference_missing\": " + std::string(json_bool(res.reference_missing)));
-                if (res.alignment_offset) {
-                    stage_fields.push_back("      \"alignment_offset\": " + std::to_string(*res.alignment_offset));
-                }
-                stage_fields.push_back("      \"alignment_relative_to_reference\": "
-                                       + std::string(json_bool(res.alignment_relative_to_reference)));
-                if (res.first_diff_index) {
-                    stage_fields.push_back("      \"first_diff_index\": " + std::to_string(*res.first_diff_index));
-                }
-                if (res.host_value) {
-                    stage_fields.push_back("      \"host_value\": " + std::to_string(*res.host_value));
-                }
-                if (res.ref_value) {
-                    stage_fields.push_back("      \"ref_value\": " + std::to_string(*res.ref_value));
-                }
-
-                stages_ss << "    {\n";
-                for (std::size_t j = 0; j < stage_fields.size(); ++j) {
-                    stages_ss << stage_fields[j];
-                    if (j + 1 < stage_fields.size()) {
-                        stages_ss << ',';
-                    }
-                    stages_ss << '\n';
-                }
-                stages_ss << "    }";
-                if (i + 1 < report.stage_results.size()) {
-                    stages_ss << ',';
-                }
-                stages_ss << '\n';
-            }
-            stages_ss << "  ]";
-        }
-        fields.push_back(stages_ss.str());
-    }
-
-    out << "{\n";
-    for (std::size_t i = 0; i < fields.size(); ++i) {
-        out << fields[i];
-        if (i + 1 < fields.size()) {
-            out << ',';
-        }
-        out << '\n';
-    }
-    out << "}\n";
-}
-
-std::vector<StageComparisonResult> compare_with_reference(const StageOutputs& outputs,
-                                                          const std::filesystem::path& compare_root)
-{
-    std::filesystem::path base = compare_root;
-    if (base.extension() == ".cf32") {
-        base.replace_extension("");
-    }
-
-    std::vector<StageComparisonResult> results;
-    auto compare_stage_file = [&](const char* suffix,
-                                  const auto& host_vec,
-                                  const char* label) {
-        std::filesystem::path path = base;
-        path += suffix;
-        if (!std::filesystem::exists(path)) {
-            StageComparisonResult missing;
-            missing.label = label;
-            missing.host_count = host_vec.size();
-            missing.ref_count = 0;
-            missing.mismatches = host_vec.size();
-            missing.reference_missing = true;
-            results.push_back(missing);
-            return;
-        }
-        auto reference = read_stage_file(path);
-        results.push_back(compare_stage(label, host_vec, reference));
-    };
-
-    compare_stage_file("_fft.txt", outputs.fft, "FFT");
-    compare_stage_file("_gray.txt", outputs.gray, "Gray");
-    compare_stage_file("_deinterleaver.txt", outputs.deinterleaver, "Deinterleaver");
-    compare_stage_file("_hamming.txt", outputs.hamming, "Hamming");
-
-    return results;
 }
 
 } // namespace
@@ -1963,7 +1524,7 @@ int main(int argc, char** argv)
                     // 3. Compare with received CRC (little-endian)
                     std::vector<uint8_t> crc_data(unwhitened.begin(),
                                                   unwhitened.begin() + expected_payload_len - 2);
-                    uint16_t computed_crc = compute_lora_crc(crc_data);
+                    uint16_t computed_crc = compute_raw_crc16(crc_data);
                     // XOR with last 2 payload bytes
                     if (expected_payload_len >= 2) {
                         computed_crc ^= unwhitened[expected_payload_len - 1];  // last byte

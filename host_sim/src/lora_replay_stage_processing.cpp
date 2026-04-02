@@ -284,6 +284,7 @@ void write_summary_json(const std::filesystem::path& path, const SummaryReport& 
     fields.push_back("  \"reference_mismatches\": " + std::to_string(report.reference_mismatches));
     fields.push_back("  \"stage_mismatches\": " + std::to_string(report.stage_mismatches));
     fields.push_back("  \"whitening_roundtrip_ok\": " + std::string(json_bool(report.whitening_roundtrip_ok)));
+    fields.push_back("  \"compare_run\": " + std::string(json_bool(report.compare_run)));
     fields.push_back("  \"packet_error_rate\": " + std::to_string(report.packet_error_rate));
     fields.push_back("  \"bit_error_rate\": " + std::to_string(report.bit_error_rate));
     fields.push_back("  \"deadline_miss_count\": " + std::to_string(report.deadline_miss_count));
@@ -296,6 +297,33 @@ void write_summary_json(const std::filesystem::path& path, const SummaryReport& 
         fields.push_back("  \"tracking_mitigation\": \""
                          + json_escape(report.tracking_mitigation) + "\"");
     }
+
+    if (!report.stage_timings_ns.empty()) {
+        std::ostringstream timings_ss;
+        timings_ss << "  \"stage_timings_ns\": [";
+        for (std::size_t i = 0; i < report.stage_timings_ns.size(); ++i) {
+            if (i > 0) {
+                timings_ss << ", ";
+            }
+            timings_ss << report.stage_timings_ns[i];
+        }
+        timings_ss << "]";
+        fields.push_back(timings_ss.str());
+    }
+
+    if (!report.memory_usage_bytes.empty()) {
+        std::ostringstream mem_ss;
+        mem_ss << "  \"symbol_memory_bytes\": [";
+        for (std::size_t i = 0; i < report.memory_usage_bytes.size(); ++i) {
+            if (i > 0) {
+                mem_ss << ", ";
+            }
+            mem_ss << report.memory_usage_bytes[i];
+        }
+        mem_ss << "]";
+        fields.push_back(mem_ss.str());
+    }
+
     if (!report.preview_symbols.empty()) {
         std::ostringstream preview_ss;
         preview_ss << "  \"preview_symbols\": [";
