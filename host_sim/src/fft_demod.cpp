@@ -282,29 +282,26 @@ FftDemodulator::FrequencyEstimate FftDemodulator::estimate_frequency_offsets(
     }
     estimate.cfo_int = signed_bin;
 
-    // --- SFO estimation from inter-symbol phase-difference drift ---
+    // --- SFO estimation from fractional-bin drift across preamble ---
     //
-    // CFO_frac causes a constant phase rotation Δφ between successive
-    // preamble symbols at the peak bin.  SFO causes Δφ to drift linearly.
+    // SFO causes the symbol boundaries to drift, which shifts the
+    // dechirped FFT peak by a fraction of a bin per symbol.  We estimate
+    // the drift by computing a fractional bin value for each preamble
+    // symbol using log-domain Gaussian parabolic interpolation, then
+    // fitting a linear slope (OLS) to these values.
     //
-    // We compute Δφ[k] = arg( fft[k+1] · conj(fft[k]) ) for each pair
-    // of adjacent preamble symbols, then fit a linear slope.  The slope
-    // in rad/symbol² maps to SFO in bins/symbol via:
-    //    sfo_slope = phase_slope / (2π)
-    //
-    // The alignment may include 1-2 non-preamble symbols at the start.
-    // We validate each symbol by checking its FFT peak is at global_bin
-    // (±1 bin), and only use phase differences between verified preamble
-    // symbol pairs.
+    // The slope in bins/symbol directly gives sfo_slope, which is used
+    // by the stride-compensated demod loop.
 
     estimate.sfo_slope = 0.0f;
 
     if (symbol_count >= 6) {
-        const int n_diffs = symbol_count - 1;
+        // Compute fractional bin for each preamble symbol
+        std::vector<int>    inlier_indices;
+        std::vector<double> inlier_bins;
 
-        // Mark which symbols are genuine preamble (peak at global_bin ±1)
-        std::vector<bool> is_preamble(symbol_count, false);
         for (int s = 0; s < symbol_count; ++s) {
+            // Find peak bin for this symbol
             int sym_best = 0;
             float sym_best_mag = -1.0f;
             for (int bin = 0; bin < n_bins_; ++bin) {
@@ -315,20 +312,36 @@ FftDemodulator::FrequencyEstimate FftDemodulator::estimate_frequency_offsets(
                     sym_best = bin;
                 }
             }
+
+            // Verify it's a genuine preamble symbol (peak at global_bin ±1)
             int d = std::abs(sym_best - global_bin);
             d = std::min(d, n_bins_ - d);
-            is_preamble[s] = (d <= 1);
-        }
+            if (d > 1) continue;
 
-        // Compute phase differences only between consecutive verified pairs
-        std::vector<int>    inlier_indices;
-        std::vector<double> inlier_phases;
-        for (int k = 0; k < n_diffs; ++k) {
-            if (!is_preamble[k] || !is_preamble[k + 1]) continue;
-            const std::complex<double> a = fft_vals[k][global_bin];
-            const std::complex<double> b = fft_vals[k + 1][global_bin];
-            inlier_indices.push_back(k);
-            inlier_phases.push_back(std::arg(b * std::conj(a)));
+            // Parabolic interpolation around the global_bin to get
+            // fractional offset (we use global_bin, not sym_best, to
+            // keep all measurements on the same baseline).
+            const int prev_bin = (global_bin - 1 + n_bins_) % n_bins_;
+            const int next_bin = (global_bin + 1) % n_bins_;
+            const auto& vp = fft_vals[s][prev_bin];
+            const auto& vc = fft_vals[s][global_bin];
+            const auto& vn = fft_vals[s][next_bin];
+            const float mp = vp.real() * vp.real() + vp.imag() * vp.imag();
+            const float mc = vc.real() * vc.real() + vc.imag() * vc.imag();
+            const float mn = vn.real() * vn.real() + vn.imag() * vn.imag();
+
+            if (mp > 1e-30f && mc > 1e-30f && mn > 1e-30f) {
+                const float lp = std::log(mp);
+                const float lc = std::log(mc);
+                const float ln_next = std::log(mn);
+                const float denom = lp - 2.0f * lc + ln_next;
+                if (std::abs(denom) > 1e-6f) {
+                    float delta = 0.5f * (lp - ln_next) / denom;
+                    delta = std::max(-0.5f, std::min(0.5f, delta));
+                    inlier_indices.push_back(s);
+                    inlier_bins.push_back(static_cast<double>(delta));
+                }
+            }
         }
 
         const int n_inliers = static_cast<int>(inlier_indices.size());
@@ -337,7 +350,7 @@ FftDemodulator::FrequencyEstimate FftDemodulator::estimate_frequency_offsets(
             double sum_x = 0.0, sum_y = 0.0, sum_xy = 0.0, sum_xx = 0.0;
             for (int i = 0; i < n_inliers; ++i) {
                 const double x = static_cast<double>(inlier_indices[i]);
-                const double y = inlier_phases[i];
+                const double y = inlier_bins[i];
                 sum_x += x;
                 sum_y += y;
                 sum_xy += x * y;
@@ -351,11 +364,11 @@ FftDemodulator::FrequencyEstimate FftDemodulator::estimate_frequency_offsets(
                 double ss_res = 0.0;
                 for (int i = 0; i < n_inliers; ++i) {
                     const double predicted = intercept + slope * static_cast<double>(inlier_indices[i]);
-                    const double residual = inlier_phases[i] - predicted;
+                    const double residual = inlier_bins[i] - predicted;
                     ss_res += residual * residual;
                 }
 
-                const double s2 = ss_res / (n - 2.0);
+                const double s2 = ss_res / std::max(1.0, n - 2.0);
                 const double x_bar = sum_x / n;
                 double ss_xx = 0.0;
                 for (int i = 0; i < n_inliers; ++i) {
@@ -365,42 +378,39 @@ FftDemodulator::FrequencyEstimate FftDemodulator::estimate_frequency_offsets(
 
                 const double se_slope = (ss_xx > 1e-12) ? std::sqrt(s2 / ss_xx) : 1e30;
                 const double t_stat = std::abs(slope) / se_slope;
-                const double sfo = slope / (2.0 * M_PI);
 
-                // R² (coefficient of determination) — reject step-function
-                // patterns where CFO-induced phase jumps masquerade as a slope.
+                // R² (coefficient of determination)
                 const double y_bar = sum_y / n;
                 double ss_tot = 0.0;
                 for (int i = 0; i < n_inliers; ++i) {
-                    const double dy = inlier_phases[i] - y_bar;
+                    const double dy = inlier_bins[i] - y_bar;
                     ss_tot += dy * dy;
                 }
                 const double r_squared = (ss_tot > 1e-12) ? 1.0 - ss_res / ss_tot : 0.0;
 
                 static const bool debug_sfo = (std::getenv("HOST_SIM_DEBUG_SFO") != nullptr);
                 if (debug_sfo) {
-                    std::cerr << "[SFO_debug] n_diffs=" << n_diffs
-                              << " n_inliers=" << n_inliers
-                              << " slope_rad=" << slope
-                              << " sfo_bins=" << sfo
+                    std::cerr << "[SFO_debug] n_inliers=" << n_inliers
+                              << " slope_bins=" << slope
                               << " se_slope=" << se_slope
                               << " t_stat=" << t_stat
                               << " r_squared=" << r_squared
                               << "\n";
                     for (int i = 0; i < n_inliers; ++i) {
-                        std::cerr << "[SFO_debug]   phase[" << inlier_indices[i]
-                                  << "]=" << inlier_phases[i] << "\n";
+                        std::cerr << "[SFO_debug]   frac_bin[" << inlier_indices[i]
+                                  << "]=" << inlier_bins[i] << "\n";
                     }
                 }
 
                 // Accept SFO only if:
                 // 1. Statistically significant (t > 3.0)
-                // 2. Physically plausible (< 0.1 bins/symbol)
-                // 3. Large enough to matter (> 0.001 bins/symbol)
-                // 4. Good linear fit (R² > 0.8) to reject step-function artifacts
-                if (t_stat > 3.0 && std::abs(sfo) < 0.1 && std::abs(sfo) > 0.001
+                // 2. Physically plausible (< 100 ppm in bins/symbol)
+                // 3. Large enough to matter (> 0.003 bins/symbol)
+                // 4. Good linear fit (R² > 0.8) to reject noise artifacts
+                const double max_sfo_bins = 100.0e-6 * n_bins_;  // 100 ppm
+                if (t_stat > 3.0 && std::abs(slope) < max_sfo_bins && std::abs(slope) > 0.003
                     && r_squared > 0.8) {
-                    estimate.sfo_slope = static_cast<float>(sfo);
+                    estimate.sfo_slope = static_cast<float>(slope);
                 }
             }
         }

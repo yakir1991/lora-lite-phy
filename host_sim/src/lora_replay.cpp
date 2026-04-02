@@ -509,6 +509,7 @@ int main(int argc, char** argv)
                 static_cast<std::size_t>(INT_MAX)));
             const int preamble_symbols_to_use =
                 std::min(std::max(metadata->preamble_len - 1, 0), available_symbols);
+            float estimated_sfo = 0.0f;
             if (preamble_symbols_to_use > 0) {
                 auto freq_est = demod.estimate_frequency_offsets(
                     samples.data() + alignment_samples,
@@ -564,12 +565,18 @@ int main(int argc, char** argv)
                     }
                 }
 
+                // For the main demod loop (preamble grid), do NOT apply
+                // SFO phase correction — it distorts sync-word bins and
+                // header decode.  The actual SFO slope is saved and
+                // applied later in the SFD re-demod loop where it helps
+                // the payload decode track timing drift.
+                estimated_sfo = freq_est.sfo_slope;
                 demod.set_frequency_offsets(freq_est.cfo_frac,
                                             freq_est.cfo_int,
-                                            freq_est.sfo_slope);
+                                            0.0f);
                 demod_ref.set_frequency_offsets(freq_est.cfo_frac,
                                                 freq_est.cfo_int,
-                                                freq_est.sfo_slope);
+                                                0.0f);
                 demod.reset_symbol_counter();
                 // Per-symbol CFO tracking: disabled by default.
                 // Enable with HOST_SIM_CFO_TRACK_ALPHA env variable.
@@ -705,9 +712,22 @@ int main(int argc, char** argv)
 
                 // Save demod state for re-demod attempts (needed by
                 // both the native-OS and the OS=2-upsample fallback).
+                // Use the estimated SFO (from the preamble analysis) for
+                // re-demod; the main demod loop ran with sfo_slope=0.
                 const float saved_cfo_frac = demod.current_cfo_frac();
                 const int   saved_cfo_int  = demod.current_cfo_int();
-                const float saved_sfo      = demod.current_sfo_slope();
+                const float saved_sfo      = estimated_sfo;
+
+                // SFO-compensated stride for SFD re-demod.  The demod's
+                // phase-domain SFO correction is NOT used (sfo_slope=0):
+                // instead we move the FFT window to the correct timing
+                // position for each symbol via variable stride.  This
+                // avoids the cumulative phase-model error that made the
+                // old phase-domain correction unreliable.
+                const int N_bins = 1 << metadata->sf;
+                const double redemod_stride = (saved_sfo != 0.0f && !options.compare_root)
+                    ? static_cast<double>(sps) * (1.0 - static_cast<double>(saved_sfo) / N_bins)
+                    : static_cast<double>(sps);
 
                 if (sync_pos) {
                     const std::size_t quarter = static_cast<std::size_t>(sps / 4);
@@ -721,9 +741,10 @@ int main(int argc, char** argv)
                         if (data_sample + 8ULL * sps > samples.size()) continue;
 
                         // Re-demodulate data symbols from adjusted position.
+                        // Use SFO stride for timing; sfo_slope=0 in demod.
                         demod.set_frequency_offsets(saved_cfo_frac,
                                                    saved_cfo_int,
-                                                   saved_sfo);
+                                                   0.0f);
                         demod.reset_symbol_counter();
                         std::vector<uint16_t> redemod;
                         std::vector<host_sim::SymbolLLR> redemod_llrs;
@@ -731,8 +752,11 @@ int main(int argc, char** argv)
                         // Cap at 1024 symbols: enough for max LoRa payload (255B, any SF/CR)
                         // while preventing multi-packet mode from consuming the entire capture.
                         for (std::size_t i = 0; i < std::min<std::size_t>(max_sym, 1024); ++i) {
+                            const std::size_t sym_off = static_cast<std::size_t>(
+                                std::round(i * redemod_stride));
+                            if (data_sample + sym_off + static_cast<std::size_t>(sps) > samples.size()) break;
                             redemod.push_back(demod.demodulate(
-                                &samples[data_sample + i * sps]));
+                                &samples[data_sample + sym_off]));
                             if (options.soft) {
                                 const auto& mags = demod.get_fft_magnitudes_sq();
                                 redemod_llrs.push_back(host_sim::compute_symbol_llrs(
@@ -781,7 +805,7 @@ int main(int argc, char** argv)
                                         continue;
                                     demod.set_frequency_offsets(saved_cfo_frac,
                                                                saved_cfo_int,
-                                                               saved_sfo);
+                                                               0.0f);
                                     demod.reset_symbol_counter();
                                     std::vector<uint16_t> adj_syms;
                                     std::vector<host_sim::SymbolLLR> adj_llrs;
@@ -790,8 +814,11 @@ int main(int argc, char** argv)
                                     for (std::size_t i = 0;
                                          i < std::min<std::size_t>(adj_max, 200);
                                          ++i) {
+                                        const std::size_t sym_off = static_cast<std::size_t>(
+                                            std::round(i * redemod_stride));
+                                        if (adj_data + sym_off + static_cast<std::size_t>(sps) > samples.size()) break;
                                         adj_syms.push_back(demod.demodulate(
-                                            &samples[adj_data + i * sps]));
+                                            &samples[adj_data + sym_off]));
                                         if (options.soft) {
                                             const auto& mags = demod.get_fft_magnitudes_sq();
                                             adj_llrs.push_back(host_sim::compute_symbol_llrs(
@@ -860,7 +887,7 @@ int main(int argc, char** argv)
                                     continue;
                                 demod.set_frequency_offsets(saved_cfo_frac,
                                                            saved_cfo_int,
-                                                           saved_sfo);
+                                                           0.0f);
                                 demod.reset_symbol_counter();
                                 std::vector<uint16_t> adj_syms;
                                 std::vector<host_sim::SymbolLLR> adj_llrs;
@@ -869,8 +896,11 @@ int main(int argc, char** argv)
                                 for (std::size_t i = 0;
                                      i < std::min<std::size_t>(adj_max, 200);
                                      ++i) {
+                                    const std::size_t sym_off = static_cast<std::size_t>(
+                                        std::round(i * redemod_stride));
+                                    if (adj_data + sym_off + static_cast<std::size_t>(sps) > samples.size()) break;
                                     adj_syms.push_back(demod.demodulate(
-                                        &samples[adj_data + i * sps]));
+                                        &samples[adj_data + sym_off]));
                                     if (options.soft) {
                                         const auto& mags = demod.get_fft_magnitudes_sq();
                                         adj_llrs.push_back(host_sim::compute_symbol_llrs(
