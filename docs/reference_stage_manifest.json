@@ -249,5 +249,30 @@
       "deinterleaver": "b236f754fcb0087f9070b22eb1233f729ad404af1851cc2bfa5acfde86cc7feb",
       "hamming": "a5e842a19ca71103d056d3e4ea9de7ed120a23a91feaef58d42c737dbee12f01"
     }
+  },
+  {
+    "capture": "tx_rx_sf8_bw125000_cr4_payload128.cf32",
+    "sha256": "0243a9c3d88c07c48d77134fbe757e2076a2e3311a17139c0e62868c874d71e9",
+    "metadata": {
+      "sf": 8,
+      "bw": 125000,
+      "sample_rate": 500000,
+      "cr": 4,
+      "payload_len": 128,
+      "preamble_len": 8,
+      "implicit_header": false,
+      "has_crc": true,
+      "ldro": 0,
+      "capture_file": "tx_rx_sf8_bw125000_cr4_payload128.cf32",
+      "sample_count": 465716,
+      "duration_secs": 0.931432,
+      "snr_db": -8.0
+    },
+    "stage_dump_sha256": {
+      "fft": "d05b9cb28f46d27acf5f9f6479fe17822d0a3acf7e9fd9ff26e8ccddfb553481",
+      "gray": "0405ae33fd45a82a862c51d6037dfa162f491c7f8e91dc1fec6b6cabf5e4ec7e",
+      "deinterleaver": "352c04a1129ea0e8a4ec84776e2e218fc2b143073f2954b90bf65a7376145e90",
+      "hamming": "2545b52e9f4c2b14f716cc4963972d1ce31222a7f137275b78a31d9ebccda6ca"
+    }
   }
 ]
