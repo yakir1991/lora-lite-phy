@@ -402,15 +402,67 @@ FftDemodulator::FrequencyEstimate FftDemodulator::estimate_frequency_offsets(
                     }
                 }
 
+                // Correct the OLS slope for Dirichlet-kernel interpolation bias.
+                //
+                // Log-parabolic interpolation on a Dirichlet (sinc²) peak
+                // systematically underestimates fractional bin offsets.
+                // The bias depends on the absolute fractional offset (dominated
+                // by CFO).  The mapping true→measured is:
+                //   δ̂(Δ) = ln((1-Δ)/(1+Δ)) / (2 ln(Δ²/(1-Δ²)))
+                // The measured slope ≈ f'(x₀) × true_slope, where x₀ is the
+                // average fractional offset.  We correct by dividing slope
+                // by f'(x₀), estimated from the OLS intercept.
+                double corrected_slope = slope;
+                {
+                    // Invert the interpolation bias to get true fractional
+                    // offset from the OLS intercept.
+                    auto fwd = [](double d) -> double {
+                        if (d < 1e-12) return 0.0;
+                        if (d >= 0.5)  return 0.5;
+                        double lp = -2.0 * std::log(1.0 + d);
+                        double lc = -2.0 * std::log(d);
+                        double ln = -2.0 * std::log(1.0 - d);
+                        double den = lp - 2.0 * lc + ln;
+                        return (std::abs(den) > 1e-15)
+                                   ? 0.5 * (lp - ln) / den
+                                   : 0.0;
+                    };
+                    double meas_avg = std::abs(intercept);
+                    // Newton-Raphson: find x such that fwd(x) = meas_avg
+                    double x0 = std::min(meas_avg * 3.0, 0.499);
+                    for (int iter = 0; iter < 6; ++iter) {
+                        double fx = fwd(x0);
+                        constexpr double eps = 1e-7;
+                        double dfx = (fwd(x0 + eps) - fwd(x0 - eps)) /
+                                     (2.0 * eps);
+                        if (std::abs(dfx) < 1e-15) break;
+                        x0 -= (fx - meas_avg) / dfx;
+                        x0 = std::max(1e-6, std::min(0.499, x0));
+                    }
+                    // f'(x0): derivative of the forward model at the true
+                    // operating point.
+                    constexpr double eps2 = 1e-7;
+                    double fp = (fwd(x0 + eps2) - fwd(x0 - eps2)) /
+                                (2.0 * eps2);
+                    if (fp > 0.05) {
+                        corrected_slope = slope / fp;
+                    }
+                }
+
+                if (debug_sfo) {
+                    std::cerr << "[SFO_debug] corrected_slope=" << corrected_slope
+                              << " (raw=" << slope << ")\n";
+                }
+
                 // Accept SFO only if:
                 // 1. Statistically significant (t > 3.0)
                 // 2. Physically plausible (< 100 ppm in bins/symbol)
                 // 3. Large enough to matter (> 0.003 bins/symbol)
                 // 4. Good linear fit (R² > 0.8) to reject noise artifacts
                 const double max_sfo_bins = 100.0e-6 * n_bins_;  // 100 ppm
-                if (t_stat > 3.0 && std::abs(slope) < max_sfo_bins && std::abs(slope) > 0.003
-                    && r_squared > 0.8) {
-                    estimate.sfo_slope = static_cast<float>(slope);
+                if (t_stat > 3.0 && std::abs(corrected_slope) < max_sfo_bins
+                    && std::abs(corrected_slope) > 0.003 && r_squared > 0.8) {
+                    estimate.sfo_slope = static_cast<float>(corrected_slope);
                 }
             }
         }
