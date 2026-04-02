@@ -190,16 +190,10 @@ PreambleSearchResult find_symbol_alignment_cfo_aware(
     // --- Phase 1: coarse scan with stride to find candidate preamble bin ---
     // Scanning all offsets × all symbols is O(sps × preamble_symbols × N).
     // To keep it fast, first scan with a stride to narrow the offset range.
-    // The polyphase fold sinc main lobe is ~os samples wide, so stride=os
-    // won't miss the peak, and the fine scan refines within ±os.
-    const int coarse_stride = std::max(1, os);  // full oversampling factor
+    // At high OS, the partial-fold coarse scan has enough SNR to tolerate
+    // a stride of 2×os while keeping the fine scan accurate.
+    const int coarse_stride = std::max(1, os > 4 ? os * 2 : os);
     const int coarse_steps = (sps + coarse_stride - 1) / coarse_stride;
-
-    // For each coarse offset, dechirp preamble_symbols symbols and compare
-    // accumulated peak magnitudes.  The true alignment yields the strongest
-    // polyphase-fold response because the anti-aliasing filter is matched.
-    int global_best_bin = 0;
-    int global_best_offset_coarse = 0;
 
     // Allocate FFT resources once
     kiss_fft_cfg cfg = kiss_fft_alloc(n_bins, 0, nullptr, nullptr);
@@ -213,8 +207,43 @@ PreambleSearchResult find_symbol_alignment_cfo_aware(
     std::vector<kiss_fft_cpx> fft_in(n_bins);
     std::vector<kiss_fft_cpx> fft_out(n_bins);
 
+    // Single-tap decimation: fast but lower SNR.  Used for coarse scan
+    // when os ≤ 4 (where single-tap = full fold anyway).
+    // For os > 4, use partial polyphase fold (4 evenly-spaced taps) which
+    // is ~os/4 times faster than the full fold while providing ~6dB more
+    // SNR than a single tap.
+    const int coarse_fold_stride = std::max(1, os / 4);
+    auto dechirp_symbol_fast = [&](std::size_t sample_offset, float* out_peak_mag = nullptr) -> int {
+        for (int bin = 0; bin < n_bins; ++bin) {
+            std::complex<float> acc{0.0f, 0.0f};
+            for (int m = 0; m < os; m += coarse_fold_stride) {
+                const int idx = bin * os + m;
+                acc += samples[sample_offset + idx] * downchirp[idx];
+            }
+            fft_in[bin].r = acc.real();
+            fft_in[bin].i = acc.imag();
+        }
+        kiss_fft(cfg, fft_in.data(), fft_out.data());
+
+        int best_bin = 0;
+        float best_mag = -1.0f;
+        for (int bin = 0; bin < n_bins; ++bin) {
+            const float mag = fft_out[bin].r * fft_out[bin].r +
+                              fft_out[bin].i * fft_out[bin].i;
+            if (mag > best_mag) {
+                best_mag = mag;
+                best_bin = bin;
+            }
+        }
+        if (out_peak_mag) {
+            *out_peak_mag = best_mag;
+        }
+        return best_bin;
+    };
+
+    // Polyphase fold: higher SNR (~10·log₁₀(os) dB better than
+    // single-tap).  Used for the fine scan where precision matters.
     auto dechirp_symbol = [&](std::size_t sample_offset, float* out_peak_mag = nullptr) -> int {
-        // Polyphase fold + FFT to find peak bin (same as FftDemodulator::compute_fft)
         for (int bin = 0; bin < n_bins; ++bin) {
             std::complex<float> acc{0.0f, 0.0f};
             for (int m = 0; m < os; ++m) {
@@ -243,11 +272,19 @@ PreambleSearchResult find_symbol_alignment_cfo_aware(
     };
 
     // Coarse scan — score by accumulated peak MAGNITUDE of the majority bin.
-    // At the true alignment the polyphase fold response is maximal;
-    // at aliased offsets the fold's anti-aliasing filter attenuates it.
-    // Cache per-symbol results to avoid redundant dechirps.
+    // Uses single-tap decimation (dechirp_symbol_fast) for speed; the fine
+    // scan below uses the full polyphase fold for precision.
+    // Keep the top-K coarse candidates so that the polyphase fine scan
+    // can rescue cases where single-tap picks the wrong region.
+    struct CoarseCandidate {
+        float mag_sum;
+        int   offset;
+        int   bin;
+    };
+    constexpr int K_COARSE = 5;
+    std::vector<CoarseCandidate> top_candidates(K_COARSE, {-1.0f, 0, 0});
+
     std::vector<int> sym_peaks(preamble_symbols);
-    float global_best_mag_sum = -1.0f;
     for (int ci = 0; ci < coarse_steps; ++ci) {
         const int offset = ci * coarse_stride;
         std::vector<float> mag_per_bin(n_bins, 0.0f);
@@ -258,18 +295,16 @@ PreambleSearchResult find_symbol_alignment_cfo_aware(
                                       static_cast<std::size_t>(sym) * sps;
             if (base_sample + sps > samples.size()) break;
             float peak_mag = 0.0f;
-            int peak = dechirp_symbol(base_sample, &peak_mag);
+            int peak = dechirp_symbol_fast(base_sample, &peak_mag);
             sym_peaks[sym] = peak;
             mag_per_bin[peak] += peak_mag;
-            // Also count near-neighbors (±1) as the same bin
             int left = (peak - 1 + n_bins) % n_bins;
             int right = (peak + 1) % n_bins;
-            mag_per_bin[left] += peak_mag * 0.01f; // tiny boost for neighbor
+            mag_per_bin[left] += peak_mag * 0.01f;
             mag_per_bin[right] += peak_mag * 0.01f;
             ++valid_syms;
         }
 
-        // Find the bin with the highest accumulated magnitude.
         int local_best_bin = 0;
         float local_best_mag = -1.0f;
         for (int b = 0; b < n_bins; ++b) {
@@ -279,8 +314,6 @@ PreambleSearchResult find_symbol_alignment_cfo_aware(
             }
         }
 
-        // Require at least half of preamble symbols in the dominant bin ±1.
-        // Use cached peaks — no redundant dechirp.
         int count_near = 0;
         for (int sym = 0; sym < valid_syms; ++sym) {
             int diff = std::abs(sym_peaks[sym] - local_best_bin);
@@ -288,50 +321,57 @@ PreambleSearchResult find_symbol_alignment_cfo_aware(
             if (diff <= 1) ++count_near;
         }
 
-        if (count_near >= (preamble_symbols + 1) / 2 &&
-            local_best_mag > global_best_mag_sum) {
-            global_best_mag_sum = local_best_mag;
-            global_best_bin = local_best_bin;
-            global_best_offset_coarse = offset;
+        if (count_near >= (preamble_symbols + 1) / 2) {
+            // Insert into top-K if better than the worst candidate.
+            int worst_idx = 0;
+            for (int k = 1; k < K_COARSE; ++k) {
+                if (top_candidates[k].mag_sum < top_candidates[worst_idx].mag_sum)
+                    worst_idx = k;
+            }
+            if (local_best_mag > top_candidates[worst_idx].mag_sum) {
+                top_candidates[worst_idx] = {local_best_mag, offset, local_best_bin};
+            }
         }
     }
 
-    // --- Phase 2: fine scan around coarse winner ---
-    int fine_start = std::max(0, global_best_offset_coarse - coarse_stride);
-    int fine_end = std::min(sps - 1, global_best_offset_coarse + coarse_stride);
-
+    // --- Phase 2: fine scan around each coarse candidate ---
+    // Use full polyphase fold for precision.  The best fine-scan result
+    // across all candidates wins.
     float best_mag_sum = -1.0f;
-    std::size_t best_offset = static_cast<std::size_t>(global_best_offset_coarse);
-    int best_bin = global_best_bin;
+    std::size_t best_offset = 0;
+    int best_bin = 0;
 
-    for (int offset = fine_start; offset <= fine_end; ++offset) {
-        std::vector<float> fine_mag_per_bin(n_bins, 0.0f);
+    for (const auto& cand : top_candidates) {
+        if (cand.mag_sum < 0.0f) continue;  // unused slot
+        int fine_start = std::max(0, cand.offset - coarse_stride);
+        int fine_end = std::min(sps - 1, cand.offset + coarse_stride);
 
-        for (int sym = 0; sym < preamble_symbols; ++sym) {
-            std::size_t base_sample = static_cast<std::size_t>(offset) +
-                                      static_cast<std::size_t>(sym) * sps;
-            if (base_sample + sps > samples.size()) break;
-            float peak_mag = 0.0f;
-            int peak = dechirp_symbol(base_sample, &peak_mag);
-            fine_mag_per_bin[peak] += peak_mag;
-        }
+        for (int offset = fine_start; offset <= fine_end; ++offset) {
+            std::vector<float> fine_mag_per_bin(n_bins, 0.0f);
 
-        // Find dominant bin by accumulated magnitude
-        int dominant_bin = 0;
-        float dominant_mag = -1.0f;
-        for (int b = 0; b < n_bins; ++b) {
-            if (fine_mag_per_bin[b] > dominant_mag) {
-                dominant_mag = fine_mag_per_bin[b];
-                dominant_bin = b;
+            for (int sym = 0; sym < preamble_symbols; ++sym) {
+                std::size_t base_sample = static_cast<std::size_t>(offset) +
+                                          static_cast<std::size_t>(sym) * sps;
+                if (base_sample + sps > samples.size()) break;
+                float peak_mag = 0.0f;
+                int peak = dechirp_symbol(base_sample, &peak_mag);
+                fine_mag_per_bin[peak] += peak_mag;
             }
-        }
 
-        if (dominant_mag > best_mag_sum * 1.001f) {
-            // Require >0.1% improvement to switch offset — avoids bouncing
-            // between nearby offsets that differ only by noise.
-            best_mag_sum = dominant_mag;
-            best_offset = static_cast<std::size_t>(offset);
-            best_bin = dominant_bin;
+            int dominant_bin = 0;
+            float dominant_mag = -1.0f;
+            for (int b = 0; b < n_bins; ++b) {
+                if (fine_mag_per_bin[b] > dominant_mag) {
+                    dominant_mag = fine_mag_per_bin[b];
+                    dominant_bin = b;
+                }
+            }
+
+            if (dominant_mag > best_mag_sum * 1.001f) {
+                best_mag_sum = dominant_mag;
+                best_offset = static_cast<std::size_t>(offset);
+                best_bin = dominant_bin;
+            }
         }
     }
 
