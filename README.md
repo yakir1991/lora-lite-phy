@@ -7,7 +7,7 @@ GNU Radio required.
 Verified bit-exact against the
 [gr-lora_sdr](https://github.com/tapparelj/gr-lora_sdr) GNU Radio reference
 across all SF/BW/CR combinations, and validated over-the-air with a Semtech
-RFM95 transceiver.
+RFM95 transceiver captured via HackRF One SDR.
 
 ## Features
 
@@ -220,6 +220,53 @@ measured FER results against hardware.
 | `--per-stats` | Print PER/BER statistics at end of streaming run |
 | `--cfo-track [alpha]` | Enable per-symbol CFO tracking EMA (default α=0.02) |
 | `--verbose` | Per-symbol debug output |
+
+## Live OTA Decode (HackRF One)
+
+The decoder has been validated end-to-end over the air using:
+
+- **TX**: Semtech RFM95W on ESP32 (RadioLib), SF12 BW125 CR4/8 at 868.1 MHz
+- **RX**: HackRF One SDR at 2 MHz sample rate
+
+Three consecutive packets were decoded successfully with CRC-verified payloads:
+
+```
+Payload ASCII: LoRa Test #135154   CRC 0x62c0 OK
+Payload ASCII: LoRa Test #135155   CRC 0x62c1 OK
+Payload ASCII: LoRa Test #135156   CRC 0x62c2 OK
+```
+
+To capture and decode live packets:
+
+```bash
+# Capture at 200 kHz offset to avoid HackRF DC spike
+hackrf_transfer -r /dev/stdout -f 867900000 -s 2000000 \
+    -l 24 -g 24 -n 40000000 | \
+  ./build/host_sim/lora_replay \
+    --iq - --format hackrf \
+    --metadata ota_meta.json \
+    --multi --verbose
+```
+
+With metadata:
+
+```json
+{
+  "sample_rate": 2000000,
+  "bw": 125000,
+  "sf": 12,
+  "cr": 0,
+  "preamble_len": 8,
+  "has_crc": true,
+  "ldro": true,
+  "implicit_header": false,
+  "sync_word": 18
+}
+```
+
+> **Note:** Set `cr` to `0` to accept whatever coding rate the header reports.
+> The 200 kHz frequency offset avoids the HackRF DC spur; the decoder's
+> CFO tracking compensates automatically.
 
 ## Acknowledgments
 
