@@ -196,15 +196,16 @@ uint16_t FftDemodulator::demodulate(const std::complex<float>* symbol_samples) c
                   << '\n';
     }
 
+    // Store fractional-bin residual for caller-side SFO tracking.
+    last_residual_ = corrected_position - static_cast<float>(corrected_bin);
+
     // Per-symbol closed-loop CFO tracking.
     // The residual (fractional distance from bin centre after all corrections)
     // is a noisy observation of the remaining CFO error.  An EMA filter
     // feeds it back into cfo_frac_ so the correction adapts to slow drift.
     if (cfo_track_alpha_ > 0.0f &&
         static_cast<int>(symbol_counter_) >= cfo_track_delay_) {
-        const float residual = corrected_position -
-                               static_cast<float>(corrected_bin);
-        cfo_frac_ += cfo_track_alpha_ * residual;
+        cfo_frac_ += cfo_track_alpha_ * last_residual_;
         // Keep cfo_frac_ in [-0.5, 0.5)
         if (cfo_frac_ >= 0.5f) cfo_frac_ -= 1.0f;
         if (cfo_frac_ < -0.5f) cfo_frac_ += 1.0f;

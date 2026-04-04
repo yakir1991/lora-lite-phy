@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <chrono>
 #include <climits>
 #include <cmath>
 #include <cstdlib>
@@ -24,6 +25,7 @@
 #include <limits>
 #include <cctype>
 #include <optional>
+#include <span>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -373,6 +375,1098 @@ int main(int argc, char** argv)
         const Options options = parse_arguments(argc, argv);
         if (options.verbose) std::cerr << "[debug] entering lora_replay" << std::endl;
 
+        // ── Streaming mode ──────────────────────────────────────
+        // Reads stdin incrementally.  Uses the same burst detection
+        // (quartile noise floor) and decode pipeline as batch mode,
+        // but processes each burst immediately so first-packet
+        // latency is sub-second instead of waiting for stdin EOF.
+        if (options.stream) {
+            if (!options.metadata) {
+                throw std::runtime_error("--stream requires --metadata");
+            }
+            const auto base_meta = host_sim::load_metadata(*options.metadata);
+            const auto iq_fmt = (options.iq_format == Options::IqFormat::hackrf)
+                                    ? host_sim::IqFormat::hackrf_int8
+                                    : host_sim::IqFormat::cf32;
+
+            // Chunk: ~100 ms of samples per read call
+            const std::size_t chunk_samples =
+                std::max<std::size_t>(4096, static_cast<std::size_t>(base_meta.sample_rate * 0.1));
+            host_sim::StreamingIqReader reader(iq_fmt, chunk_samples);
+
+            // Multi-SF demodulator bank (single entry when --multi-sf not set).
+            struct SfCtx {
+                std::unique_ptr<host_sim::FftDemodulator> demod;
+                int sps, os;
+            };
+            std::vector<SfCtx> sf_bank;
+            {
+                const int sf_lo = options.multi_sf ? 6 : base_meta.sf;
+                const int sf_hi = options.multi_sf ? 12 : base_meta.sf;
+                for (int sf_i = sf_lo; sf_i <= sf_hi; ++sf_i) {
+                    SfCtx ctx;
+                    ctx.demod = std::make_unique<host_sim::FftDemodulator>(
+                        sf_i, base_meta.sample_rate, base_meta.bw);
+                    ctx.sps = ctx.demod->samples_per_symbol();
+                    ctx.os = ctx.demod->oversample_factor();
+                    sf_bank.push_back(std::move(ctx));
+                }
+            }
+            // Accumulate enough data for the largest SF.
+            const int max_sps = sf_bank.back().sps;
+            const std::size_t min_accumulate =
+                static_cast<std::size_t>(max_sps) * 60;
+
+            if (options.multi_sf) {
+                std::cout << "Multi-SF: SF6–SF12, BW=" << base_meta.bw
+                          << ", Fs=" << base_meta.sample_rate << "\n";
+            } else {
+                std::cout << "Metadata: SF=" << base_meta.sf
+                          << ", CR=" << base_meta.cr
+                          << ", BW=" << base_meta.bw
+                          << ", Fs=" << base_meta.sample_rate
+                          << ", payload_len=" << base_meta.payload_len << "\n";
+            }
+            std::cout << "[stream] Listening... (max_sps=" << max_sps
+                      << ", symbol_period="
+                      << static_cast<double>(max_sps) / base_meta.sample_rate * 1000.0
+                      << " ms)\n";
+            std::cout.flush();
+
+            std::size_t search_offset = 0;
+            int packet_index = 0;
+            float tracked_noise_floor = 0.0f;  // Adaptive noise estimate
+
+            // PER/BER statistics counters (active when --per-stats)
+            int stat_bursts = 0;        // bursts detected
+            int stat_decoded = 0;       // header decoded successfully
+            int stat_crc_ok = 0;        // CRC passed
+            int stat_bit_errors = 0;    // total bit errors (when --payload given)
+            int stat_total_bits = 0;    // total bits compared
+            bool stream_payload_failure = false; // any payload byte mismatch
+
+            while (true) {
+                // Read more data
+                if (!reader.eof()) {
+                    reader.read_chunk();
+                }
+
+                const std::size_t avail = reader.available();
+                // Wait until we have enough for burst detection + one packet
+                if (avail - search_offset < min_accumulate && !reader.eof()) {
+                    continue;
+                }
+
+                // Burst detection: use smallest SF (finest resolution).
+                auto& detect_ctx = sf_bank.front();
+                const auto burst_det = host_sim::detect_burst_ex(
+                    reader.data(), avail, detect_ctx.sps, 6.0f,
+                    search_offset, tracked_noise_floor, 2);
+
+                if (!burst_det) {
+                    if (reader.eof()) {
+                        if (packet_index == 0 &&
+                            avail - search_offset >=
+                            static_cast<std::size_t>(detect_ctx.sps) * 12) {
+                            // Fall through with synthetic burst detection
+                        } else {
+                            break;
+                        }
+                    } else {
+                        if (avail > min_accumulate) {
+                            const std::size_t trim =
+                                avail - min_accumulate / 2;
+                            reader.consume(trim);
+                            search_offset = (search_offset > trim)
+                                                ? search_offset - trim : 0;
+                        }
+                        continue;
+                    }
+                }
+
+                // Burst boundaries (using smallest SF's window size)
+                const std::size_t burst_start_raw = burst_det
+                    ? burst_det->burst_start : search_offset;
+                const float noise_floor = burst_det
+                    ? burst_det->noise_floor : 0.0f;
+                const std::size_t det_win =
+                    static_cast<std::size_t>(detect_ctx.sps);
+                const std::size_t bp_win = burst_start_raw / det_win;
+                const std::size_t n_total_win = avail / det_win;
+                const float thr = noise_floor * 6.0f;
+
+                constexpr std::size_t tail_windows = 5;
+                std::size_t quiet_run = 0;
+                std::size_t burst_end_win = n_total_win;
+                double burst_power_acc = 0.0;
+                std::size_t burst_power_count = 0;
+                for (std::size_t w = bp_win; w < n_total_win; ++w) {
+                    double acc = 0.0;
+                    const auto* p = reader.data() + w * det_win;
+                    for (std::size_t i = 0; i < det_win; ++i) {
+                        acc += static_cast<double>(p[i].real()) * p[i].real() +
+                               static_cast<double>(p[i].imag()) * p[i].imag();
+                    }
+                    const float wp = static_cast<float>(
+                        acc / static_cast<double>(det_win));
+                    if (wp > thr) {
+                        burst_power_acc += wp;
+                        ++burst_power_count;
+                    }
+                    if (wp <= thr) {
+                        ++quiet_run;
+                        if (quiet_run >= tail_windows) {
+                            burst_end_win = w - tail_windows + 1;
+                            break;
+                        }
+                    } else {
+                        quiet_run = 0;
+                    }
+                }
+
+                if (burst_end_win == n_total_win && !reader.eof()) {
+                    continue;
+                }
+
+                constexpr std::size_t burst_tail_margin = 4;
+                const std::size_t burst_end = std::min(
+                    (burst_end_win + burst_tail_margin) * det_win, avail);
+                const std::size_t burst_len =
+                    burst_end > burst_start_raw
+                        ? burst_end - burst_start_raw : 0;
+                if (burst_len < det_win * 12) {
+                    if (options.verbose) {
+                        std::cerr << "[stream] short burst (" << burst_len
+                                  << " samples), skipping\n";
+                    }
+                    search_offset = burst_end;
+                    continue;
+                }
+                const std::size_t burst_start = burst_start_raw;
+
+                const float mean_burst_power = (burst_power_count > 0)
+                    ? static_cast<float>(burst_power_acc /
+                      static_cast<double>(burst_power_count))
+                    : (burst_det ? burst_det->signal_power : 0.0f);
+                const float snr_linear = (noise_floor > 0.0f)
+                    ? (mean_burst_power - noise_floor) / noise_floor
+                    : 0.0f;
+                const float snr_db = (snr_linear > 0.0f)
+                    ? 10.0f * std::log10(snr_linear)
+                    : -99.0f;
+
+                const std::span<const std::complex<float>> burst_samples(
+                    reader.data() + burst_start, burst_len);
+
+                // ── Multi-SF: select correct SF by demodulating preamble
+                //    at fixed offset (burst start).  The correct SF gives
+                //    consistent bins; wrong SFs scatter. ──
+                SfCtx* best_ctx = &detect_ctx;
+                if (sf_bank.size() > 1) {
+                    int best_consistency = -1;
+                    for (auto& ctx : sf_bank) {
+                        if (burst_len <
+                            static_cast<std::size_t>(ctx.sps) * 8)
+                            continue;
+                        ctx.demod->set_frequency_offsets(0.0f, 0, 0.0f);
+                        ctx.demod->reset_symbol_counter();
+                        const int n = std::min(
+                            8, static_cast<int>(burst_len / ctx.sps));
+                        // Count most-common bin among first n symbols
+                        int bin_counts[4096]{};
+                        int n_bins = 1 << ctx.demod->sf();
+                        for (int s = 0; s < n; ++s) {
+                            int b = ctx.demod->demodulate(
+                                burst_samples.data() +
+                                s * static_cast<std::size_t>(ctx.sps));
+                            if (b >= 0 && b < n_bins) ++bin_counts[b];
+                        }
+                        int mode_count = 0;
+                        for (int i = 0; i < n_bins; ++i) {
+                            if (bin_counts[i] > mode_count)
+                                mode_count = bin_counts[i];
+                        }
+                        if (options.verbose) {
+                            std::cerr << "[multi-sf-probe] SF="
+                                      << ctx.demod->sf()
+                                      << " consistency=" << mode_count
+                                      << "/" << n << "\n";
+                        }
+                        if (mode_count > best_consistency) {
+                            best_consistency = mode_count;
+                            best_ctx = &ctx;
+                        }
+                    }
+                    if (options.verbose) {
+                        std::cerr << "[multi-sf] selected SF="
+                                  << best_ctx->demod->sf() << "\n";
+                    }
+                }
+
+                auto& demod = *best_ctx->demod;
+                const int sps = best_ctx->sps;
+                const int os = best_ctx->os;
+                auto metadata = base_meta;
+                metadata.sf = demod.sf();
+
+                ++stat_bursts;
+                std::cout << "\n=== Packet #" << packet_index << " ===\n";
+                {
+                    const double t_ms = static_cast<double>(burst_start) / metadata.sample_rate * 1000.0;
+                    const double len_ms = static_cast<double>(burst_len) / metadata.sample_rate * 1000.0;
+                    std::cout << "Burst at sample " << burst_start
+                              << " (" << std::fixed << std::setprecision(1) << t_ms
+                              << " ms), " << burst_len << " samples ("
+                              << len_ms << " ms), SNR=" << snr_db << " dB\n"
+                              << std::defaultfloat << std::setprecision(6);
+                }
+                std::cout.flush();
+
+                const auto decode_t0 = std::chrono::steady_clock::now();
+
+                // ── Decode this burst (reuse existing pipeline) ──
+
+                // Alignment
+                std::size_t alignment_offset = 0;
+                int detected_preamble_bin = 0;
+                {
+                    auto pr = host_sim::find_symbol_alignment_cfo_aware(
+                        burst_samples, demod, metadata.preamble_len);
+                    alignment_offset = pr.alignment_offset;
+                    detected_preamble_bin = pr.preamble_bin;
+                }
+
+                // CFO estimation
+                float estimated_sfo = 0.0f;
+                {
+                    const int avail_pream_sym = static_cast<int>(std::min<std::size_t>(
+                        (burst_samples.size() > alignment_offset
+                             ? (burst_samples.size() - alignment_offset) / static_cast<std::size_t>(sps)
+                             : 0),
+                        static_cast<std::size_t>(INT_MAX)));
+                    const int pream_to_use = std::min(std::max(metadata.preamble_len - 1, 0), avail_pream_sym);
+                    if (pream_to_use > 0) {
+                        auto freq_est = demod.estimate_frequency_offsets(
+                            burst_samples.data() + alignment_offset, pream_to_use);
+                        if (detected_preamble_bin != 0) {
+                            const int n_bins = 1 << metadata.sf;
+                            int signed_bin = detected_preamble_bin;
+                            if (signed_bin > n_bins / 2) signed_bin -= n_bins;
+                            if (std::abs(signed_bin) > std::abs(freq_est.cfo_int) + 2) {
+                                freq_est.cfo_int = signed_bin;
+                            }
+                        }
+                        demod.set_frequency_offsets(freq_est.cfo_frac, freq_est.cfo_int, freq_est.sfo_slope);
+                        estimated_sfo = freq_est.sfo_slope;
+
+                        // Report CFO in Hz
+                        {
+                            const int n_bins = 1 << metadata.sf;
+                            const double cfo_bins = static_cast<double>(freq_est.cfo_int) + freq_est.cfo_frac;
+                            const double cfo_hz = cfo_bins * static_cast<double>(metadata.bw) / n_bins;
+                            std::cout << "CFO=" << std::fixed << std::setprecision(1) << cfo_hz
+                                      << " Hz (" << std::setprecision(2) << cfo_bins << " bins)";
+                            if (std::abs(freq_est.sfo_slope) > 0.001f) {
+                                std::cout << ", SFO=" << std::setprecision(3) << freq_est.sfo_slope << " bins/sym";
+                            }
+                            std::cout << "\n" << std::defaultfloat << std::setprecision(6);
+                        }
+
+                        // Sub-sample alignment refinement (±3 samples).
+                        // At low OS, even 1–2 sample error shifts the
+                        // dechirped FFT peak and flips marginal symbols.
+                        if (os <= 4) {
+                            int best_off = 0;
+                            int best_c0 = -1;
+                            for (int try_off = -3; try_off <= 3; ++try_off) {
+                                const auto try_a = static_cast<std::size_t>(
+                                    static_cast<std::ptrdiff_t>(alignment_offset) + try_off);
+                                if (try_a + 8ULL * sps > burst_samples.size()) continue;
+                                demod.set_frequency_offsets(freq_est.cfo_frac,
+                                                            freq_est.cfo_int,
+                                                            freq_est.sfo_slope);
+                                demod.reset_symbol_counter();
+                                int c0 = 0;
+                                for (int p = 0; p < std::min(pream_to_use, 8); ++p) {
+                                    uint16_t v = demod.demodulate(
+                                        &burst_samples[try_a +
+                                                       static_cast<std::size_t>(p) * sps]);
+                                    if (v == 0) ++c0;
+                                }
+                                if (c0 > best_c0) { best_c0 = c0; best_off = try_off; }
+                            }
+                            if (best_off != 0) {
+                                alignment_offset = static_cast<std::size_t>(
+                                    static_cast<std::ptrdiff_t>(alignment_offset) + best_off);
+                            }
+                        }
+                    }
+                }
+
+                // Demodulate symbols — no SFO phase correction on preamble grid
+                demod.set_frequency_offsets(demod.current_cfo_frac(), demod.current_cfo_int(), 0.0f);
+                demod.reset_symbol_counter();
+                // Per-symbol CFO tracking (EMA).
+                // --cfo-track [alpha] CLI flag or HOST_SIM_CFO_TRACK_ALPHA env.
+                {
+                    float alpha = options.cfo_track_alpha;
+                    if (alpha == 0.0f) {
+                        static const char* alpha_env = std::getenv("HOST_SIM_CFO_TRACK_ALPHA");
+                        if (alpha_env) alpha = std::stof(alpha_env);
+                    }
+                    if (alpha > 0.0f) {
+                        demod.set_cfo_tracking(alpha, 8);
+                    }
+                }
+                const std::size_t max_sym =
+                    (burst_samples.size() - alignment_offset) /
+                    static_cast<std::size_t>(sps);
+                std::vector<uint16_t> symbols;
+                std::vector<host_sim::SymbolLLR> symbol_llrs;
+                symbols.reserve(max_sym);
+                if (options.soft) symbol_llrs.reserve(max_sym);
+                for (std::size_t i = 0; i < max_sym; ++i) {
+                    symbols.push_back(demod.demodulate(
+                        &burst_samples[alignment_offset +
+                                       i * static_cast<std::size_t>(sps)]));
+                    if (options.soft) {
+                        const auto& mags = demod.get_fft_magnitudes_sq();
+                        symbol_llrs.push_back(host_sim::compute_symbol_llrs(
+                            mags.data(), metadata.sf,
+                            (static_cast<int>(i) < 8) || metadata.ldro,
+                            demod.current_cfo_int()));
+                    }
+                }
+
+                // Try header decode (skip grid scan at high OS)
+                HeaderDecodeResult header;
+                const bool skip_grid = (os > 4) || (os == 4);
+
+                if (!skip_grid && !header.success) {
+                    for (std::size_t c = 0; c + 8 <= symbols.size(); ++c) {
+                        auto h = try_decode_header(symbols, c, metadata);
+                        if (!h.success) continue;
+                        int hlen = h.payload_len > 0 ? h.payload_len : metadata.payload_len;
+                        int hcr = h.cr > 0 ? h.cr : metadata.cr;
+                        if (metadata.payload_len > 0 && hlen != metadata.payload_len) continue;
+                        if (metadata.cr > 0 && hcr != metadata.cr) continue;
+                        if (metadata.has_crc && !h.has_crc) continue;
+                        header = std::move(h);
+                        break;
+                    }
+                }
+
+                // SFD re-demod fallback
+                if (!header.success) {
+                    auto sync_pos = host_sim::find_header_symbol_index(
+                        symbols, 0x12, metadata.sf);
+                    if (!sync_pos)
+                        sync_pos = host_sim::find_header_symbol_index(
+                            symbols, 0x34, metadata.sf);
+                    // Implicit-header fallback: if sync word not found,
+                    // estimate data start from known preamble length.
+                    // Data starts at: preamble + 2 sync + 2.25 SFD ≈ preamble + 4
+                    // (same formula find_header_symbol_index returns: sync_high_pos + 4)
+                    if (!sync_pos && metadata.implicit_header) {
+                        sync_pos = static_cast<std::size_t>(
+                            metadata.preamble_len + 4);
+                    }
+
+                    const float saved_cfo_frac = demod.current_cfo_frac();
+                    const int saved_cfo_int = demod.current_cfo_int();
+                    const int N_bins = 1 << metadata.sf;
+                    const double redemod_stride =
+                        (estimated_sfo != 0.0f)
+                            ? static_cast<double>(sps) *
+                                  (1.0 - static_cast<double>(estimated_sfo) / N_bins)
+                            : static_cast<double>(sps);
+
+                    if (sync_pos) {
+                        const std::size_t quarter =
+                            static_cast<std::size_t>(sps / 4);
+                        for (int qoff : {1, 0, 2, 3}) {
+                            if (header.success) break;
+                            const std::size_t data_sample =
+                                alignment_offset +
+                                *sync_pos * static_cast<std::size_t>(sps) +
+                                static_cast<std::size_t>(qoff) * quarter;
+                            if (data_sample + 8ULL * sps > burst_samples.size())
+                                continue;
+
+                            demod.set_frequency_offsets(
+                                saved_cfo_frac, saved_cfo_int, 0.0f);
+                            demod.reset_symbol_counter();
+                            std::vector<uint16_t> redemod;
+                            std::vector<host_sim::SymbolLLR> redemod_llrs;
+                            const std::size_t rmax =
+                                (burst_samples.size() - data_sample) / sps;
+                            // Per-symbol SFO tracking: refine stride using
+                            // residual drift from parabolic interpolation.
+                            double sfo_accum = 0.0;
+                            double sfo_stride = redemod_stride;
+                            float sfo_prev_res = 0.0f;
+                            float sfo_drift = 0.0f;
+                            constexpr float sfo_alpha = 0.01f;
+                            constexpr int sfo_delay = 8;
+                            for (std::size_t i = 0;
+                                 i < std::min<std::size_t>(rmax, 1024); ++i) {
+                                const std::size_t off =
+                                    static_cast<std::size_t>(
+                                        std::round(sfo_accum));
+                                if (data_sample + off +
+                                        static_cast<std::size_t>(sps) >
+                                    burst_samples.size())
+                                    break;
+                                redemod.push_back(demod.demodulate(
+                                    &burst_samples[data_sample + off]));
+                                if (options.soft) {
+                                    const auto& mags = demod.get_fft_magnitudes_sq();
+                                    redemod_llrs.push_back(host_sim::compute_symbol_llrs(
+                                        mags.data(), metadata.sf,
+                                        (static_cast<int>(i) < 8) || metadata.ldro,
+                                        demod.current_cfo_int()));
+                                }
+                                // Adaptive stride: track residual slope.
+                                if (static_cast<int>(i) >= sfo_delay) {
+                                    float dr = demod.last_residual() - sfo_prev_res;
+                                    if (dr > 0.5f) dr -= 1.0f;
+                                    if (dr < -0.5f) dr += 1.0f;
+                                    sfo_drift += sfo_alpha * (dr - sfo_drift);
+                                    sfo_stride = redemod_stride -
+                                        static_cast<double>(sps) *
+                                        static_cast<double>(sfo_drift) / N_bins;
+                                }
+                                sfo_prev_res = demod.last_residual();
+                                sfo_accum += sfo_stride;
+                            }
+
+                            if (metadata.implicit_header) {
+                                // Build implicit header matching batch path:
+                                // deinterleave first block at CR=4 (header rate),
+                                // prepend 5 zero nibbles (placeholder for absent
+                                // explicit header fields).
+                                HeaderDecodeResult imp;
+                                const std::size_t hdr_syms_cnt = std::min<std::size_t>(8, redemod.size());
+                                std::vector<uint16_t> first_block(
+                                    redemod.begin(),
+                                    redemod.begin() + static_cast<std::ptrdiff_t>(hdr_syms_cnt));
+                                host_sim::DeinterleaverConfig hdr_cfg{
+                                    metadata.sf, 4, true, metadata.ldro};
+                                std::size_t consumed_block = 0;
+                                auto codewords = host_sim::deinterleave(
+                                    first_block, hdr_cfg, consumed_block);
+                                auto nibs = host_sim::hamming_decode_block(
+                                    codewords, true, 4);
+                                imp.success = true;
+                                imp.payload_len = metadata.payload_len;
+                                imp.cr = metadata.cr;
+                                imp.has_crc = metadata.has_crc;
+                                imp.checksum_field = -1;
+                                imp.checksum_computed = -1;
+                                imp.consumed_symbols = consumed_block > 0
+                                    ? static_cast<int>(consumed_block) : 8;
+                                imp.codewords.assign(codewords.begin(), codewords.end());
+                                imp.nibbles.assign(5, 0);
+                                imp.nibbles.insert(imp.nibbles.end(),
+                                                   nibs.begin(), nibs.end());
+
+                                // CRC-guided timing sweep for implicit header
+                                if (metadata.has_crc &&
+                                    !probe_payload_crc(redemod, imp, metadata)) {
+                                    const int max_adj = std::max(os, 4) + 2;
+                                    bool found_adj = false;
+                                    for (int adj = -1; std::abs(adj) <= max_adj;
+                                         adj = adj > 0 ? -adj - 1 : -adj) {
+                                        const auto adj_data =
+                                            static_cast<std::size_t>(
+                                                static_cast<std::ptrdiff_t>(
+                                                    data_sample) + adj);
+                                        if (adj_data + 8ULL * sps >
+                                            burst_samples.size())
+                                            continue;
+                                        demod.set_frequency_offsets(
+                                            saved_cfo_frac, saved_cfo_int, 0.0f);
+                                        demod.reset_symbol_counter();
+                                        std::vector<uint16_t> adj_syms;
+                                        const std::size_t adj_max =
+                                            (burst_samples.size() - adj_data) / sps;
+                                        for (std::size_t i = 0;
+                                             i < std::min<std::size_t>(adj_max, 200);
+                                             ++i) {
+                                            const std::size_t so =
+                                                static_cast<std::size_t>(
+                                                    std::round(i * redemod_stride));
+                                            if (adj_data + so +
+                                                    static_cast<std::size_t>(sps) >
+                                                burst_samples.size())
+                                                break;
+                                            adj_syms.push_back(demod.demodulate(
+                                                &burst_samples[adj_data + so]));
+                                        }
+                                        // Rebuild implicit header for adjusted symbols
+                                        std::size_t adj_consumed = 0;
+                                        std::vector<uint16_t> adj_first(
+                                            adj_syms.begin(),
+                                            adj_syms.begin() + std::min<std::ptrdiff_t>(
+                                                8, static_cast<std::ptrdiff_t>(adj_syms.size())));
+                                        auto adj_cw = host_sim::deinterleave(
+                                            adj_first, hdr_cfg, adj_consumed);
+                                        auto adj_nibs = host_sim::hamming_decode_block(
+                                            adj_cw, true, 4);
+                                        HeaderDecodeResult adj_imp;
+                                        adj_imp.success = true;
+                                        adj_imp.payload_len = metadata.payload_len;
+                                        adj_imp.cr = metadata.cr;
+                                        adj_imp.has_crc = metadata.has_crc;
+                                        adj_imp.consumed_symbols = adj_consumed > 0
+                                            ? static_cast<int>(adj_consumed) : 8;
+                                        adj_imp.nibbles.assign(5, 0);
+                                        adj_imp.nibbles.insert(adj_imp.nibbles.end(),
+                                                               adj_nibs.begin(),
+                                                               adj_nibs.end());
+                                        if (probe_payload_crc(
+                                                adj_syms, adj_imp, metadata)) {
+                                            redemod = std::move(adj_syms);
+                                            redemod_llrs.clear();
+                                            imp = std::move(adj_imp);
+                                            std::cout << "SFD re-demod: implicit data start "
+                                                         "refined by "
+                                                      << adj
+                                                      << " samples (CRC verified)\n";
+                                            found_adj = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!found_adj) continue;  // Try next qoff
+                                }
+                                header = std::move(imp);
+                                symbols = std::move(redemod);
+                                symbol_llrs = std::move(redemod_llrs);
+                                break;
+                            }
+
+                            auto hdr = try_decode_header(redemod, 0, metadata);
+                            if (!hdr.success) continue;
+                            int hlen = hdr.payload_len > 0
+                                           ? hdr.payload_len
+                                           : metadata.payload_len;
+                            int hcr =
+                                hdr.cr > 0 ? hdr.cr : metadata.cr;
+                            if (metadata.payload_len > 0 &&
+                                hlen != metadata.payload_len)
+                                continue;
+                            if (metadata.cr > 0 && hcr != metadata.cr)
+                                continue;
+                            if (metadata.has_crc && !hdr.has_crc)
+                                continue;
+
+                            // CRC-guided timing sweep
+                            if ((hdr.has_crc || metadata.has_crc) &&
+                                !probe_payload_crc(redemod, hdr, metadata)) {
+                                const int max_adj = std::max(os, 4) + 2;
+                                for (int adj = -1; std::abs(adj) <= max_adj;
+                                     adj = adj > 0 ? -adj - 1 : -adj) {
+                                    const auto adj_data =
+                                        static_cast<std::size_t>(
+                                            static_cast<std::ptrdiff_t>(
+                                                data_sample) +
+                                            adj);
+                                    if (adj_data + 8ULL * sps >
+                                        burst_samples.size())
+                                        continue;
+                                    demod.set_frequency_offsets(
+                                        saved_cfo_frac, saved_cfo_int, 0.0f);
+                                    demod.reset_symbol_counter();
+                                    std::vector<uint16_t> adj_syms;
+                                    const std::size_t adj_max =
+                                        (burst_samples.size() - adj_data) / sps;
+                                    for (std::size_t i = 0;
+                                         i < std::min<std::size_t>(adj_max, 200);
+                                         ++i) {
+                                        const std::size_t so =
+                                            static_cast<std::size_t>(
+                                                std::round(i * redemod_stride));
+                                        if (adj_data + so +
+                                                static_cast<std::size_t>(sps) >
+                                            burst_samples.size())
+                                            break;
+                                        adj_syms.push_back(demod.demodulate(
+                                            &burst_samples[adj_data + so]));
+                                    }
+                                    auto adj_hdr = try_decode_header(
+                                        adj_syms, 0, metadata);
+                                    if (!adj_hdr.success) continue;
+                                    if (probe_payload_crc(
+                                            adj_syms, adj_hdr, metadata)) {
+                                        redemod = std::move(adj_syms);
+                                        redemod_llrs.clear();
+                                        hdr = std::move(adj_hdr);
+                                        break;
+                                    }
+                                }
+                            }
+
+                            std::cout << "SFD re-demod: header found with "
+                                         "quarter offset "
+                                      << qoff << " (sync at symbol "
+                                      << (*sync_pos - 4) << ")\n";
+                            header = std::move(hdr);
+                            symbols = std::move(redemod);
+                            symbol_llrs = std::move(redemod_llrs);
+                            break;
+                        }
+                    }
+
+                    // ── OS=2 upsample fallback (streaming) ──────────
+                    // When native-OS decode at OS=1 fails or produces
+                    // CRC-invalid payload, upsample burst by 2x and
+                    // retry with SFO rate compensation sweep.
+                    bool need_os2 = !header.success;
+                    if (!need_os2 && os == 1 && sync_pos &&
+                        (header.has_crc || metadata.has_crc) &&
+                        !probe_payload_crc(symbols, header, metadata)) {
+                        need_os2 = true;
+                    }
+                    if (need_os2 && sync_pos && os == 1) {
+                        auto fallback_header = header;
+                        auto fallback_symbols = symbols;
+                        auto fallback_llrs = symbol_llrs;
+                        header.success = false;
+
+                        const std::size_t burst_start = alignment_offset;
+                        const std::size_t burst_len = burst_samples.size() - burst_start;
+                        auto up = upsample_2x(&burst_samples[burst_start], burst_len);
+
+                        const int sps_os2 = sps * 2;
+                        const std::size_t quarter_os2 =
+                            static_cast<std::size_t>(sps_os2 / 4);
+                        host_sim::FftDemodulator demod_os2(metadata.sf,
+                                                metadata.bw * 2,
+                                                metadata.bw);
+
+                        std::vector<std::pair<int,int>> hdr_hit_pairs;
+                        for (int os2_pass = 0;
+                             os2_pass < 2 && !header.success; ++os2_pass) {
+                        for (int sfo_cand = 0; std::abs(sfo_cand) <= 100;
+                             sfo_cand = sfo_cand >= 0 ? -sfo_cand - 10
+                                                      : -sfo_cand) {
+                            if (header.success) break;
+                            const double stride =
+                                static_cast<double>(sps_os2) *
+                                (1.0 - static_cast<double>(sfo_cand) * 1e-6);
+
+                        for (int qoff : {1, 0, 2, 3}) {
+                            if (header.success) break;
+                            if (os2_pass == 0 && qoff != 1) continue;
+                            if (os2_pass == 1) {
+                                bool was_hit = false;
+                                for (auto& p : hdr_hit_pairs)
+                                    if (p.first == sfo_cand && p.second == qoff)
+                                        was_hit = true;
+                                if (!was_hit) continue;
+                            }
+                            const std::size_t data_sample_os2 =
+                                *sync_pos * static_cast<std::size_t>(sps_os2) +
+                                static_cast<std::size_t>(qoff) * quarter_os2;
+                            if (data_sample_os2 + 8ULL * sps_os2 > up.size())
+                                continue;
+
+                            demod_os2.set_frequency_offsets(saved_cfo_frac,
+                                                           saved_cfo_int,
+                                                           0.0f);
+                            demod_os2.reset_symbol_counter();
+                            std::vector<uint16_t> os2_syms;
+                            std::vector<host_sim::SymbolLLR> os2_llrs;
+
+                            // Demod first 8 symbols (header probe)
+                            for (std::size_t i = 0; i < 8; ++i) {
+                                const auto pos = static_cast<std::size_t>(
+                                    std::round(static_cast<double>(
+                                                   data_sample_os2) +
+                                               static_cast<double>(i) * stride));
+                                if (pos + sps_os2 > up.size()) break;
+                                os2_syms.push_back(demod_os2.demodulate(&up[pos]));
+                                if (options.soft) {
+                                    const auto& mags = demod_os2.get_fft_magnitudes_sq();
+                                    os2_llrs.push_back(host_sim::compute_symbol_llrs(
+                                        mags.data(), metadata.sf,
+                                        true, demod_os2.current_cfo_int()));
+                                }
+                            }
+                            if (os2_syms.size() < 8) continue;
+
+                            // Header validation
+                            HeaderDecodeResult os2_hdr;
+                            int hlen = 0, hcr = 0;
+                            if (metadata.implicit_header) {
+                                host_sim::DeinterleaverConfig hdr_cfg{
+                                    metadata.sf, 4, true, metadata.ldro};
+                                std::size_t consumed_block = 0;
+                                std::vector<uint16_t> first8(os2_syms.begin(),
+                                    os2_syms.begin() + 8);
+                                auto cw = host_sim::deinterleave(
+                                    first8, hdr_cfg, consumed_block);
+                                auto nibs = host_sim::hamming_decode_block(cw, true, 4);
+                                os2_hdr.success = true;
+                                os2_hdr.payload_len = metadata.payload_len;
+                                os2_hdr.cr = metadata.cr;
+                                os2_hdr.has_crc = metadata.has_crc;
+                                os2_hdr.consumed_symbols = consumed_block > 0
+                                    ? static_cast<int>(consumed_block) : 8;
+                                os2_hdr.nibbles.assign(5, 0);
+                                os2_hdr.nibbles.insert(os2_hdr.nibbles.end(),
+                                                       nibs.begin(), nibs.end());
+                                hlen = metadata.payload_len;
+                                hcr = metadata.cr;
+                            } else {
+                                os2_hdr = try_decode_header(os2_syms, 0, metadata);
+                                if (!os2_hdr.success) continue;
+                                hlen = os2_hdr.payload_len > 0
+                                           ? os2_hdr.payload_len
+                                           : metadata.payload_len;
+                                hcr = os2_hdr.cr > 0 ? os2_hdr.cr : metadata.cr;
+                                if (metadata.payload_len > 0 &&
+                                    hlen != metadata.payload_len) continue;
+                                if (metadata.cr > 0 && hcr != metadata.cr) continue;
+                                if (metadata.has_crc && !os2_hdr.has_crc) continue;
+                            }
+
+                            if (os2_pass == 0) {
+                                hdr_hit_pairs.emplace_back(sfo_cand, qoff);
+                                continue;
+                            }
+
+                            // Pass 1: full payload demod + CRC check
+                            const int payload_cw = hcr + 4;
+                            const std::size_t nibbles_needed =
+                                static_cast<std::size_t>(hlen) * 2 +
+                                (os2_hdr.has_crc || metadata.has_crc ? 4 : 0);
+                            const std::size_t header_nibs =
+                                os2_hdr.nibbles.size() > 5
+                                    ? os2_hdr.nibbles.size() - 5 : 0;
+                            const std::size_t data_nibs_needed =
+                                nibbles_needed > header_nibs
+                                    ? nibbles_needed - header_nibs : 0;
+                            const std::size_t data_blocks =
+                                (data_nibs_needed + payload_cw - 1) /
+                                static_cast<std::size_t>(payload_cw);
+                            const std::size_t max_data_syms =
+                                data_blocks * static_cast<std::size_t>(payload_cw) + 4;
+                            const std::size_t total_syms =
+                                8 + max_data_syms;
+
+                            // Demod remaining symbols at variable stride
+                            for (std::size_t i = 8; i < total_syms; ++i) {
+                                const auto pos = static_cast<std::size_t>(
+                                    std::round(static_cast<double>(
+                                                   data_sample_os2) +
+                                               static_cast<double>(i) * stride));
+                                if (pos + sps_os2 > up.size()) break;
+                                os2_syms.push_back(demod_os2.demodulate(&up[pos]));
+                                if (options.soft) {
+                                    const auto& mags = demod_os2.get_fft_magnitudes_sq();
+                                    os2_llrs.push_back(host_sim::compute_symbol_llrs(
+                                        mags.data(), metadata.sf,
+                                        metadata.ldro,
+                                        demod_os2.current_cfo_int()));
+                                }
+                            }
+
+                            // CRC probe + timing adjustment sweep
+                            if ((os2_hdr.has_crc || metadata.has_crc) &&
+                                probe_payload_crc(os2_syms, os2_hdr, metadata)) {
+                                std::cout << "OS=2 fallback: CRC OK (sfo="
+                                          << sfo_cand << " ppm, qoff="
+                                          << qoff << ")\n";
+                                header = std::move(os2_hdr);
+                                symbols = std::move(os2_syms);
+                                symbol_llrs = std::move(os2_llrs);
+                                break;
+                            }
+                            // Timing adjustment sweep (±3 samples)
+                            for (int adj = -1; std::abs(adj) <= 3;
+                                 adj = adj > 0 ? -adj - 1 : -adj) {
+                                const auto adj_data = static_cast<std::size_t>(
+                                    static_cast<std::ptrdiff_t>(data_sample_os2) + adj);
+                                if (adj_data + 8ULL * sps_os2 > up.size()) continue;
+                                demod_os2.set_frequency_offsets(saved_cfo_frac,
+                                                               saved_cfo_int, 0.0f);
+                                demod_os2.reset_symbol_counter();
+                                std::vector<uint16_t> adj_syms;
+                                for (std::size_t i = 0; i < total_syms; ++i) {
+                                    const auto pos = static_cast<std::size_t>(
+                                        std::round(static_cast<double>(adj_data) +
+                                                   static_cast<double>(i) * stride));
+                                    if (pos + sps_os2 > up.size()) break;
+                                    adj_syms.push_back(demod_os2.demodulate(&up[pos]));
+                                }
+                                HeaderDecodeResult adj_hdr;
+                                if (metadata.implicit_header) {
+                                    host_sim::DeinterleaverConfig hdr_cfg{
+                                        metadata.sf, 4, true, metadata.ldro};
+                                    std::size_t adj_consumed = 0;
+                                    std::vector<uint16_t> adj_first8(adj_syms.begin(),
+                                        adj_syms.begin() + std::min<std::ptrdiff_t>(
+                                            8, static_cast<std::ptrdiff_t>(adj_syms.size())));
+                                    auto adj_cw = host_sim::deinterleave(
+                                        adj_first8, hdr_cfg, adj_consumed);
+                                    auto adj_nibs = host_sim::hamming_decode_block(
+                                        adj_cw, true, 4);
+                                    adj_hdr.success = true;
+                                    adj_hdr.payload_len = metadata.payload_len;
+                                    adj_hdr.cr = metadata.cr;
+                                    adj_hdr.has_crc = metadata.has_crc;
+                                    adj_hdr.consumed_symbols = adj_consumed > 0
+                                        ? static_cast<int>(adj_consumed) : 8;
+                                    adj_hdr.nibbles.assign(5, 0);
+                                    adj_hdr.nibbles.insert(adj_hdr.nibbles.end(),
+                                                           adj_nibs.begin(),
+                                                           adj_nibs.end());
+                                } else {
+                                    adj_hdr = try_decode_header(adj_syms, 0, metadata);
+                                    if (!adj_hdr.success) continue;
+                                }
+                                if (probe_payload_crc(adj_syms, adj_hdr, metadata)) {
+                                    std::cout << "OS=2 fallback: CRC OK after adj="
+                                              << adj << " (sfo=" << sfo_cand
+                                              << " ppm, qoff=" << qoff << ")\n";
+                                    header = std::move(adj_hdr);
+                                    symbols = std::move(adj_syms);
+                                    symbol_llrs.clear();
+                                    break;
+                                }
+                            }
+                        }}}  // qoff / sfo_cand / os2_pass
+
+                        // If OS=2 failed, restore native decode.
+                        if (!header.success) {
+                            header = std::move(fallback_header);
+                            symbols = std::move(fallback_symbols);
+                            symbol_llrs = std::move(fallback_llrs);
+                        }
+                    }
+                }
+
+                // Payload decode
+                if (header.success) {
+                    ++stat_decoded;
+                    const int payload_len = header.payload_len > 0
+                                          ? header.payload_len
+                                          : metadata.payload_len;
+                    const int active_cr = header.cr > 0 ? header.cr : metadata.cr;
+                    const bool has_crc = header.has_crc || metadata.has_crc;
+
+                    std::cout << "Header: len=" << payload_len
+                              << " cr=" << active_cr
+                              << " crc=" << (has_crc ? "yes" : "no") << "\n";
+
+                    // Payload nibble target
+                    std::size_t nibble_target = static_cast<std::size_t>(payload_len) * 2;
+                    if (has_crc) nibble_target += 4;
+
+                    // At SF >= 8 the header block produces SF-2 nibbles:
+                    // first 5 are header fields, rest spill into payload.
+                    std::vector<uint8_t> payload_nibbles;
+                    if (header.nibbles.size() > 5) {
+                        for (std::size_t i = 5; i < header.nibbles.size(); ++i) {
+                            payload_nibbles.push_back(header.nibbles[i]);
+                        }
+                    }
+
+                    // Decode data symbols block-by-block
+                    const int payload_cw_len = active_cr + 4;
+                    std::size_t sym_cursor = header.consumed_symbols;
+                    host_sim::DeinterleaverConfig payload_cfg{
+                        metadata.sf, active_cr, false, metadata.ldro};
+
+                    while (static_cast<std::ptrdiff_t>(sym_cursor) + payload_cw_len <=
+                               static_cast<std::ptrdiff_t>(symbols.size()) &&
+                           payload_nibbles.size() < nibble_target) {
+                        std::vector<uint16_t> block(
+                            symbols.begin() + static_cast<std::ptrdiff_t>(sym_cursor),
+                            symbols.begin() + static_cast<std::ptrdiff_t>(sym_cursor) + payload_cw_len);
+                        std::size_t consumed = 0;
+
+                        std::vector<uint8_t> nibs;
+                        if (options.soft &&
+                            sym_cursor + static_cast<std::size_t>(payload_cw_len) <= symbol_llrs.size()) {
+                            std::vector<host_sim::SymbolLLR> block_llrs(
+                                symbol_llrs.begin() + static_cast<std::ptrdiff_t>(sym_cursor),
+                                symbol_llrs.begin() + static_cast<std::ptrdiff_t>(sym_cursor) + payload_cw_len);
+                            nibs = host_sim::soft_decode_block(
+                                block_llrs, metadata.sf, active_cr,
+                                false, metadata.ldro, consumed);
+                        } else {
+                            auto codewords = host_sim::deinterleave(block, payload_cfg, consumed);
+                            nibs = host_sim::hamming_decode_block(codewords, false, active_cr);
+                        }
+                        if (consumed == 0) break;
+                        sym_cursor += consumed;
+                        payload_nibbles.insert(payload_nibbles.end(), nibs.begin(), nibs.end());
+                    }
+
+                    // Dewhiten at nibble level, pack into bytes
+                    // (matches GNU Radio gr-lora_sdr dewhitening convention)
+                    host_sim::WhiteningSequencer seq;
+                    auto whitening = seq.sequence(payload_nibbles.size() / 2);
+
+                    std::vector<uint8_t> dewhitened;
+                    dewhitened.reserve(payload_nibbles.size() / 2);
+                    for (std::size_t i = 0; i + 1 < payload_nibbles.size(); i += 2) {
+                        const std::size_t byte_idx = i / 2;
+                        uint8_t low_nib, high_nib;
+                        if (byte_idx < static_cast<std::size_t>(payload_len)) {
+                            const uint8_t w = (byte_idx < whitening.size()) ? whitening[byte_idx] : 0;
+                            low_nib = (payload_nibbles[i] & 0xF) ^ (w & 0x0F);
+                            high_nib = (payload_nibbles[i + 1] & 0xF) ^ ((w >> 4) & 0x0F);
+                        } else {
+                            low_nib = payload_nibbles[i] & 0xF;
+                            high_nib = payload_nibbles[i + 1] & 0xF;
+                        }
+                        dewhitened.push_back(static_cast<uint8_t>((high_nib << 4) | low_nib));
+                    }
+                    if (dewhitened.size() > static_cast<std::size_t>(payload_len) + (has_crc ? 2u : 0u)) {
+                        dewhitened.resize(static_cast<std::size_t>(payload_len) + (has_crc ? 2u : 0u));
+                    }
+
+                    // Print payload
+                    std::cout << "Payload bytes (dewhitened):";
+                    for (std::size_t i = 0;
+                         i < std::min<std::size_t>(dewhitened.size(),
+                                                    static_cast<std::size_t>(payload_len));
+                         ++i) {
+                        std::cout << ' ' << std::hex << std::setw(2)
+                                  << std::setfill('0')
+                                  << static_cast<int>(dewhitened[i]);
+                    }
+                    std::cout << std::dec << "\n";
+
+                    // ASCII
+                    std::cout << "Payload ASCII: ";
+                    for (std::size_t i = 0;
+                         i < std::min<std::size_t>(dewhitened.size(),
+                                                    static_cast<std::size_t>(payload_len));
+                         ++i) {
+                        const char c = static_cast<char>(dewhitened[i]);
+                        std::cout << (std::isprint(static_cast<unsigned char>(c)) ? c : '.');
+                    }
+                    std::cout << "\n";
+
+                    // CRC check — GNU Radio convention:
+                    // 1. CRC-16/CCITT on first payload_len-2 bytes
+                    // 2. XOR with last 2 payload bytes
+                    if (has_crc && payload_len >= 2 &&
+                        static_cast<int>(dewhitened.size()) >= payload_len + 2) {
+                        std::vector<uint8_t> crc_data(
+                            dewhitened.begin(),
+                            dewhitened.begin() + payload_len - 2);
+                        uint16_t crc = compute_raw_crc16(crc_data);
+                        crc ^= dewhitened[payload_len - 1];
+                        crc ^= static_cast<uint16_t>(dewhitened[payload_len - 2]) << 8;
+                        const uint16_t decoded_crc =
+                            static_cast<uint16_t>(dewhitened[payload_len]) |
+                            (static_cast<uint16_t>(dewhitened[payload_len + 1]) << 8);
+                        const bool ok = (decoded_crc == crc);
+                        if (ok) ++stat_crc_ok;
+                        std::cout << "[payload] CRC decoded=0x" << std::hex
+                                  << std::setw(4) << std::setfill('0')
+                                  << decoded_crc << " computed=0x"
+                                  << std::setw(4) << std::setfill('0') << crc
+                                  << std::dec << (ok ? " OK" : " MISMATCH")
+                                  << "\n";
+                        if (!ok && !options.payload.empty()) {
+                            stream_payload_failure = true;
+                        }
+                    }
+
+                    // BER: compare payload against expected (--payload)
+                    if (!options.payload.empty()) {
+                        const auto& ref = options.payload;
+                        const int cmp_len = std::min(
+                            static_cast<int>(ref.size()), payload_len);
+                        for (int b = 0; b < cmp_len; ++b) {
+                            uint8_t diff = dewhitened[b] ^
+                                           static_cast<uint8_t>(ref[b]);
+                            stat_bit_errors += __builtin_popcount(diff);
+                        }
+                        stat_total_bits += cmp_len * 8;
+
+                        // Byte-exact payload verification
+                        bool match = (static_cast<int>(ref.size()) == payload_len);
+                        if (match) {
+                            for (int b = 0; b < payload_len; ++b) {
+                                if (dewhitened[b] != static_cast<uint8_t>(ref[b])) {
+                                    match = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!match) {
+                            stream_payload_failure = true;
+                            std::cout << "[payload] MISMATCH (stream packet #"
+                                      << packet_index << ")\n";
+                        }
+                    }
+                } else {
+                    std::cout << "[stream] packet #" << packet_index
+                              << ": header decode failed\n";
+                }
+
+                const auto decode_t1 = std::chrono::steady_clock::now();
+                const auto decode_us = std::chrono::duration_cast<
+                    std::chrono::microseconds>(decode_t1 - decode_t0).count();
+                std::cout << "[stream] decode latency: " << std::fixed
+                          << std::setprecision(1) << decode_us / 1000.0
+                          << " ms\n" << std::defaultfloat << std::setprecision(6);
+                std::cout.flush();
+
+                // Advance past this burst
+                search_offset = burst_end;
+                ++packet_index;
+
+                // Update adaptive noise floor estimate for next burst
+                if (noise_floor > 0.0f) {
+                    tracked_noise_floor = noise_floor;
+                }
+
+                // Periodically compact the buffer
+                if (search_offset > min_accumulate) {
+                    reader.consume(search_offset);
+                    search_offset = 0;
+                }
+            }
+
+            std::cout << "\n[stream] EOF — " << packet_index
+                      << " packet(s) processed\n";
+
+            // PER/BER summary
+            if (options.per_stats) {
+                std::cout << "\n=== PER/BER Statistics ===\n"
+                          << "  Bursts detected : " << stat_bursts << "\n"
+                          << "  Headers decoded : " << stat_decoded << "\n"
+                          << "  CRC OK          : " << stat_crc_ok << "\n";
+                if (stat_bursts > 0) {
+                    const double per = 1.0 - static_cast<double>(stat_crc_ok) /
+                                             static_cast<double>(stat_bursts);
+                    std::cout << "  PER             : " << std::fixed
+                              << std::setprecision(4) << per << "\n"
+                              << std::defaultfloat << std::setprecision(6);
+                }
+                if (stat_total_bits > 0) {
+                    const double ber = static_cast<double>(stat_bit_errors) /
+                                       static_cast<double>(stat_total_bits);
+                    std::cout << "  BER             : " << std::scientific
+                              << std::setprecision(2) << ber
+                              << " (" << stat_bit_errors << "/" << stat_total_bits << " bits)\n"
+                              << std::defaultfloat << std::setprecision(6);
+                }
+                std::cout << "==========================\n";
+            }
+
+            return stream_payload_failure ? EXIT_FAILURE : EXIT_SUCCESS;
+        }
+
+        // ── Batch mode (original path) ──────────────────────────
         std::vector<std::complex<float>> samples;
         if (options.read_stdin) {
             if (options.verbose) std::cerr << "[debug] reading IQ from stdin"
@@ -424,6 +1518,7 @@ int main(int argc, char** argv)
         }
 
         bool compare_failure = false;
+        bool payload_failure = false;  // payload content or CRC mismatch
         std::size_t total_stage_mismatches = 0;
         std::size_t reference_mismatches = 0;
 
@@ -475,8 +1570,8 @@ int main(int argc, char** argv)
             const std::size_t align_window = static_cast<std::size_t>(sps) *
                 static_cast<std::size_t>(metadata->preamble_len + 6);
             const std::size_t view_len = std::min(burst_len, align_window);
-            const std::vector<std::complex<float>> burst_view(
-                burst_samples, burst_samples + view_len);
+            const std::span<const std::complex<float>> burst_view(
+                burst_samples, view_len);
 
             // --- Stage 1: alignment ---
             // At low oversampling (os<=4), the polyphase anti-aliasing is weak
@@ -578,11 +1673,17 @@ int main(int argc, char** argv)
                                                 freq_est.cfo_int,
                                                 0.0f);
                 demod.reset_symbol_counter();
-                // Per-symbol CFO tracking: disabled by default.
-                // Enable with HOST_SIM_CFO_TRACK_ALPHA env variable.
-                static const char* alpha_env = std::getenv("HOST_SIM_CFO_TRACK_ALPHA");
-                if (alpha_env) {
-                    demod.set_cfo_tracking(std::stof(alpha_env), 8);
+                // Per-symbol CFO tracking (EMA).
+                // --cfo-track [alpha] CLI flag or HOST_SIM_CFO_TRACK_ALPHA env.
+                {
+                    float alpha = options.cfo_track_alpha;
+                    if (alpha == 0.0f) {
+                        static const char* alpha_env = std::getenv("HOST_SIM_CFO_TRACK_ALPHA");
+                        if (alpha_env) alpha = std::stof(alpha_env);
+                    }
+                    if (alpha > 0.0f) {
+                        demod.set_cfo_tracking(alpha, 8);
+                    }
                 }
                 std::cout << "Frequency offsets: CFO_int=" << freq_est.cfo_int
                           << " CFO_frac=" << freq_est.cfo_frac
@@ -749,11 +1850,19 @@ int main(int argc, char** argv)
                         std::vector<uint16_t> redemod;
                         std::vector<host_sim::SymbolLLR> redemod_llrs;
                         const std::size_t max_sym = (samples.size() - data_sample) / sps;
+                        // Per-symbol SFO tracking: refine stride using
+                        // residual drift from parabolic interpolation.
+                        double sfo_accum = 0.0;
+                        double sfo_stride = redemod_stride;
+                        float sfo_prev_res = 0.0f;
+                        float sfo_drift = 0.0f;
+                        constexpr float sfo_alpha = 0.01f;
+                        constexpr int sfo_delay = 8;
                         // Cap at 1024 symbols: enough for max LoRa payload (255B, any SF/CR)
                         // while preventing multi-packet mode from consuming the entire capture.
                         for (std::size_t i = 0; i < std::min<std::size_t>(max_sym, 1024); ++i) {
                             const std::size_t sym_off = static_cast<std::size_t>(
-                                std::round(i * redemod_stride));
+                                std::round(sfo_accum));
                             if (data_sample + sym_off + static_cast<std::size_t>(sps) > samples.size()) break;
                             redemod.push_back(demod.demodulate(
                                 &samples[data_sample + sym_off]));
@@ -764,6 +1873,18 @@ int main(int argc, char** argv)
                                     (static_cast<int>(i) < 8) || metadata->ldro,
                                     saved_cfo_int));
                             }
+                            // Adaptive stride: track residual slope.
+                            if (static_cast<int>(i) >= sfo_delay) {
+                                float dr = demod.last_residual() - sfo_prev_res;
+                                if (dr > 0.5f) dr -= 1.0f;
+                                if (dr < -0.5f) dr += 1.0f;
+                                sfo_drift += sfo_alpha * (dr - sfo_drift);
+                                sfo_stride = redemod_stride -
+                                    static_cast<double>(sps) *
+                                    static_cast<double>(sfo_drift) / N_bins;
+                            }
+                            sfo_prev_res = demod.last_residual();
+                            sfo_accum += sfo_stride;
                         }
 
                         if (metadata->implicit_header) {
@@ -1515,7 +2636,7 @@ int main(int argc, char** argv)
                         std::cout << "[payload] decoded payload differs from expected string\n";
                     }
                     if (!payload_match) {
-                        compare_failure = true;
+                        payload_failure = true;
                     }
                 } else if (options.payload.empty() && metadata->payload_hex &&
                            !metadata->payload_hex->empty() && expected_payload_len > 0) {
@@ -1543,7 +2664,7 @@ int main(int argc, char** argv)
                         payload_match = false;
                     }
                     if (!payload_match) {
-                        compare_failure = true;
+                        payload_failure = true;
                     }
                 }
 
@@ -1569,6 +2690,9 @@ int main(int argc, char** argv)
                               << std::setfill('0') << decoded_crc
                               << " computed=0x" << std::setw(4) << computed_crc
                               << std::dec << (crc_ok ? " OK" : " MISMATCH") << "\n";
+                    if (!crc_ok && !options.payload.empty()) {
+                        payload_failure = true;
+                    }
                 }
 
                 // Dump decoded payload bytes to file if requested
@@ -1772,7 +2896,8 @@ int main(int argc, char** argv)
             std::cout << "[summary] stage comparison mismatches observed: " << total_stage_mismatches << "\n";
         }
 
-        const bool success = roundtrip_ok && !compare_failure;
+        const bool success = roundtrip_ok && !payload_failure &&
+                             (!compare_failure || !options.compare_root);
         return success ? EXIT_SUCCESS : EXIT_FAILURE;
     } catch (const std::exception& ex) {
         std::cerr << "Error: " << ex.what() << '\n';

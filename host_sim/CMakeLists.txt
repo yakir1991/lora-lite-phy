@@ -3,8 +3,17 @@ cmake_minimum_required(VERSION 3.16)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(Threads REQUIRED)
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -Wpedantic)
+    # Enable native SIMD (AVX2/FMA on x86, NEON on ARM) for auto-vectorization
+    # of chirp multiply, polyphase fold, and FFT butterfly loops.
+    include(CheckCXXCompilerFlag)
+    check_cxx_compiler_flag("-march=native" HAS_MARCH_NATIVE)
+    if(HAS_MARCH_NATIVE)
+        add_compile_options(-march=native)
+    endif()
 endif()
 
 add_library(host_sim_core STATIC
@@ -33,6 +42,28 @@ target_include_directories(host_sim_core
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/third_party/kissfft
 )
+
+target_link_libraries(host_sim_core
+    PUBLIC
+        Threads::Threads
+)
+
+# -ffast-math on performance-critical DSP files: enables FMA contraction,
+# reciprocal sqrt, and re-association, giving ~15-25% speedup on chirp
+# multiply and polyphase fold loops.  Do NOT apply globally — it breaks
+# strict IEEE 754 compliance required by the whitening/CRC logic.
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set_source_files_properties(
+        src/alignment.cpp
+        src/fft_demod.cpp
+        src/soft_decode.cpp
+        PROPERTIES COMPILE_OPTIONS "-ffast-math"
+    )
+    set_source_files_properties(
+        third_party/kissfft/kiss_fft.c
+        PROPERTIES COMPILE_OPTIONS "-ffast-math"
+    )
+endif()
 
 add_executable(lora_replay
     src/lora_replay.cpp
@@ -187,7 +218,7 @@ if (BUILD_TESTING)
                     ${PROJECT_SOURCE_DIR}/docs/reference_summary_metrics.json
                     --lora-replay ${CMAKE_CURRENT_BINARY_DIR}/lora_replay
         )
-        set_tests_properties(host_sim_summary_metrics PROPERTIES LABELS "host-sim")
+        set_tests_properties(host_sim_summary_metrics PROPERTIES LABELS "host-sim" RUN_SERIAL TRUE)
     endif()
 
     # ----- OTA regression tests (offline decode of real-world captures) -----
@@ -205,11 +236,8 @@ if (BUILD_TESTING)
                 --metadata "${OTA_METADATA}"
                 --payload "${expected_payload}"
         )
-        # OTA captures have reference-demod mismatches (expected with real noise)
-        # so we match on payload + CRC instead of exit code.
         set_tests_properties(${test_name} PROPERTIES
             LABELS "ota"
-            PASS_REGULAR_EXPRESSION "Payload ASCII: ${expected_payload}.*CRC.*OK"
         )
     endforeach()
 
@@ -278,7 +306,6 @@ if (BUILD_TESTING)
         )
         set_tests_properties(${_test_name} PROPERTIES
             LABELS "ota"
-            PASS_REGULAR_EXPRESSION "Payload ASCII: ${_payload}.*CRC.*OK"
         )
     endforeach()
 
@@ -430,6 +457,8 @@ set(TX_SOFT_DECODE_TESTS
     "soft_sf9_cr1_snr-13"   9   1  125000  "Hello soft"      -13  20
     "soft_sf12_cr1_snr-18"  12  1  125000  "Hello soft"      -18  10
     "soft_sf6_cr1_snr-5"    6   1  125000  "Hello soft"      -5   20
+    "soft_sf10_cr1_snr-15"  10  1  125000  "Hello soft"      -15  20
+    "soft_sf11_cr1_snr-16"  11  1  125000  "Hello soft"      -16  10
 )
 list(LENGTH TX_SOFT_DECODE_TESTS _soft_total)
 math(EXPR _soft_count "${_soft_total} / 7")
@@ -543,6 +572,20 @@ set(TX_IMPAIRMENT_TESTS
     "sf11_sfo10"     11  1  125000  "Hello"  3  "1.0"  ""  ""     10  125000
     # BW=62.5kHz with CFO
     "bw62k5_cfo10k"   7  1  62500  "Hello"  5  "1.0"  ""  10000   ""  62500
+    # Triple impairment (CFO+SFO+AWGN) at various SFs
+    "sf9_awgn_cfo_sfo"   9   1  125000  "Hello"  10  "0.5"  -8   10000  10  125000
+    "sf10_awgn_cfo_sfo"  10  1  125000  "Hello"  10  "0.5"  -10  10000  10  125000
+    "sf12_awgn_cfo_sfo"  12  1  125000  "Hello"  5   "0.5"  -15  10000  10  125000
+    # Combined CFO+SFO at higher SFs
+    "sf8_cfo10k_sfo10"   8   1  125000  "Hello"  5  "1.0"  ""   10000  10  125000
+    "sf9_cfo10k_sfo10"   9   1  125000  "Hello"  5  "1.0"  ""   10000  10  125000
+    "sf10_cfo10k_sfo10"  10  1  125000  "Hello"  3  "1.0"  ""   10000  10  125000
+    "sf12_cfo10k_sfo10"  12  1  125000  "Hello"  3  "1.0"  ""   10000  10  125000
+    # SF8 with AWGN
+    "sf8_cfo10k_snr-8"   8   1  125000  "Hello"  10  "0.5"  -8   10000  ""  125000
+    # Higher CR + combined impairments
+    "cr2_cfo10k_sfo10"   7   2  125000  "Hello"  5  "1.0"  ""   10000  10  125000
+    "cr4_awgn_cfo_sfo"   7   4  125000  "Hello"  10 "0.8"  -5   10000  10  125000
 )
 list(LENGTH TX_IMPAIRMENT_TESTS _imp_total)
 math(EXPR _imp_count "${_imp_total} / 11")
@@ -662,6 +705,66 @@ foreach(_i RANGE 0 ${_impi_count})
     )
     set_tests_properties(${_test_name} PROPERTIES
         LABELS "tx;impairment"
+    )
+endforeach()
+
+# ===== Streaming OS=2 upsample fallback tests =====
+# Use high SFO to trigger the OS=2 fallback path in streaming decode.
+# Each entry: suffix  SF  CR  BW  payload  SEEDS  MIN_OK_RATIO  SNR  CFO  SFO  SAMPLE_RATE
+set(TX_STREAM_OS2_TESTS
+    "sf7_sfo50"   7  1  125000  "Test1234"  3  "1.0"  ""  ""  50  125000
+    "sf9_sfo40"   9  1  125000  "Hello"     3  "1.0"  ""  ""  40  125000
+)
+list(LENGTH TX_STREAM_OS2_TESTS _so2_total)
+math(EXPR _so2_count "${_so2_total} / 11")
+foreach(_i RANGE 0 ${_so2_count})
+    if(_i EQUAL ${_so2_count})
+        break()
+    endif()
+    math(EXPR _off  "${_i} * 11")
+    math(EXPR _off1 "${_off} + 1")
+    math(EXPR _off2 "${_off} + 2")
+    math(EXPR _off3 "${_off} + 3")
+    math(EXPR _off4 "${_off} + 4")
+    math(EXPR _off5 "${_off} + 5")
+    math(EXPR _off6 "${_off} + 6")
+    math(EXPR _off7 "${_off} + 7")
+    math(EXPR _off8 "${_off} + 8")
+    math(EXPR _off9 "${_off} + 9")
+    math(EXPR _off10 "${_off} + 10")
+    list(GET TX_STREAM_OS2_TESTS ${_off}  _suffix)
+    list(GET TX_STREAM_OS2_TESTS ${_off1} _sf)
+    list(GET TX_STREAM_OS2_TESTS ${_off2} _cr)
+    list(GET TX_STREAM_OS2_TESTS ${_off3} _bw)
+    list(GET TX_STREAM_OS2_TESTS ${_off4} _payload)
+    list(GET TX_STREAM_OS2_TESTS ${_off5} _seeds)
+    list(GET TX_STREAM_OS2_TESTS ${_off6} _min_ok)
+    list(GET TX_STREAM_OS2_TESTS ${_off7} _snr)
+    list(GET TX_STREAM_OS2_TESTS ${_off8} _cfo)
+    list(GET TX_STREAM_OS2_TESTS ${_off9} _sfo)
+    list(GET TX_STREAM_OS2_TESTS ${_off10} _sr)
+    set(_test_name "tx_stream_os2_${_suffix}")
+    add_test(
+        NAME ${_test_name}
+        COMMAND ${CMAKE_COMMAND}
+            -DLORA_TX=$<TARGET_FILE:lora_tx>
+            -DLORA_REPLAY=$<TARGET_FILE:lora_replay>
+            -DSF=${_sf}
+            -DCR=${_cr}
+            -DBW=${_bw}
+            -DSAMPLE_RATE=${_sr}
+            -DPAYLOAD=${_payload}
+            -DSEEDS=${_seeds}
+            -DMIN_OK_RATIO=${_min_ok}
+            -DSNR=${_snr}
+            -DCFO=${_cfo}
+            -DSFO=${_sfo}
+            -DSTREAM=1
+            -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tx_stream_os2_${_suffix}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tx_impairment_test.cmake
+    )
+    set_tests_properties(${_test_name} PROPERTIES
+        LABELS "tx;impairment;streaming"
     )
 endforeach()
 

@@ -2,6 +2,7 @@
 
 #include <complex>
 #include <cstddef>
+#include <span>
 #include <vector>
 #include <optional>
 
@@ -20,7 +21,41 @@ std::optional<std::size_t> detect_burst_start(const std::vector<std::complex<flo
                                float threshold_factor = 6.0f,
                                std::size_t search_from = 0);
 
-std::size_t find_symbol_alignment(const std::vector<std::complex<float>>& samples,
+/// Pointer+size overload — avoids vector copy in streaming paths.
+std::optional<std::size_t> detect_burst_start(const std::complex<float>* samples,
+                               std::size_t n_samples,
+                               int samples_per_symbol,
+                               float threshold_factor = 6.0f,
+                               std::size_t search_from = 0);
+
+/// Result of burst detection with signal quality info.
+struct BurstDetectResult {
+    std::size_t burst_start{0};     ///< Sample index of burst start
+    float noise_floor{0.0f};        ///< Estimated noise power per sample
+    float signal_power{0.0f};       ///< Mean power in burst-start window
+};
+
+/// Extended burst detection — returns noise floor + signal power for
+/// SNR estimation.  Avoids the caller having to recompute window powers.
+/// @param samples           Pointer to IQ sample buffer.
+/// @param n_samples         Number of complex samples in the buffer.
+/// @param samples_per_symbol Samples per LoRa symbol (FFT size × oversample).
+/// @param threshold_factor  Power ratio threshold for burst detection (default 6).
+/// @param search_from       Sample offset to start searching from (default 0).
+/// @param prior_noise       If > 0, use as noise estimate instead of quartile.
+///                          Useful for streaming: reuse noise from previous burst.
+/// @param min_consec        Minimum consecutive windows above threshold to confirm
+///                          a burst (default 1).  Higher values reject impulse noise.
+std::optional<BurstDetectResult> detect_burst_ex(
+    const std::complex<float>* samples,
+    std::size_t n_samples,
+    int samples_per_symbol,
+    float threshold_factor = 6.0f,
+    std::size_t search_from = 0,
+    float prior_noise = 0.0f,
+    int min_consec = 1);
+
+std::size_t find_symbol_alignment(std::span<const std::complex<float>> samples,
                                   const FftDemodulator& demod,
                                   int preamble_symbols = 8);
 
@@ -33,7 +68,7 @@ struct AlignmentResult
 
 /// Same as find_symbol_alignment but also returns the best score.
 AlignmentResult find_symbol_alignment_scored(
-    const std::vector<std::complex<float>>& samples,
+    std::span<const std::complex<float>> samples,
     const FftDemodulator& demod,
     int preamble_symbols = 8);
 
@@ -57,7 +92,7 @@ struct PreambleSearchResult
 /// The returned preamble_bin is the raw demodulated bin value, which equals
 /// the integer CFO that should be fed to set_frequency_offsets().
 PreambleSearchResult find_symbol_alignment_cfo_aware(
-    const std::vector<std::complex<float>>& samples,
+    std::span<const std::complex<float>> samples,
     const FftDemodulator& demod,
     int preamble_symbols = 8);
 

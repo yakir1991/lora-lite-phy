@@ -21,12 +21,15 @@ void print_usage(const char* binary)
               << " [--dump-stages <path/prefix>]"
               << " [--dump-payload <file.bin>]"
               << " [--summary <file.json>]"
+              << " [--per-stats]"
+              << " [--cfo-track [alpha]]"
               << " [--multi]"
               << " [--verbose]"
               << "\n"
               << "\n  --iq -           Read IQ samples from stdin (pipe mode)"
               << "\n  --format hackrf  Expect HackRF int8 IQ on stdin (default: cf32)"
-              << "\n";
+              << "\n  --stream         Streaming mode: decode packets as they arrive"
+              << "\n                   (implies --iq - --multi)\n";
 }
 
 Options parse_arguments(int argc, char** argv)
@@ -67,8 +70,30 @@ Options parse_arguments(int argc, char** argv)
             opts.dump_payload = std::filesystem::path{argv[++i]};
         } else if (arg == "--summary" && i + 1 < argc) {
             opts.summary_output = std::filesystem::path{argv[++i]};
+        } else if (arg == "--per-stats") {
+            opts.per_stats = true;
+        } else if (arg == "--multi-sf") {
+            opts.multi_sf = true;
+        } else if (arg == "--cfo-track") {
+            // Optional alpha value: --cfo-track 0.05 or just --cfo-track (default 0.02)
+            if (i + 1 < argc) {
+                const std::string_view next{argv[i + 1]};
+                if (!next.empty() && (next[0] == '0' || next[0] == '.' || std::isdigit(static_cast<unsigned char>(next[0])))) {
+                    opts.cfo_track_alpha = std::stof(std::string(next));
+                    ++i;
+                } else {
+                    opts.cfo_track_alpha = 0.02f;
+                }
+            } else {
+                opts.cfo_track_alpha = 0.02f;
+            }
         } else if (arg == "--multi") {
             opts.multi_packet = true;
+        } else if (arg == "--stream") {
+            opts.stream = true;
+            opts.read_stdin = true;
+            opts.multi_packet = true;
+            if (opts.iq_file.empty()) opts.iq_file = "-";
         } else if (arg == "--soft") {
             opts.soft = true;
         } else if (arg == "--verbose" || arg == "-v") {

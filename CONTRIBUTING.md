@@ -13,7 +13,7 @@ cmake --build build
 ctest --test-dir build -j$(nproc)
 ```
 
-All 138 tests must pass before submitting a pull request.
+All tests must pass before submitting a pull request (`ctest` exit code 0).
 
 ## Development Workflow
 

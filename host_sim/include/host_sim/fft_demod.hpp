@@ -50,6 +50,10 @@ public:
     int current_cfo_int() const { return cfo_int_; }
     float current_sfo_slope() const { return sfo_slope_; }
 
+    /// Fractional-bin residual from the most recent demodulate() call.
+    /// Used by the caller for per-symbol SFO tracking (stride refinement).
+    float last_residual() const { return last_residual_; }
+
     /// Enable per-symbol closed-loop CFO tracking.
     /// alpha = 0 disables tracking (default).
     /// delay_symbols: number of symbols to skip before tracking starts
@@ -79,6 +83,7 @@ private:
     mutable std::size_t symbol_counter_{0};
     float cfo_track_alpha_{0.0f};
     int cfo_track_delay_{0};
+    mutable float last_residual_{0.0f};
 
     void initialize_fft();
     void compute_fft(const std::complex<float>* symbol_samples,

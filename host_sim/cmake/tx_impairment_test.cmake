@@ -3,7 +3,7 @@
 # Runs multiple seeds and requires a minimum pass rate.
 # Expects: LORA_TX, LORA_REPLAY, SF, CR, BW, PAYLOAD, WORK_DIR
 #          SEEDS, MIN_OK_RATIO (e.g. "1.0" for 100%, "0.5" for 50%)
-# Optional: SAMPLE_RATE, SNR, CFO, SFO, SOFT
+# Optional: SAMPLE_RATE, SNR, CFO, SFO, SOFT, STREAM
 
 file(MAKE_DIRECTORY "${WORK_DIR}")
 
@@ -79,22 +79,43 @@ foreach(_seed RANGE 1 ${SEEDS})
     endif()
 
     # Decode
-    set(_rx_cmd "${LORA_REPLAY}"
-        --iq "${TX_IQ}"
-        --metadata "${META}"
-        --payload "${PAYLOAD}")
+    if(DEFINED STREAM AND "${STREAM}" STREQUAL "1")
+        # Streaming mode reads from stdin, not --iq
+        set(_rx_cmd "${LORA_REPLAY}"
+            --stream
+            --metadata "${META}"
+            --payload "${PAYLOAD}")
 
-    if(DEFINED SOFT AND "${SOFT}" STREQUAL "1")
-        list(APPEND _rx_cmd --soft)
+        if(DEFINED SOFT AND "${SOFT}" STREQUAL "1")
+            list(APPEND _rx_cmd --soft)
+        endif()
+
+        execute_process(
+            COMMAND ${_rx_cmd}
+            INPUT_FILE "${TX_IQ}"
+            OUTPUT_VARIABLE _rx_out
+            ERROR_VARIABLE _rx_err
+            RESULT_VARIABLE _rx_rc
+            TIMEOUT 60
+        )
+    else()
+        set(_rx_cmd "${LORA_REPLAY}"
+            --iq "${TX_IQ}"
+            --metadata "${META}"
+            --payload "${PAYLOAD}")
+
+        if(DEFINED SOFT AND "${SOFT}" STREQUAL "1")
+            list(APPEND _rx_cmd --soft)
+        endif()
+
+        execute_process(
+            COMMAND ${_rx_cmd}
+            OUTPUT_VARIABLE _rx_out
+            ERROR_VARIABLE _rx_err
+            RESULT_VARIABLE _rx_rc
+            TIMEOUT 60
+        )
     endif()
-
-    execute_process(
-        COMMAND ${_rx_cmd}
-        OUTPUT_VARIABLE _rx_out
-        ERROR_VARIABLE _rx_err
-        RESULT_VARIABLE _rx_rc
-        TIMEOUT 60
-    )
 
     string(FIND "${_rx_out}" "CRC" _crc_pos)
     if(_crc_pos GREATER -1)

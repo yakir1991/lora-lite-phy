@@ -21,6 +21,7 @@
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -53,9 +54,8 @@ int main(int argc, char** argv)
     const std::size_t window = static_cast<std::size_t>(sps) *
                                static_cast<std::size_t>(meta.preamble_len + 6);
     const std::size_t view_len = std::min(samples.size() - burst_offset, window);
-    std::vector<std::complex<float>> burst_view(
-        samples.data() + burst_offset,
-        samples.data() + burst_offset + view_len);
+    const std::span<const std::complex<float>> burst_view(
+        samples.data() + burst_offset, view_len);
 
     const std::size_t alignment = burst_offset +
         host_sim::find_symbol_alignment(burst_view, demod, meta.preamble_len);

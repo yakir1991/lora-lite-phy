@@ -93,12 +93,31 @@ The metadata JSON describes the capture parameters:
 
 ```json
 {
-  "sf": 7, "bw": 125000, "sample_rate": 500000,
-  "cr": 1, "payload_len": 10, "has_crc": true,
-  "implicit_header": false, "ldro": false,
-  "preamble_len": 8, "sync_word": 18
+  "sf": 7,
+  "bw": 125000,
+  "sample_rate": 500000,
+  "cr": 1,
+  "payload_len": 10,
+  "has_crc": true,
+  "implicit_header": false,
+  "ldro": false,
+  "preamble_len": 8,
+  "sync_word": 18
 }
 ```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `sf` | int | yes | Spreading factor (5–12) |
+| `bw` | int | yes | Bandwidth in Hz |
+| `sample_rate` | int | yes | Capture sample rate in Hz |
+| `cr` | int | yes | Coding rate (1–4, meaning 4/5–4/8) |
+| `payload_len` | int | no | Expected payload length in bytes (0 = from header) |
+| `has_crc` | bool | no | Whether CRC is present (default: true) |
+| `implicit_header` | bool | no | Implicit header mode (default: false) |
+| `ldro` | bool | no | Low data-rate optimisation (default: auto) |
+| `preamble_len` | int | no | Preamble length in symbols (default: 8) |
+| `sync_word` | int | no | Sync word value (default: 0x12; LoRaWAN: 0x34) |
 
 Add `--soft` for soft-decision decoding, `--multi` for multi-packet
 captures, `--verbose` for per-symbol debug output.
@@ -116,21 +135,40 @@ Prints `CRC OK` / `CRC FAIL` and `Payload MATCH` / `Payload MISMATCH`.
 
 ## Tests
 
-The project ships with **138 CTests** (when GNU Radio reference data is
-present locally; CI runs the ~123 self-contained tests):
+The project ships with **152 CTests** (when GNU Radio reference data is
+present locally; CI runs the ~136 self-contained tests):
 
 | Category | Count | Description |
 |---|---|---|
-| GNU Radio parity | 15 | Bit-exact match against `gr_lora_sdr` reference output |
+| GNU Radio parity | 11 | Bit-exact match against `gr_lora_sdr` reference output |
+| Unit / integration | 6 | Numeric traits, Q15 demod, scheduler, summary metrics |
 | OTA golden-file | 44 | Real RFM95 captures, SF6–SF12, BW 125–500 kHz, CR 4/5–4/8 |
-| TX→RX roundtrip | 9 | SF6–SF12, CR 1–4, BW 62.5k–500k |
-| Soft-decision AWGN | 6 | SF6–SF12 under noise, soft Hamming decode |
-| Impairment sweep | 52 | CFO ≤40 kHz, SFO ≤50 ppm, combined |
+| TX→RX roundtrip | 15 | SF6–SF12, CR 1–4, BW 62.5k–500k, OS=1/OS=4 |
+| Soft-decision AWGN | 8 | SF6–SF12 under noise, soft Hamming decode |
+| Impairment sweep | 51 | CFO ≤40 kHz, SFO ≤50 ppm, combined triple (CFO+SFO+AWGN) |
+| Streaming OS=2 | 2 | High-SFO streaming decode with OS=2 upsample fallback |
 | Implicit header | 11 | SF7, SF10, SF12 with impairments |
-| Misc | 1 | Multi-packet, no-CRC, hex payload, LoRaWAN sync word |
+| Misc | 4 | Multi-packet, no-CRC, hex payload, LoRaWAN sync word |
 
 ```bash
 cd build && ctest -j$(nproc)
+```
+
+### API Documentation (Doxygen)
+
+```bash
+cmake --build build --target docs
+# Output: docs/api/html/index.html
+```
+
+### Code Coverage
+
+```bash
+cmake -B build -DENABLE_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug
+cmake --build build
+cd build && ctest -j$(nproc)
+cmake --build . --target coverage
+# Output: build/coverage_html/index.html
 ```
 
 ## Documentation
@@ -170,12 +208,17 @@ measured FER results against hardware.
 
 | Flag | Description |
 |---|---|
-| `--iq <file>` | Input .cf32 capture |
+| `--iq <file>` | Input .cf32 capture (use `-` for stdin) |
+| `--format cf32\|hackrf` | IQ sample format (default: cf32) |
 | `--metadata <file>` | Capture parameters JSON |
-| `--payload <text>` | Expected payload for verification |
+| `--payload <text>` | Expected payload for byte-exact verification |
 | `--summary <file>` | Write JSON decode summary |
 | `--soft` | Enable soft-decision Hamming |
-| `--multi` | Decode multiple packets |
+| `--multi` | Decode multiple packets in one capture |
+| `--multi-sf` | Probe SF6–SF12 per burst (auto-detect spreading factor) |
+| `--stream` | Streaming mode: decode packets as they arrive (implies `--iq - --multi`) |
+| `--per-stats` | Print PER/BER statistics at end of streaming run |
+| `--cfo-track [alpha]` | Enable per-symbol CFO tracking EMA (default α=0.02) |
 | `--verbose` | Per-symbol debug output |
 
 ## Acknowledgments

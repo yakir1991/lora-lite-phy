@@ -50,3 +50,6 @@ tools/*
 
 # Doxygen output
 docs/api/
+
+# Coverage output
+coverage_html/
