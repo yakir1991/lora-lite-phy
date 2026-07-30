@@ -83,10 +83,15 @@ jobs:
       - name: Test
         run: ctest --test-dir build -j$(nproc) --output-on-failure --timeout 300 -E "tx_soft_sf12"
 
+      # Report generation is informational: the coverage build and its tests
+      # above are the gate. A gcov/lcov version skew on the runner should not
+      # turn the whole workflow red, so this step and the upload are best-effort.
       - name: Generate coverage report
+        continue-on-error: true
         run: cmake --build build --target coverage
 
       - name: Upload coverage to Codecov
+        continue-on-error: true
         uses: codecov/codecov-action@v4
         with:
           files: build/coverage.info
