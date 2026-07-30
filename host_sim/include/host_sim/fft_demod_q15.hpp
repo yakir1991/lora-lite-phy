@@ -43,8 +43,6 @@ public:
 private:
     int sf_;
     int n_bins_;
-    int sample_rate_;
-    int bandwidth_;
     int oversample_factor_;
     int samples_per_symbol_;
 

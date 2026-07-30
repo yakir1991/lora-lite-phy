@@ -22,8 +22,7 @@ namespace host_sim
 {
 
 FftDemodulatorQ15::FftDemodulatorQ15(int sf, int sample_rate, int bandwidth)
-    : sf_(sf), n_bins_(1 << sf), sample_rate_(sample_rate), bandwidth_(bandwidth),
-      oversample_factor_(std::max(1, sample_rate / bandwidth)),
+    : sf_(sf), n_bins_(1 << sf), oversample_factor_(std::max(1, sample_rate / bandwidth)),
       samples_per_symbol_((1 << sf) * oversample_factor_),
       chirps_q15_(build_chirps_q15(sf, oversample_factor_))
 {
