@@ -37,8 +37,8 @@ std::vector<std::complex<float>> modulate_symbol(uint16_t symbol, int n_bins, in
     for (int n = 0; n < sps; ++n)
     {
         const float t = static_cast<float>(n) / static_cast<float>(sps);
-        const float phase = two_pi * (static_cast<float>(symbol) / n_bins * t +
-                                       0.5f * t * t) * n_bins;
+        const float phase =
+            two_pi * (static_cast<float>(symbol) / n_bins * t + 0.5f * t * t) * n_bins;
         out[n] = std::complex<float>(std::cos(phase), std::sin(phase));
     }
     return out;
@@ -93,8 +93,7 @@ int main()
     }
 
     std::cout << "Encoded " << payload_str.size() << " bytes"
-              << " | SF=" << SF << " BW=" << BW
-              << " | " << iq.size() << " samples"
+              << " | SF=" << SF << " BW=" << BW << " | " << iq.size() << " samples"
               << "\n";
 
     // Write CF32

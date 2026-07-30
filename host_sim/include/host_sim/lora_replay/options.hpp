@@ -26,7 +26,11 @@ struct Options
     bool per_stats{false};
     bool multi_sf{false};
     float cfo_track_alpha{0.0f};
-    enum class IqFormat { cf32, hackrf } iq_format{IqFormat::cf32};
+    enum class IqFormat
+    {
+        cf32,
+        hackrf
+    } iq_format{IqFormat::cf32};
     bool read_stdin{false};
 };
 

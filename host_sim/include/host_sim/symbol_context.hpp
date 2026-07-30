@@ -1,8 +1,8 @@
 #pragma once
 
 #include <complex>
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 #include <span>
 
 namespace host_sim

@@ -17,12 +17,17 @@ std::vector<std::complex<float>> load_cf32_stdin();
 std::vector<std::complex<float>> load_hackrf_stdin();
 
 /// IQ format for streaming reader.
-enum class IqFormat : uint8_t { cf32, hackrf_int8 };
+enum class IqFormat : uint8_t
+{
+    cf32,
+    hackrf_int8
+};
 
 /// Incremental stdin reader for real-time streaming decode.
 /// Reads IQ in fixed-size chunks without waiting for EOF.
 /// Uses offset-based consume for O(1) amortised discard.
-class StreamingIqReader {
+class StreamingIqReader
+{
 public:
     explicit StreamingIqReader(IqFormat format, std::size_t chunk_samples = 65536);
 

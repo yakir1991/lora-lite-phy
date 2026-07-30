@@ -36,7 +36,10 @@ public:
 
     const Config& config() const { return config_; }
 
-    void set_instrumentation(Instrumentation instrumentation) { instrumentation_ = instrumentation; }
+    void set_instrumentation(Instrumentation instrumentation)
+    {
+        instrumentation_ = instrumentation;
+    }
 
 private:
     Config config_{};

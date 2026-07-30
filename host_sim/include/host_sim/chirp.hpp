@@ -26,4 +26,4 @@ ChirpTables build_chirps_with_id(int sf, int oversample_factor, int id);
 ChirpTablesQ15 build_chirps_q15(int sf, int oversample_factor);
 ChirpTablesQ15 build_chirps_q15_with_id(int sf, int oversample_factor, int id);
 
-}
+} // namespace host_sim

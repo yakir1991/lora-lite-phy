@@ -38,7 +38,8 @@ std::vector<uint8_t> WhiteningSequencer::sequence(std::size_t count) const
     std::vector<uint8_t> result;
     result.reserve(count);
 
-    for (std::size_t i = 0; i < count; ++i) {
+    for (std::size_t i = 0; i < count; ++i)
+    {
         result.push_back(kWhiteningSequence[i % kWhiteningPeriod]);
     }
     return result;
@@ -48,9 +49,8 @@ std::vector<uint8_t> WhiteningSequencer::apply(const std::vector<uint8_t>& paylo
 {
     std::vector<uint8_t> whitened(payload.size());
     const auto seq = sequence(payload.size());
-    std::transform(payload.begin(), payload.end(), seq.begin(), whitened.begin(), [](uint8_t data, uint8_t mask) {
-        return static_cast<uint8_t>(data ^ mask);
-    });
+    std::transform(payload.begin(), payload.end(), seq.begin(), whitened.begin(),
+                   [](uint8_t data, uint8_t mask) { return static_cast<uint8_t>(data ^ mask); });
     return whitened;
 }
 

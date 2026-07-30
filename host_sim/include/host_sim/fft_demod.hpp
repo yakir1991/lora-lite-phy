@@ -7,7 +7,8 @@
 #include <cstdint>
 #include <vector>
 
-extern "C" {
+extern "C"
+{
 #include "kiss_fft.h"
 }
 
@@ -26,7 +27,8 @@ public:
     uint16_t demodulate(const std::complex<float>* symbol_samples) const;
 
     // Return |fft_out_[n]|² for all N bins after the most recent demodulate() call.
-    // Returns a reference to an internal buffer; valid until next demodulate/get_fft_magnitudes_sq call.
+    // Returns a reference to an internal buffer; valid until next demodulate/get_fft_magnitudes_sq
+    // call.
     const std::vector<float>& get_fft_magnitudes_sq() const;
 
     int samples_per_symbol() const { return samples_per_symbol_; }
@@ -59,7 +61,8 @@ public:
     /// alpha = 0 disables tracking (default).
     /// delay_symbols: number of symbols to skip before tracking starts
     ///   (use >=8 to protect the header block from tracking noise).
-    void set_cfo_tracking(float alpha, int delay_symbols = 0) {
+    void set_cfo_tracking(float alpha, int delay_symbols = 0)
+    {
         cfo_track_alpha_ = alpha;
         cfo_track_delay_ = delay_symbols;
     }
@@ -87,8 +90,7 @@ private:
     mutable float last_residual_{0.0f};
 
     void initialize_fft();
-    void compute_fft(const std::complex<float>* symbol_samples,
-                     kiss_fft_cpx* output) const;
+    void compute_fft(const std::complex<float>* symbol_samples, kiss_fft_cpx* output) const;
 };
 
-}
+} // namespace host_sim

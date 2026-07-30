@@ -52,7 +52,11 @@ private:
     kiss_fft_q15_cfg kiss_cfg_{nullptr};
 
     // Scratch buffers (pre-allocated, reused per demodulate call).
-    struct Q15Cpx { int16_t r; int16_t i; };
+    struct Q15Cpx
+    {
+        int16_t r;
+        int16_t i;
+    };
     std::vector<Q15Cpx> fft_in_;
     std::vector<Q15Cpx> fft_out_;
 

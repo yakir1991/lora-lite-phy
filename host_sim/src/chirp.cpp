@@ -26,11 +26,13 @@ ChirpTables build_chirps_with_id(int sf, int oversample_factor, int id)
     tables.upchirp.resize(samples_per_symbol);
     tables.downchirp.resize(samples_per_symbol);
 
-    for (int n = 0; n < samples_per_symbol; ++n) {
+    for (int n = 0; n < samples_per_symbol; ++n)
+    {
         const float n_f = static_cast<float>(n);
         const float quadratic = n_f * n_f / (2.0f * N * os * os);
         float linear = (static_cast<float>(wrapped_id) / N - 0.5f) * n_f / os;
-        if (n >= n_fold) {
+        if (n >= n_fold)
+        {
             linear = (static_cast<float>(wrapped_id) / N - 1.5f) * n_f / os;
         }
         const float phase = quadratic + linear;
@@ -52,7 +54,8 @@ ChirpTablesQ15 build_chirps_q15_with_id(int sf, int oversample_factor, int id)
     tables.upchirp.resize(float_tables.upchirp.size());
     tables.downchirp.resize(float_tables.downchirp.size());
 
-    for (std::size_t i = 0; i < float_tables.upchirp.size(); ++i) {
+    for (std::size_t i = 0; i < float_tables.upchirp.size(); ++i)
+    {
         const auto& up = float_tables.upchirp[i];
         const auto& down = float_tables.downchirp[i];
         tables.upchirp[i] = float_to_q15_complex(up.real(), up.imag());

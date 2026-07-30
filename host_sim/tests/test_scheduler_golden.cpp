@@ -1,8 +1,8 @@
 #include "host_sim/alignment.hpp"
 #include "host_sim/capture.hpp"
+#include "host_sim/fft_demod_ref.hpp"
 #include "host_sim/lora_params.hpp"
 #include "host_sim/scheduler.hpp"
-#include "host_sim/fft_demod_ref.hpp"
 #include "host_sim/stages/demod_stage.hpp"
 
 #include <algorithm>
@@ -20,35 +20,29 @@ namespace
 class FileSymbolSource : public host_sim::SymbolSource
 {
 public:
-    FileSymbolSource(std::vector<std::complex<float>> samples,
-                     std::size_t alignment_offset,
-                     std::size_t samples_per_symbol,
-                     std::size_t symbol_count)
-        : samples_(std::move(samples)),
-          offset_(alignment_offset),
-          samples_per_symbol_(samples_per_symbol),
-          symbol_count_(symbol_count)
+    FileSymbolSource(std::vector<std::complex<float>> samples, std::size_t alignment_offset,
+                     std::size_t samples_per_symbol, std::size_t symbol_count)
+        : samples_(std::move(samples)), offset_(alignment_offset),
+          samples_per_symbol_(samples_per_symbol), symbol_count_(symbol_count)
     {
     }
 
-    void reset() override
-    {
-        index_ = 0;
-    }
+    void reset() override { index_ = 0; }
 
     std::optional<host_sim::SymbolBuffer> next_symbol() override
     {
-        if (index_ >= symbol_count_) {
+        if (index_ >= symbol_count_)
+        {
             return std::nullopt;
         }
         const auto start = offset_ + index_ * samples_per_symbol_;
-        if (start + samples_per_symbol_ > samples_.size()) {
+        if (start + samples_per_symbol_ > samples_.size())
+        {
             return std::nullopt;
         }
         host_sim::SymbolBuffer buffer;
         buffer.samples.insert(
-            buffer.samples.end(),
-            samples_.begin() + static_cast<std::ptrdiff_t>(start),
+            buffer.samples.end(), samples_.begin() + static_cast<std::ptrdiff_t>(start),
             samples_.begin() + static_cast<std::ptrdiff_t>(start + samples_per_symbol_));
         ++index_;
         return buffer;
@@ -65,14 +59,12 @@ private:
 class CollectorStage : public host_sim::Stage
 {
 public:
-    void reset(const host_sim::StageConfig&) override
-    {
-        symbols_.clear();
-    }
+    void reset(const host_sim::StageConfig&) override { symbols_.clear(); }
 
     void process(host_sim::SymbolContext& context) override
     {
-        if (context.has_demod_symbol) {
+        if (context.has_demod_symbol)
+        {
             symbols_.push_back(context.demod_symbol);
         }
     }
@@ -113,7 +105,8 @@ int main()
             ? (samples.size() - alignment_offset) / samples_per_symbol
             : 0;
     const std::size_t symbol_count = std::min<std::size_t>(available_symbols, 256);
-    if (symbol_count == 0) {
+    if (symbol_count == 0)
+    {
         std::cerr << "No symbols available in capture\n";
         return 1;
     }
@@ -129,9 +122,12 @@ int main()
     scheduler.attach_stage(demod_stage);
     scheduler.attach_stage(collector);
 
-    try {
+    try
+    {
         scheduler.run(source);
-    } catch (const std::exception& ex) {
+    }
+    catch (const std::exception& ex)
+    {
         std::cerr << "Scheduler run failed: " << ex.what() << "\n";
         return 1;
     }
@@ -139,23 +135,27 @@ int main()
     host_sim::FftDemodReference demod_reference(meta.sf, meta.sample_rate, meta.bw);
     std::vector<uint16_t> reference;
     reference.reserve(symbol_count);
-    for (std::size_t i = 0; i < symbol_count; ++i) {
+    for (std::size_t i = 0; i < symbol_count; ++i)
+    {
         const auto start = alignment_offset + i * samples_per_symbol;
         reference.push_back(
             demod_reference.demodulate(samples.data() + static_cast<std::ptrdiff_t>(start)));
     }
 
     const auto& symbols = collector->symbols();
-    if (symbols.size() != reference.size()) {
-        std::cerr << "Symbol count mismatch: got " << symbols.size()
-                  << " expected " << reference.size() << "\n";
+    if (symbols.size() != reference.size())
+    {
+        std::cerr << "Symbol count mismatch: got " << symbols.size() << " expected "
+                  << reference.size() << "\n";
         return 1;
     }
 
-    for (std::size_t i = 0; i < symbols.size(); ++i) {
-        if (symbols[i] != reference[i]) {
-            std::cerr << "Mismatch at symbol " << i << ": got " << symbols[i]
-                      << " expected " << reference[i] << "\n";
+    for (std::size_t i = 0; i < symbols.size(); ++i)
+    {
+        if (symbols[i] != reference[i])
+        {
+            std::cerr << "Mismatch at symbol " << i << ": got " << symbols[i] << " expected "
+                      << reference[i] << "\n";
             return 1;
         }
     }

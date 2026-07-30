@@ -14,6 +14,7 @@ struct DeinterleaverConfig
     bool ldro{false};
 };
 
-std::vector<uint8_t> deinterleave(const std::vector<uint16_t>& symbols, const DeinterleaverConfig& cfg, std::size_t& consumed);
+std::vector<uint8_t> deinterleave(const std::vector<uint16_t>& symbols,
+                                  const DeinterleaverConfig& cfg, std::size_t& consumed);
 
 } // namespace host_sim

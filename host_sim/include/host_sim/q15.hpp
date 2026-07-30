@@ -20,10 +20,12 @@ struct Q15Complex
 
 inline int16_t saturate_q15(int32_t value)
 {
-    if (value > static_cast<int32_t>(kQ15Max)) {
+    if (value > static_cast<int32_t>(kQ15Max))
+    {
         return kQ15Max;
     }
-    if (value < static_cast<int32_t>(kQ15Min)) {
+    if (value < static_cast<int32_t>(kQ15Min))
+    {
         return kQ15Min;
     }
     return static_cast<int16_t>(value);
@@ -32,7 +34,8 @@ inline int16_t saturate_q15(int32_t value)
 inline int16_t float_to_q15(float value)
 {
     const float clamped = std::clamp(value, -1.0f, 0.999969f);
-    const int32_t scaled = static_cast<int32_t>(std::lrint(clamped * static_cast<float>(kQ15Scale)));
+    const int32_t scaled =
+        static_cast<int32_t>(std::lrint(clamped * static_cast<float>(kQ15Scale)));
     return saturate_q15(scaled);
 }
 
@@ -75,4 +78,3 @@ inline Q15Complex q15_mul(const Q15Complex& a, const Q15Complex& b)
 }
 
 } // namespace host_sim
-

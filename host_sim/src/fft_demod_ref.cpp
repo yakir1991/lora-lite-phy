@@ -18,7 +18,8 @@ std::vector<std::complex<float>> build_downchirp(int sf, int oversample_factor)
     const float os = static_cast<float>(oversample_factor);
 
     std::vector<std::complex<float>> downchirp(samples_per_symbol);
-    for (int n = 0; n < samples_per_symbol; ++n) {
+    for (int n = 0; n < samples_per_symbol; ++n)
+    {
         const float chip = static_cast<float>(n) / os;
         const float quadratic = chip * chip / (2.0f * N);
         const float linear = -0.5f * chip;
@@ -31,13 +32,11 @@ std::vector<std::complex<float>> build_downchirp(int sf, int oversample_factor)
 } // namespace
 
 FftDemodReference::FftDemodReference(int sf, int sample_rate, int bandwidth)
-    : sf_(sf),
-      n_bins_(1 << sf),
-      sample_rate_(sample_rate),
-      bandwidth_(bandwidth)
+    : sf_(sf), n_bins_(1 << sf), sample_rate_(sample_rate), bandwidth_(bandwidth)
 {
     oversample_factor_ = bandwidth_ > 0 ? sample_rate_ / bandwidth_ : 1;
-    if (oversample_factor_ <= 0) {
+    if (oversample_factor_ <= 0)
+    {
         oversample_factor_ = 1;
     }
     samples_per_symbol_ = n_bins_ * oversample_factor_;
@@ -47,7 +46,8 @@ FftDemodReference::FftDemodReference(int sf, int sample_rate, int bandwidth)
 
 FftDemodReference::~FftDemodReference()
 {
-    if (kiss_cfg_ != nullptr) {
+    if (kiss_cfg_ != nullptr)
+    {
         free(kiss_cfg_);
         kiss_cfg_ = nullptr;
     }
@@ -56,7 +56,8 @@ FftDemodReference::~FftDemodReference()
 void FftDemodReference::initialize_fft()
 {
     kiss_cfg_ = kiss_fft_alloc(n_bins_, 0, nullptr, nullptr);
-    if (!kiss_cfg_) {
+    if (!kiss_cfg_)
+    {
         throw std::runtime_error("Failed to allocate KISS FFT configuration for reference demod");
     }
     fft_input_.resize(n_bins_);
@@ -66,29 +67,33 @@ void FftDemodReference::initialize_fft()
 uint16_t FftDemodReference::demodulate(const std::complex<float>* symbol_samples) const
 {
     const bool apply_sfo = std::abs(sfo_slope_) > 0.0f;
-    const float sfo_factor = apply_sfo
-        ? -2.0f * static_cast<float>(M_PI) * sfo_slope_ /
-              static_cast<float>(samples_per_symbol_)
-        : 0.0f;
+    const float sfo_factor = apply_sfo ? -2.0f * static_cast<float>(M_PI) * sfo_slope_ /
+                                             static_cast<float>(samples_per_symbol_)
+                                       : 0.0f;
 
     int base = oversample_factor_ / 2;
-    if (oversample_factor_ > 1 && (oversample_factor_ % 2) == 0) {
+    if (oversample_factor_ > 1 && (oversample_factor_ % 2) == 0)
+    {
         base = std::max(0, base - 1);
     }
 
-    for (int bin = 0; bin < n_bins_; ++bin) {
+    for (int bin = 0; bin < n_bins_; ++bin)
+    {
         int sample_idx = bin * oversample_factor_ + base;
-        if (sample_idx < 0) {
+        if (sample_idx < 0)
+        {
             sample_idx = 0;
-        } else if (sample_idx >= samples_per_symbol_) {
+        }
+        else if (sample_idx >= samples_per_symbol_)
+        {
             sample_idx = samples_per_symbol_ - 1;
         }
-        const float chip = static_cast<float>(sample_idx) /
-                           static_cast<float>(oversample_factor_);
-        const float phase = -2.0f * static_cast<float>(M_PI) * fractional_offset_ *
-                            chip / static_cast<float>(n_bins_);
+        const float chip = static_cast<float>(sample_idx) / static_cast<float>(oversample_factor_);
+        const float phase = -2.0f * static_cast<float>(M_PI) * fractional_offset_ * chip /
+                            static_cast<float>(n_bins_);
         std::complex<float> rot(std::cos(phase), std::sin(phase));
-        if (apply_sfo) {
+        if (apply_sfo)
+        {
             const float sfo_phase = sfo_factor * static_cast<float>(sample_idx);
             rot *= std::complex<float>(std::cos(sfo_phase), std::sin(sfo_phase));
         }
@@ -101,11 +106,13 @@ uint16_t FftDemodReference::demodulate(const std::complex<float>* symbol_samples
 
     int best_bin = 0;
     float best_mag = -1.0f;
-    for (int bin = 0; bin < n_bins_; ++bin) {
+    for (int bin = 0; bin < n_bins_; ++bin)
+    {
         const float re = fft_output_[bin].r;
         const float im = fft_output_[bin].i;
         const float magnitude_sq = re * re + im * im;
-        if (magnitude_sq > best_mag) {
+        if (magnitude_sq > best_mag)
+        {
             best_mag = magnitude_sq;
             best_bin = bin;
         }
@@ -113,7 +120,8 @@ uint16_t FftDemodReference::demodulate(const std::complex<float>* symbol_samples
 
     int corrected_bin = best_bin - cfo_int_;
     corrected_bin %= n_bins_;
-    if (corrected_bin < 0) {
+    if (corrected_bin < 0)
+    {
         corrected_bin += n_bins_;
     }
 

@@ -3,9 +3,9 @@
 #include <complex>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <vector>
-#include <optional>
 
 namespace host_sim
 {
@@ -18,22 +18,21 @@ class FftDemodulator;
 /// If no burst is found, returns std::nullopt.
 /// If search_from > 0, scanning starts at that sample offset.
 std::optional<std::size_t> detect_burst_start(const std::vector<std::complex<float>>& samples,
-                               int samples_per_symbol,
-                               float threshold_factor = 6.0f,
-                               std::size_t search_from = 0);
+                                              int samples_per_symbol, float threshold_factor = 6.0f,
+                                              std::size_t search_from = 0);
 
 /// Pointer+size overload — avoids vector copy in streaming paths.
 std::optional<std::size_t> detect_burst_start(const std::complex<float>* samples,
-                               std::size_t n_samples,
-                               int samples_per_symbol,
-                               float threshold_factor = 6.0f,
-                               std::size_t search_from = 0);
+                                              std::size_t n_samples, int samples_per_symbol,
+                                              float threshold_factor = 6.0f,
+                                              std::size_t search_from = 0);
 
 /// Result of burst detection with signal quality info.
-struct BurstDetectResult {
-    std::size_t burst_start{0};     ///< Sample index of burst start
-    float noise_floor{0.0f};        ///< Estimated noise power per sample
-    float signal_power{0.0f};       ///< Mean power in burst-start window
+struct BurstDetectResult
+{
+    std::size_t burst_start{0}; ///< Sample index of burst start
+    float noise_floor{0.0f};    ///< Estimated noise power per sample
+    float signal_power{0.0f};   ///< Mean power in burst-start window
 };
 
 /// Extended burst detection — returns noise floor + signal power for
@@ -47,31 +46,25 @@ struct BurstDetectResult {
 ///                          Useful for streaming: reuse noise from previous burst.
 /// @param min_consec        Minimum consecutive windows above threshold to confirm
 ///                          a burst (default 1).  Higher values reject impulse noise.
-std::optional<BurstDetectResult> detect_burst_ex(
-    const std::complex<float>* samples,
-    std::size_t n_samples,
-    int samples_per_symbol,
-    float threshold_factor = 6.0f,
-    std::size_t search_from = 0,
-    float prior_noise = 0.0f,
-    int min_consec = 1);
+std::optional<BurstDetectResult> detect_burst_ex(const std::complex<float>* samples,
+                                                 std::size_t n_samples, int samples_per_symbol,
+                                                 float threshold_factor = 6.0f,
+                                                 std::size_t search_from = 0,
+                                                 float prior_noise = 0.0f, int min_consec = 1);
 
 std::size_t find_symbol_alignment(std::span<const std::complex<float>> samples,
-                                  const FftDemodulator& demod,
-                                  int preamble_symbols = 8);
+                                  const FftDemodulator& demod, int preamble_symbols = 8);
 
 /// Alignment result with confidence score.
 struct AlignmentResult
 {
     std::size_t offset{0};
-    int score{0};    ///< Sum of per-symbol scores (2 for bin==0, 1 for bin<=2).
+    int score{0}; ///< Sum of per-symbol scores (2 for bin==0, 1 for bin<=2).
 };
 
 /// Same as find_symbol_alignment but also returns the best score.
-AlignmentResult find_symbol_alignment_scored(
-    std::span<const std::complex<float>> samples,
-    const FftDemodulator& demod,
-    int preamble_symbols = 8);
+AlignmentResult find_symbol_alignment_scored(std::span<const std::complex<float>> samples,
+                                             const FftDemodulator& demod, int preamble_symbols = 8);
 
 /// Result of CFO-aware preamble search.
 struct PreambleSearchResult
@@ -92,18 +85,15 @@ struct PreambleSearchResult
 /// the combination that yields the longest run of identical-bin symbols.
 /// The returned preamble_bin is the raw demodulated bin value, which equals
 /// the integer CFO that should be fed to set_frequency_offsets().
-PreambleSearchResult find_symbol_alignment_cfo_aware(
-    std::span<const std::complex<float>> samples,
-    const FftDemodulator& demod,
-    int preamble_symbols = 8);
+PreambleSearchResult find_symbol_alignment_cfo_aware(std::span<const std::complex<float>> samples,
+                                                     const FftDemodulator& demod,
+                                                     int preamble_symbols = 8);
 
 /// Find the symbol index where the header begins, by detecting sync words.
 /// Returns std::nullopt if sync words cannot be found.
 /// sync_word is the 8-bit sync word (e.g., 0x12), which is split into
 /// sync_high = (sync_word >> 4) << 3 and sync_low = (sync_word & 0xF) << 3.
-std::optional<std::size_t> find_header_symbol_index(
-    const std::vector<uint16_t>& symbols,
-    int sync_word,
-    int sf);
+std::optional<std::size_t> find_header_symbol_index(const std::vector<uint16_t>& symbols,
+                                                    int sync_word, int sf);
 
 } // namespace host_sim

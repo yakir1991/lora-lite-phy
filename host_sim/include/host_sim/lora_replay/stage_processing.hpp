@@ -7,14 +7,14 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <optional>
 #include <ostream>
-#include <string>
 #include <stdexcept>
-#include <type_traits>
+#include <string>
 #include <tuple>
+#include <type_traits>
 #include <vector>
-#include <limits>
 
 namespace host_sim::lora_replay
 {
@@ -43,11 +43,8 @@ struct StageOutputs
 
 uint16_t normalize_fft_symbol(uint16_t symbol, bool reduce_by_four, int sf);
 
-void append_fft_gray(const std::vector<uint16_t>& block_symbols,
-                     bool is_header_block,
-                     bool ldro_enabled,
-                     int sf,
-                     StageOutputs& outputs);
+void append_fft_gray(const std::vector<uint16_t>& block_symbols, bool is_header_block,
+                     bool ldro_enabled, int sf, StageOutputs& outputs);
 
 std::vector<long long> read_stage_file(const std::filesystem::path& path);
 
@@ -55,10 +52,12 @@ template <typename Value>
 void write_stage_file(const std::filesystem::path& path, const std::vector<Value>& values)
 {
     std::ofstream out(path);
-    if (!out) {
+    if (!out)
+    {
         throw std::runtime_error("Failed to write stage dump: " + path.string());
     }
-    for (auto value : values) {
+    for (auto value : values)
+    {
         out << static_cast<long long>(value) << '\n';
     }
 }
@@ -78,8 +77,7 @@ struct StageComparisonResult
 };
 
 template <typename HostType>
-StageComparisonResult compare_stage(const std::string& label,
-                                    const std::vector<HostType>& host,
+StageComparisonResult compare_stage(const std::string& label, const std::vector<HostType>& host,
                                     const std::vector<long long>& reference)
 {
     StageComparisonResult result;
@@ -87,8 +85,10 @@ StageComparisonResult compare_stage(const std::string& label,
     result.host_count = host.size();
     result.ref_count = reference.size();
 
-    if (host.empty()) {
-        if (!reference.empty()) {
+    if (host.empty())
+    {
+        if (!reference.empty())
+        {
             result.mismatches = reference.size();
             result.alignment_offset = 0;
             result.first_diff_index = 0;
@@ -97,7 +97,8 @@ StageComparisonResult compare_stage(const std::string& label,
         return result;
     }
 
-    if (reference.empty()) {
+    if (reference.empty())
+    {
         result.mismatches = result.host_count;
         result.alignment_relative_to_reference = false;
         result.alignment_offset = 0;
@@ -108,33 +109,36 @@ StageComparisonResult compare_stage(const std::string& label,
 
     const bool host_is_longer = result.host_count >= result.ref_count;
     const std::size_t compare_len = host_is_longer ? result.ref_count : result.host_count;
-    if (compare_len == 0) {
+    if (compare_len == 0)
+    {
         return result;
     }
 
     const std::size_t max_offset =
         host_is_longer ? (result.host_count - compare_len) : (result.ref_count - compare_len);
 
-    auto evaluate_alignment = [&](std::size_t host_start, std::size_t ref_start) {
+    auto evaluate_alignment = [&](std::size_t host_start, std::size_t ref_start)
+    {
         std::size_t mismatches = 0;
         std::optional<std::size_t> first_diff;
         std::optional<long long> first_host;
         std::optional<long long> first_ref;
-        for (std::size_t idx = 0; idx < compare_len; ++idx) {
+        for (std::size_t idx = 0; idx < compare_len; ++idx)
+        {
             const long long host_val = static_cast<long long>(host[host_start + idx]);
             const long long ref_val = reference[ref_start + idx];
-            if (host_val != ref_val) {
+            if (host_val != ref_val)
+            {
                 ++mismatches;
-                if (!first_diff) {
+                if (!first_diff)
+                {
                     first_diff = idx;
                     first_host = host_val;
                     first_ref = ref_val;
                 }
             }
         }
-        return std::tuple<std::size_t,
-                          std::optional<std::size_t>,
-                          std::optional<long long>,
+        return std::tuple<std::size_t, std::optional<std::size_t>, std::optional<long long>,
                           std::optional<long long>>(mismatches, first_diff, first_host, first_ref);
     };
 
@@ -144,17 +148,20 @@ StageComparisonResult compare_stage(const std::string& label,
     std::optional<long long> best_host_value;
     std::optional<long long> best_ref_value;
 
-    for (std::size_t offset = 0; offset <= max_offset; ++offset) {
+    for (std::size_t offset = 0; offset <= max_offset; ++offset)
+    {
         const std::size_t host_start = host_is_longer ? offset : 0;
         const std::size_t ref_start = host_is_longer ? 0 : offset;
         auto [mism, first_diff, host_val, ref_val] = evaluate_alignment(host_start, ref_start);
-        if (mism < best_mismatches) {
+        if (mism < best_mismatches)
+        {
             best_mismatches = mism;
             best_offset = offset;
             best_first_diff = first_diff;
             best_host_value = host_val;
             best_ref_value = ref_val;
-            if (best_mismatches == 0) {
+            if (best_mismatches == 0)
+            {
                 break;
             }
         }
@@ -165,7 +172,8 @@ StageComparisonResult compare_stage(const std::string& label,
                             : best_mismatches;
     result.alignment_offset = best_offset;
     result.alignment_relative_to_reference = !host_is_longer;
-    if (best_first_diff) {
+    if (best_first_diff)
+    {
         result.first_diff_index = best_first_diff;
         result.host_value = best_host_value;
         result.ref_value = best_ref_value;
@@ -258,13 +266,12 @@ struct StageDiffReport
 };
 
 StageDiffReport build_stage_diff_report(const std::vector<StageComparisonResult>& results,
-                                        bool verbose,
-                                        std::ostream& stream);
+                                        bool verbose, std::ostream& stream);
 
 void write_summary_json(const std::filesystem::path& path, const SummaryReport& report);
 
-std::vector<StageComparisonResult> compare_with_reference(const StageOutputs& outputs,
-                                                          const std::filesystem::path& compare_root);
+std::vector<StageComparisonResult>
+compare_with_reference(const StageOutputs& outputs, const std::filesystem::path& compare_root);
 
 uint16_t compute_lora_crc(const std::vector<uint8_t>& payload);
 

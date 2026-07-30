@@ -36,10 +36,7 @@ struct FixedQ15Traits
         return static_cast<SampleType>(std::lrint(clamped * scale));
     }
 
-    static float to_float(SampleType value)
-    {
-        return static_cast<float>(value) / scale;
-    }
+    static float to_float(SampleType value) { return static_cast<float>(value) / scale; }
 
     static ComplexValue to_complex(const std::complex<float>& value)
     {

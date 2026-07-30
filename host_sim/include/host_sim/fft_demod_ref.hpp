@@ -4,7 +4,8 @@
 #include <cstdint>
 #include <vector>
 
-extern "C" {
+extern "C"
+{
 #include "kiss_fft.h"
 }
 

@@ -15,8 +15,7 @@
 namespace host_sim
 {
 
-template <typename Traits = host_sim::FloatTraits>
-class DemodStageT : public Stage
+template <typename Traits = host_sim::FloatTraits> class DemodStageT : public Stage
 {
 public:
     DemodStageT() = default;
@@ -28,7 +27,8 @@ public:
         demod_ = std::make_unique<DemodulatorType>(config.sf, config.sample_rate, config.bandwidth);
         demod_->reset_symbol_counter();
         current_scale_ = 1.0f;
-        if constexpr (Traits::is_fixed_point) {
+        if constexpr (Traits::is_fixed_point)
+        {
             quantised_buffer_.clear();
             float_buffer_.clear();
         }
@@ -36,29 +36,37 @@ public:
 
     void process(SymbolContext& context) override
     {
-        if (!demod_) {
+        if (!demod_)
+        {
             throw std::runtime_error("DemodStageT used before reset");
         }
 
-        if constexpr (Traits::is_fixed_point) {
+        if constexpr (Traits::is_fixed_point)
+        {
             quantised_buffer_.resize(context.samples.size());
             float_buffer_.resize(context.samples.size());
             float max_component = 0.0f;
-            for (const auto& sample : context.samples) {
-                max_component = std::max(max_component, std::max(std::abs(sample.real()), std::abs(sample.imag())));
+            for (const auto& sample : context.samples)
+            {
+                max_component = std::max(
+                    max_component, std::max(std::abs(sample.real()), std::abs(sample.imag())));
             }
             current_scale_ = 1.0f;
-            if (max_component > 1.0f) {
+            if (max_component > 1.0f)
+            {
                 current_scale_ = 1.0f / max_component;
             }
-            for (std::size_t i = 0; i < context.samples.size(); ++i) {
+            for (std::size_t i = 0; i < context.samples.size(); ++i)
+            {
                 const auto scaled = context.samples[i] * current_scale_;
                 quantised_buffer_[i] = Traits::to_complex(scaled);
                 float_buffer_[i] = scaled;
             }
             demod_->set_input_scale(current_scale_);
             context.demod_symbol = demod_->demodulate(quantised_buffer_.data());
-        } else {
+        }
+        else
+        {
             context.demod_symbol = demod_->demodulate(context.samples.data());
         }
 

@@ -7,6 +7,8 @@ IndentWidth: 4
 TabWidth: 4
 UseTab: Never
 ColumnLimit: 100
+# Keep access specifiers flush with the class keyword, as the sources do
+AccessModifierOffset: -4
 
 # Allman brace style (opening brace on its own line)
 BreakBeforeBraces: Allman
