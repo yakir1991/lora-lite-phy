@@ -18,8 +18,8 @@ jobs:
       - name: Check formatting
         run: |
           find host_sim/src host_sim/include host_sim/tests examples \
-               -name '*.cpp' -o -name '*.hpp' -o -name '*.h' \
-            | xargs clang-format-17 --dry-run --Werror
+               \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' \) \
+            | xargs --no-run-if-empty clang-format-17 --dry-run --Werror
 
   build-and-test:
     runs-on: ubuntu-latest
@@ -47,13 +47,13 @@ jobs:
           sudo apt-get install -y -qq ninja-build
 
       - name: Configure
-        run: cmake -B build -G Ninja -DCMAKE_C_COMPILER=${{ matrix.cc }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+        run: cmake -B build -G Ninja -DCMAKE_C_COMPILER=${{ matrix.cc }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         run: cmake --build build
 
       - name: Test
-        run: ctest --test-dir build -j$(nproc) --output-on-failure --timeout 300 -E "tx_soft_sf12"
+        run: ctest --test-dir build -j$(nproc) --output-on-failure --timeout 300
 
       - name: Upload test logs on failure
         if: failure()
@@ -78,6 +78,8 @@ jobs:
       - name: Build
         run: cmake --build build
 
+      # tx_soft_sf12 needs ~47 s optimised; an instrumented Debug build pushes it
+      # past the timeout, so it stays excluded here only.
       - name: Test
         run: ctest --test-dir build -j$(nproc) --output-on-failure --timeout 300 -E "tx_soft_sf12"
 

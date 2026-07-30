@@ -16,14 +16,16 @@ jobs:
       - name: Install tools
         run: sudo apt-get update -qq && sudo apt-get install -y -qq g++-13 ninja-build
 
+      # ENABLE_NATIVE_ARCH=OFF: released binaries must run on any x86-64 CPU,
+      # not just the ISA extensions this runner happens to expose.
       - name: Configure
-        run: cmake -B build -G Ninja -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_CXX_COMPILER=g++-13 -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B build -G Ninja -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_CXX_COMPILER=g++-13 -DCMAKE_BUILD_TYPE=Release -DENABLE_NATIVE_ARCH=OFF
 
       - name: Build
         run: cmake --build build
 
       - name: Test
-        run: ctest --test-dir build -j$(nproc) --output-on-failure --timeout 300 -E "tx_soft_sf12"
+        run: ctest --test-dir build -j$(nproc) --output-on-failure --timeout 300
 
       - name: Package binaries
         run: |
