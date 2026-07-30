@@ -13,6 +13,7 @@ extern "C" {
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 
 namespace host_sim

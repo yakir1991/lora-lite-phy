@@ -4,6 +4,7 @@
 #include "host_sim/lora_replay/stage_processing.hpp"
 
 #include <algorithm>
+#include <cstdint>
 #include <stdexcept>
 
 namespace host_sim::lora_replay

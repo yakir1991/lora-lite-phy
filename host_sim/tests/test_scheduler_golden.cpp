@@ -5,6 +5,8 @@
 #include "host_sim/fft_demod_ref.hpp"
 #include "host_sim/stages/demod_stage.hpp"
 
+#include <algorithm>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iostream>

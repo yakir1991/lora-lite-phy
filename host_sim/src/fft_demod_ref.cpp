@@ -1,6 +1,8 @@
 #include "host_sim/fft_demod_ref.hpp"
 
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <stdexcept>
 
 namespace host_sim

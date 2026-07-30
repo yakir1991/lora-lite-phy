@@ -2,9 +2,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
-#include <numeric>
 #include <iostream>
+#include <numeric>
 #include <stdexcept>
 
 namespace host_sim

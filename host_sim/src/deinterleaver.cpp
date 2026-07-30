@@ -2,6 +2,7 @@
 
 #include "host_sim/gray.hpp"
 
+#include <cstdint>
 #include <stdexcept>
 
 namespace host_sim

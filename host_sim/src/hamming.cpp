@@ -1,6 +1,7 @@
 #include "host_sim/hamming.hpp"
 
 #include <algorithm>
+#include <cstdint>
 
 namespace host_sim
 {

@@ -4,6 +4,7 @@
 
 #include <complex>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 extern "C" {

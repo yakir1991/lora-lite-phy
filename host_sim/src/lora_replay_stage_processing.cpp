@@ -1,11 +1,13 @@
 #include "host_sim/lora_replay/stage_processing.hpp"
 
 #include <algorithm>
+#include <cstdint>
 #include <fstream>
 #include <iomanip>
 #include <ios>
 #include <optional>
 #include <sstream>
+#include <stdexcept>
 
 namespace host_sim::lora_replay
 {

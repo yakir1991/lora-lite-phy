@@ -18,6 +18,8 @@
 #include "host_sim/lora_params.hpp"
 #include "host_sim/whitening.hpp"
 
+#include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>

@@ -7,6 +7,7 @@
 #include "host_sim/fft_demod_q15.hpp"
 #include "host_sim/q15.hpp"
 
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

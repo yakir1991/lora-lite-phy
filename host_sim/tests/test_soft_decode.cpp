@@ -4,8 +4,9 @@
 
 #include <cassert>
 #include <cmath>
-#include <iostream>
+#include <cstdint>
 #include <iomanip>
+#include <iostream>
 #include <vector>
 
 // Test: Given known symbols, verify that compute_symbol_llrs produces LLR signs

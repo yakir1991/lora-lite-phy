@@ -1,5 +1,6 @@
 #include "host_sim/capture.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
