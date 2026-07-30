@@ -135,8 +135,10 @@ Prints `CRC OK` / `CRC FAIL` and `Payload MATCH` / `Payload MISMATCH`.
 
 ## Tests
 
-The project ships with **152 CTests** (when GNU Radio reference data is
-present locally; CI runs the ~136 self-contained tests):
+The project ships with **152 CTests** when the GNU Radio reference data and
+the Git LFS captures are present locally. A plain clone without them runs the
+93 self-contained tests, which is what CI does — the data-dependent groups are
+skipped at configure time rather than failing:
 
 | Category | Count | Description |
 |---|---|---|
