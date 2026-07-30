@@ -5,14 +5,22 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Threads REQUIRED)
 
+# -march=native bakes in whatever ISA extensions the build machine happens to
+# have, so a binary built here can die with SIGILL on an older CPU.  Keep it on
+# for local builds, where it buys real speed in the chirp multiply, polyphase
+# fold and FFT butterfly loops, but turn it off for anything redistributable.
+option(ENABLE_NATIVE_ARCH "Optimise for the build machine's CPU (-march=native)" ON)
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -Wpedantic)
-    # Enable native SIMD (AVX2/FMA on x86, NEON on ARM) for auto-vectorization
-    # of chirp multiply, polyphase fold, and FFT butterfly loops.
-    include(CheckCXXCompilerFlag)
-    check_cxx_compiler_flag("-march=native" HAS_MARCH_NATIVE)
-    if(HAS_MARCH_NATIVE)
-        add_compile_options(-march=native)
+    if(ENABLE_NATIVE_ARCH)
+        include(CheckCXXCompilerFlag)
+        check_cxx_compiler_flag("-march=native" HAS_MARCH_NATIVE)
+        if(HAS_MARCH_NATIVE)
+            add_compile_options(-march=native)
+        endif()
+    else()
+        message(STATUS "ENABLE_NATIVE_ARCH=OFF — building portable binaries")
     endif()
 endif()
 
@@ -225,6 +233,23 @@ if (BUILD_TESTING)
     set(OTA_DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/data/ota")
     set(OTA_METADATA "${OTA_DATA_DIR}/metadata.json")
 
+    # The captures are stored in Git LFS.  A checkout without LFS leaves small
+    # text pointer files in their place, which would fail every OTA test with a
+    # confusing decode error, so detect that and skip the whole group instead.
+    set(OTA_DATA_AVAILABLE FALSE)
+    if(EXISTS "${OTA_DATA_DIR}/packet_0.cf32")
+        file(READ "${OTA_DATA_DIR}/packet_0.cf32" _ota_probe LIMIT 40 HEX)
+        string(FIND "${_ota_probe}" "76657273696f6e2068747470733a2f2f6769742d6c6673" _ota_ptr)
+        if(_ota_ptr EQUAL -1)
+            set(OTA_DATA_AVAILABLE TRUE)
+        endif()
+    endif()
+
+    if(NOT OTA_DATA_AVAILABLE)
+        message(STATUS "OTA captures unavailable (Git LFS not fetched) — skipping OTA tests")
+    endif()
+
+    if(OTA_DATA_AVAILABLE)
     set(OTA_PAYLOADS "LoRa Test #520" "LoRa Test #521" "LoRa Test #522" "LoRa Test #523")
     foreach(pkt_idx RANGE 0 3)
         list(GET OTA_PAYLOADS ${pkt_idx} expected_payload)
@@ -327,6 +352,7 @@ if (BUILD_TESTING)
         LABELS "ota"
         PASS_REGULAR_EXPRESSION "MULTI_PACKET_OK"
     )
+    endif()
 endif ()
 
 # ===== TX round-trip tests (encode → decode) =====
