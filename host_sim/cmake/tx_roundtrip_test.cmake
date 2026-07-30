@@ -52,7 +52,11 @@ if(NOT _tx_rc EQUAL 0)
     message(FATAL_ERROR "TX encode failed:\n${_tx_err}")
 endif()
 
-# RX decode
+# RX decode.
+# The timeout is a hang guard, not a performance gate: an SF12 OS=4 decode is a
+# few seconds when optimised, but 40+ s in the Debug + coverage build the
+# coverage job uses, and slower still on a 2-core CI runner. Keep it well above
+# that yet under the 300 s ctest-level timeout so a genuine hang still trips.
 execute_process(
     COMMAND "${LORA_REPLAY}"
         --iq "${TX_IQ}"
@@ -61,7 +65,7 @@ execute_process(
     OUTPUT_VARIABLE _rx_out
     ERROR_VARIABLE  _rx_err
     RESULT_VARIABLE _rx_rc
-    TIMEOUT 60
+    TIMEOUT 240
 )
 message("RX: ${_rx_out}")
 
