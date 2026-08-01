@@ -6,7 +6,6 @@
 #include "host_sim/hamming.hpp"
 #include "host_sim/lora_params.hpp"
 #include "host_sim/lora_replay/header_decoder.hpp"
-#include "host_sim/lora_replay/options.hpp"
 #include "host_sim/lora_replay/stage_processing.hpp"
 #include "host_sim/scheduler.hpp"
 #include "host_sim/soft_decode.hpp"
@@ -32,6 +31,8 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+#include "lora_replay_options.hpp"
 
 namespace
 {

@@ -1,4 +1,4 @@
-#include "host_sim/lora_replay/options.hpp"
+#include "lora_replay_options.hpp"
 
 #include <cstdlib>
 #include <iostream>
