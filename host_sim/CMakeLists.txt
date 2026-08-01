@@ -37,6 +37,7 @@ add_library(host_sim_core STATIC
     src/lora_params.cpp
     src/soft_decode.cpp
     src/whitening.cpp
+    src/packet_decoder.cpp
     src/lora_replay_header_decoder.cpp
     src/lora_replay_header_encoder.cpp
     src/lora_replay_stage_processing.cpp
@@ -251,6 +252,15 @@ if (BUILD_TESTING)
     endif()
 
     if(OTA_DATA_AVAILABLE)
+    # ----- Packet-level decode API -----
+    add_executable(host_sim_packet_decoder tests/test_packet_decoder.cpp)
+    target_link_libraries(host_sim_packet_decoder PRIVATE host_sim_core)
+    target_compile_definitions(host_sim_packet_decoder
+        PRIVATE PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+    )
+    add_test(NAME packet_decoder_ota COMMAND host_sim_packet_decoder)
+    set_tests_properties(packet_decoder_ota PROPERTIES LABELS "ota")
+
     set(OTA_PAYLOADS "LoRa Test #520" "LoRa Test #521" "LoRa Test #522" "LoRa Test #523")
     foreach(pkt_idx RANGE 0 3)
         list(GET OTA_PAYLOADS ${pkt_idx} expected_payload)

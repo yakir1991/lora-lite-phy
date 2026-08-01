@@ -166,16 +166,19 @@ HeaderDecodeResult try_decode_header(const std::vector<uint16_t>& symbols, std::
 // Quick CRC probe: decode payload from symbols and check CRC.
 // Used for data-start timing refinement at low oversampling,
 // where SFO-induced timing drift can shift data symbols by ±1 bin.
-bool probe_payload_crc(const std::vector<uint16_t>& symbols, const HeaderDecodeResult& hdr,
-                       const host_sim::LoRaMetadata& meta)
+PayloadDecodeResult decode_payload(const std::vector<uint16_t>& symbols,
+                                   const HeaderDecodeResult& hdr,
+                                   const host_sim::LoRaMetadata& meta)
 {
+    PayloadDecodeResult out;
     if (!hdr.success)
-        return false;
+        return out;
     const int pl = hdr.payload_len > 0 ? hdr.payload_len : meta.payload_len;
     const int cr = hdr.cr > 0 ? hdr.cr : meta.cr;
     const bool has_crc = hdr.has_crc || meta.has_crc;
-    if (!has_crc || pl < 3)
-        return false;
+    if (pl <= 0)
+        return out;
+    out.has_crc = has_crc;
 
     std::vector<uint8_t> payload_nibbles;
     if (hdr.nibbles.size() > 5)
@@ -186,7 +189,8 @@ bool probe_payload_crc(const std::vector<uint16_t>& symbols, const HeaderDecodeR
         }
     }
 
-    const std::size_t nibble_target = static_cast<std::size_t>(pl) * 2 + 4;
+    const std::size_t crc_nibbles = has_crc ? 4u : 0u;
+    const std::size_t nibble_target = static_cast<std::size_t>(pl) * 2 + crc_nibbles;
     const int cw_len = cr + 4;
     std::size_t cursor = hdr.consumed_symbols > 0 ? hdr.consumed_symbols : 8;
     host_sim::DeinterleaverConfig payload_cfg{meta.sf, cr, false, meta.ldro};
@@ -205,15 +209,16 @@ bool probe_payload_crc(const std::vector<uint16_t>& symbols, const HeaderDecodeR
         payload_nibbles.insert(payload_nibbles.end(), nibs.begin(), nibs.end());
     }
 
-    if (payload_nibbles.size() < static_cast<std::size_t>(pl) * 2 + 4)
-        return false;
+    if (payload_nibbles.size() < nibble_target)
+        return out;
+
+    const std::size_t byte_target = static_cast<std::size_t>(pl) + (has_crc ? 2u : 0u);
 
     host_sim::WhiteningSequencer seq;
     auto whitening = seq.sequence(payload_nibbles.size() / 2);
 
     std::vector<uint8_t> unwhitened;
-    for (std::size_t i = 0;
-         i + 1 < payload_nibbles.size() && unwhitened.size() < static_cast<std::size_t>(pl) + 2;
+    for (std::size_t i = 0; i + 1 < payload_nibbles.size() && unwhitened.size() < byte_target;
          i += 2)
     {
         const std::size_t byte_idx = i / 2;
@@ -232,19 +237,41 @@ bool probe_payload_crc(const std::vector<uint16_t>& symbols, const HeaderDecodeR
         unwhitened.push_back(static_cast<uint8_t>((hi << 4) | lo));
     }
 
-    if (unwhitened.size() < static_cast<std::size_t>(pl) + 2)
-        return false;
+    if (unwhitened.size() < byte_target)
+        return out;
 
-    std::vector<uint8_t> crc_data(unwhitened.begin(), unwhitened.begin() + pl - 2);
-    uint16_t computed = compute_raw_crc16(crc_data);
-    if (pl >= 2)
+    out.payload.assign(unwhitened.begin(), unwhitened.begin() + pl);
+    out.consumed_symbols = cursor;
+    out.success = true;
+
+    if (has_crc && pl >= 3)
     {
+        std::vector<uint8_t> crc_data(unwhitened.begin(), unwhitened.begin() + pl - 2);
+        uint16_t computed = compute_raw_crc16(crc_data);
         computed ^= unwhitened[pl - 1];
         computed ^= static_cast<uint16_t>(unwhitened[pl - 2]) << 8;
+        out.crc_computed = computed;
+        out.crc_received = static_cast<uint16_t>(unwhitened[pl]) |
+                           (static_cast<uint16_t>(unwhitened[pl + 1]) << 8);
+        out.crc_ok = (out.crc_computed == out.crc_received);
     }
-    const uint16_t decoded =
-        static_cast<uint16_t>(unwhitened[pl]) | (static_cast<uint16_t>(unwhitened[pl + 1]) << 8);
-    return computed == decoded;
+    return out;
+}
+
+bool probe_payload_crc(const std::vector<uint16_t>& symbols, const HeaderDecodeResult& hdr,
+                       const host_sim::LoRaMetadata& meta)
+{
+    // Guards kept identical to the original implementation: this probe is only
+    // meaningful for CRC-bearing payloads long enough to carry one.
+    if (!hdr.success)
+        return false;
+    const int pl = hdr.payload_len > 0 ? hdr.payload_len : meta.payload_len;
+    const bool has_crc = hdr.has_crc || meta.has_crc;
+    if (!has_crc || pl < 3)
+        return false;
+
+    const auto result = decode_payload(symbols, hdr, meta);
+    return result.success && result.crc_ok;
 }
 
 } // namespace host_sim::lora_replay
