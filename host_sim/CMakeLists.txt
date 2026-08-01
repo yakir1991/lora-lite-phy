@@ -37,6 +37,7 @@ add_library(host_sim_core STATIC
     src/lora_params.cpp
     src/soft_decode.cpp
     src/whitening.cpp
+    src/lora_replay_header_decoder.cpp
     src/lora_replay_header_encoder.cpp
     src/lora_replay_stage_processing.cpp
     third_party/kissfft/kiss_fft.c
