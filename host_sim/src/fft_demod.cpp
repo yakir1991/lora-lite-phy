@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
+#include <numbers>
 #include <numeric>
 #include <stdexcept>
 
@@ -77,7 +78,7 @@ uint16_t FftDemodulator::demodulate(const std::complex<float>* symbol_samples) c
     static const bool debug_fft = (std::getenv("HOST_SIM_DEBUG_FFT_DETAIL") != nullptr);
     const float fractional_offset = cfo_frac_ + sfo_slope_ * static_cast<float>(symbol_counter_);
     const bool apply_sfo = std::abs(sfo_slope_) > 0.0f;
-    const float sfo_factor = apply_sfo ? -2.0f * static_cast<float>(M_PI) * sfo_slope_ *
+    const float sfo_factor = apply_sfo ? -2.0f * std::numbers::pi_v<float> * sfo_slope_ *
                                              static_cast<float>(symbol_counter_) /
                                              static_cast<float>(samples_per_symbol_)
                                        : 0.0f;
@@ -112,7 +113,7 @@ uint16_t FftDemodulator::demodulate(const std::complex<float>* symbol_samples) c
 
             const float chip =
                 static_cast<float>(sample_idx) / static_cast<float>(oversample_factor_);
-            const float phase = -2.0f * static_cast<float>(M_PI) * fractional_offset * chip /
+            const float phase = -2.0f * std::numbers::pi_v<float> * fractional_offset * chip /
                                 static_cast<float>(n_bins_);
             std::complex<float> rot(std::cos(phase), std::sin(phase));
             if (apply_sfo)
@@ -288,7 +289,7 @@ FftDemodulator::estimate_frequency_offsets(const std::complex<float>* samples,
         }
         if (std::abs(accum) > 0.0)
         {
-            estimate.cfo_frac = static_cast<float>(-std::arg(accum) / (2.0 * M_PI));
+            estimate.cfo_frac = static_cast<float>(-std::arg(accum) / (2.0 * std::numbers::pi));
         }
     }
 

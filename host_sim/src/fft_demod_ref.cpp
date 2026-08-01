@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <numbers>
 #include <stdexcept>
 
 namespace host_sim
@@ -24,8 +25,8 @@ std::vector<std::complex<float>> build_downchirp(int sf, int oversample_factor)
         const float quadratic = chip * chip / (2.0f * N);
         const float linear = -0.5f * chip;
         const float phase = quadratic + linear;
-        downchirp[n] = std::complex<float>(std::cos(-2.0f * static_cast<float>(M_PI) * phase),
-                                           std::sin(-2.0f * static_cast<float>(M_PI) * phase));
+        downchirp[n] = std::complex<float>(std::cos(-2.0f * std::numbers::pi_v<float> * phase),
+                                           std::sin(-2.0f * std::numbers::pi_v<float> * phase));
     }
     return downchirp;
 }
@@ -67,7 +68,7 @@ void FftDemodReference::initialize_fft()
 uint16_t FftDemodReference::demodulate(const std::complex<float>* symbol_samples) const
 {
     const bool apply_sfo = std::abs(sfo_slope_) > 0.0f;
-    const float sfo_factor = apply_sfo ? -2.0f * static_cast<float>(M_PI) * sfo_slope_ /
+    const float sfo_factor = apply_sfo ? -2.0f * std::numbers::pi_v<float> * sfo_slope_ /
                                              static_cast<float>(samples_per_symbol_)
                                        : 0.0f;
 
@@ -89,7 +90,7 @@ uint16_t FftDemodReference::demodulate(const std::complex<float>* symbol_samples
             sample_idx = samples_per_symbol_ - 1;
         }
         const float chip = static_cast<float>(sample_idx) / static_cast<float>(oversample_factor_);
-        const float phase = -2.0f * static_cast<float>(M_PI) * fractional_offset_ * chip /
+        const float phase = -2.0f * std::numbers::pi_v<float> * fractional_offset_ * chip /
                             static_cast<float>(n_bins_);
         std::complex<float> rot(std::cos(phase), std::sin(phase));
         if (apply_sfo)

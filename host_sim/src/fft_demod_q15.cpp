@@ -17,6 +17,7 @@ extern "C"
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <numbers>
 
 namespace host_sim
 {
@@ -62,7 +63,7 @@ uint16_t FftDemodulatorQ15::demodulate(const Q15Complex* symbol_samples)
 {
     const float fractional_offset = cfo_frac_ + sfo_slope_ * static_cast<float>(symbol_counter_);
     const bool apply_sfo = std::abs(sfo_slope_) > 0.0f;
-    const float sfo_factor = apply_sfo ? -2.0f * static_cast<float>(M_PI) * sfo_slope_ *
+    const float sfo_factor = apply_sfo ? -2.0f * std::numbers::pi_v<float> * sfo_slope_ *
                                              static_cast<float>(symbol_counter_) /
                                              static_cast<float>(samples_per_symbol_)
                                        : 0.0f;
@@ -85,7 +86,7 @@ uint16_t FftDemodulatorQ15::demodulate(const Q15Complex* symbol_samples)
 
         // Per-sample phase rotation for CFO/SFO.
         const float chip = static_cast<float>(sample_idx) / static_cast<float>(oversample_factor_);
-        float phase = -2.0f * static_cast<float>(M_PI) * fractional_offset * chip /
+        float phase = -2.0f * std::numbers::pi_v<float> * fractional_offset * chip /
                       static_cast<float>(n_bins_);
         if (apply_sfo)
         {
